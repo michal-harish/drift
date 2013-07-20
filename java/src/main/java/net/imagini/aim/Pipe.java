@@ -59,9 +59,13 @@ public class Pipe {
     }
 
     final public void write(String value) throws IOException {
-        byte[] data = value.getBytes();
-        write(data.length);
-        outputPipe.write(data);
+        if (value == null) {
+            write((int) 0);
+        } else {
+            byte[] data = value.getBytes();
+            write(data.length);
+            outputPipe.write(data);
+        }
     }
 
 

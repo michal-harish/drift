@@ -18,7 +18,7 @@ public class PipeLZ4 extends Pipe {
      }
 
      @Override protected OutputStream getOutputPipe(OutputStream out) throws IOException {
-         lz4OutputStream = new LZ4BlockOutputStream(out, 33554432);
+         lz4OutputStream = new LZ4BlockOutputStream(out, 65535);
          return lz4OutputStream;
      }
 

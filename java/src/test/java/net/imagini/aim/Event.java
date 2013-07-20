@@ -7,6 +7,8 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.UUID;
 
+import joptsimple.internal.Strings;
+
 public class Event implements Writable {
 
     public final long timestamp; 
@@ -40,8 +42,8 @@ public class Event implements Writable {
         this.client_ip = clientIp;
         this.type = type;
         this.user_agent = userAgent;
-        this.country_code = countryCode; 
-        this.region_code = regionCode;
+        this.country_code = Strings.isNullOrEmpty(countryCode) ? "??" : countryCode; 
+        this.region_code = Strings.isNullOrEmpty(regionCode) ? "???" : regionCode;
         this.post_code = postCode;
         this.api_key = apiKey;
         this.url = url;
