@@ -8,7 +8,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class MockServer extends Thread {
-    public static Class<? extends Pipe> type = Pipe.class;
+    public static Class<? extends Pipe> type = PipeLZ4.class;
     ServerSocket serverSocket;
 
     public MockServer(int port) throws IOException {
