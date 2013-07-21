@@ -51,20 +51,6 @@ public class Event implements Writable {
         this.userQuizzed = userQuizzed;
     }
 
-    public Event(Pipe in) throws IOException {
-        this.timestamp = in.readLong();
-        this.client_ip = InetAddress.getByAddress(in.readByteArray(4));
-        this.type = in.readString();
-        this.user_agent = in.readString();
-        this.country_code = new String(in.readByteArray(2));
-        this.region_code = new String(in.readByteArray(3));
-        this.post_code = in.readString();
-        this.api_key = in.readString();
-        this.url = in.readString();
-        this.userUid = new UUID(in.readLong(),in.readLong());
-        this.userQuizzed = in.readBool();
-    }
-
     @Override
     public void write(Pipe out) throws IOException {
         out.write(timestamp);
@@ -78,20 +64,5 @@ public class Event implements Writable {
         out.write(url);
         out.write(userUid.getMostSignificantBits());out.write(userUid.getLeastSignificantBits());
         out.write(userQuizzed);
-    }
-
-
-    @Override 
-    public String toString() {
-        String result = "timestamp:" + timestamp 
-                + ", client_ip:" + client_ip
-                + ", type:" + type
-                + ", country_code:" + country_code
-                + ", region_code:" + region_code
-                + ", post_code:" + post_code
-                + ", userUid:" + userUid.toString()
-                + ", userQuizzed:" + userQuizzed
-        ;
-        return result;
     }
 }

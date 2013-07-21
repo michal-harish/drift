@@ -5,7 +5,6 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Properties;
@@ -23,7 +22,7 @@ import kafka.message.MessageAndMetadata;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 
-public class AimPrototype {
+public class KafkaEvents {
     
     static ConsumerConnector consumer;
 
@@ -42,26 +41,31 @@ public class AimPrototype {
             Properties consumerProps = new Properties();
             consumerProps.put("zk.connect", "zookeeper-01.stag.visualdna.com");
             consumerProps.put("groupid", "aim-kafka-loader-dev");
-            System.out.println("Connecting to Kafka..");
+            System.out.println("Connecting to Kafka " + consumerProps.getProperty("zk.connect") +"..");
             consumer = Consumer.createJavaConsumerConnector(new ConsumerConfig(consumerProps));
             @SuppressWarnings("serial")
             KafkaStream<Message> stream = consumer.createMessageStreams(new HashMap<String,Integer>() {{
                 put("prod_conversions", 1);
             }}).get("prod_conversions").get(0);
-            System.out.println("Consuming messages..");
 
             ConsumerIterator<Message> it = stream.iterator();
             ObjectMapper jsonMapper = new ObjectMapper();
+            long t = System.currentTimeMillis();
+            boolean started = false;
             while(it.hasNext()) {
+                if (!started) {
+                    System.out.println("Consuming messages..");
+                    started = true;
+                }
                 MessageAndMetadata<Message> metaMsg = it.next();
                 Message message = metaMsg.message();
                 ByteBuffer buffer = message.payload();
                 byte [] bytes = new byte[buffer.remaining()];
                 buffer.get(bytes);
-                //System.out.println(new String(bytes));
                 JsonNode json = jsonMapper.readValue(bytes, JsonNode.class);
+                Event event;
                 try {
-                    new Event(
+                    event = new Event(
                         Long.valueOf(json.get("timestamp").getValueAsText()), 
                         InetAddress.getByName(json.get("client_ip").getTextValue()), 
                         json.get("event_type").getTextValue(), 
@@ -73,12 +77,16 @@ public class AimPrototype {
                         json.get("url").getTextValue(), 
                         UUID.fromString(json.get("extradata").get("vdna_widget_mc").getTextValue()), 
                         !Strings.isNullOrEmpty(json.get("userUid").getTextValue())
-                    ).write(pipe);
-                } catch(UnknownHostException e1) {
-                    System.out.println("Invalid client_ip: " + json.get("client_ip"));
+                    );
                 } catch(Exception e) {
-                   e.printStackTrace();
+                    continue;
                 }
+                if (System.currentTimeMillis() - t  > 100) {
+                    t = System.currentTimeMillis();
+                } else {
+                    continue;
+                }
+                event.write(pipe);
             }
             pipe.close();
             socket.close();
