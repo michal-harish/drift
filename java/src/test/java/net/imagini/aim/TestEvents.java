@@ -22,7 +22,7 @@ public class TestEvents {
             final Pipe pipe = MockServer.type.getConstructor(OutputStream.class).newInstance(socket.getOutputStream());
 
             try {
-                for (int i = 1; i <=100000; i++) {
+                for (int i = 1; i <=1000000; i++) {
                     UUID userUid  = UUID.randomUUID();
                     InetAddress clientIp = InetAddress.getByName("173.194.41.99");
                     pipe.write(10000L + i);
@@ -36,7 +36,6 @@ public class TestEvents {
                     pipe.write("http://");
                     pipe.write(userUid.getMostSignificantBits());pipe.write(userUid.getLeastSignificantBits());
                     pipe.write(false);
-                    Thread.sleep(10);
                 }
             } catch(Exception e) {
                e.printStackTrace();

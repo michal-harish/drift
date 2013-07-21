@@ -15,6 +15,8 @@ import org.apache.commons.io.EndianUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
 /**
+ * AimColumn represents a physical column of data of a sepecific type.
+ * 
  * TODO This class must be thread-safe as multiple loaders and queries can
  * be run simultaneously.
  * 
@@ -24,9 +26,9 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 public class AimColumn {
     final public AimDataType type;
     final public Integer size;
-    private LinkedList<ByteArrayOutputStream> segments;
+    private LinkedList<byte[]> segments;
     private LZ4BlockOutputStream lz4;
-    private ByteArrayOutputStream segment;
+    private ByteArrayOutputStream currentSegment;
 
     public AimColumn(AimDataType type) {
         this.type = type;
@@ -35,13 +37,13 @@ public class AimColumn {
         } else {
             this.size = type.getSize();
         }
-        this.segments = new LinkedList<ByteArrayOutputStream>();
+        this.segments = new LinkedList<byte[]>();
     }
     private void openSegment() {
         if (lz4 == null) {
-            segment = new ByteArrayOutputStream(65535);
+            currentSegment = new ByteArrayOutputStream(65535);
             lz4 = new LZ4BlockOutputStream(
-                segment, 
+                currentSegment, 
                 65535,
                 LZ4Factory.fastestInstance().fastCompressor(),
                 XXHashFactory.fastestInstance().newStreamingHash32(0x9747b28c).asChecksum(), 
@@ -58,14 +60,11 @@ public class AimColumn {
         if (lz4 != null) {
             lz4.close();
             lz4 = null;
-            segments.add(segment);
-            segment = null;
+            segments.add(currentSegment.toByteArray());
+            currentSegment = null;
         }
     }
-    final public void write(int value) throws IOException {
-        openSegment();
-        EndianUtils.writeSwappedInteger(lz4,value);
-    }
+
     public void write(byte[] value) throws IOException {
         openSegment();
         lz4.write(value);
@@ -73,10 +72,10 @@ public class AimColumn {
     public void write(String value) throws IOException {
         openSegment();
         if (value == null) {
-            write((int) 0);
+            EndianUtils.writeSwappedInteger(lz4,0);
         } else {
             byte[] data = value.getBytes();
-            write(data.length);
+            EndianUtils.writeSwappedInteger(lz4,data.length);
             write(data);
         }
     }
@@ -109,8 +108,8 @@ public class AimColumn {
             if (segmentIndex > endSegment) {
                 throw new EOFException();
             }
-            ByteArrayOutputStream segment = segments.get(segmentIndex++);
-            segmentStream = new LZ4BlockInputStream(new ByteArrayInputStream(segment.toByteArray()));
+            byte[] segment = segments.get(segmentIndex++);
+            segmentStream = new LZ4BlockInputStream(new ByteArrayInputStream(segment));
         }
     }
 

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.UUID;
 
@@ -58,43 +59,50 @@ public class MockServer extends Thread {
                 System.out.println();
                 System.out.print(">");
                 String input = bufferRead.readLine();
-                if (input.equals("")) {
-                    input = "timestamp,post_code,userUid";
-                }
-                if (events.getNumSegments() > 0) {
-                    //query
-                    int count = 0;
-                    long t = System.currentTimeMillis();
-                    try {
-                        String[] cols = input.split(",");
-                        Pipe[] result;
-                        try {
-                            result = events.select(cols);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            continue;
-                        }
-                        while(true) {
-                            int i = 0; for(String col: cols) {
-                                Pipe p = result[i++];
-                                String textValue;
-                                switch(col) {
-                                    case "userUid": textValue = new UUID(p .readLong(),p .readLong()).toString();
-                                    break;
-                                    default: textValue = events.readAsText(col,p);
-                                    break;
+                switch(input) {
+                    case "test": 
+                        BitSet res = new AimFilter(events.columns.get("post_code")).any("EC2 A1","EC2 A8","EC2 A1000000");
+                        res.and(new AimFilter(events.columns.get("api_key")).any("test"));
+                        System.out.println("(post_code='EC2 A1' || post_code='EC2 A8' || post_code='EC2 A1000000') && api_key='test' cardinality: " + res.cardinality());
+                        break;
+                    case "": input = "timestamp,post_code,userUid";
+                    default:
+                        if (events.getNumSegments() > 0) {
+                            //query
+                            int count = 0;
+                            long t = System.currentTimeMillis();
+                            try {
+                                String[] cols = input.split(",");
+                                Pipe[] result;
+                                try {
+                                    result = events.select(cols);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    continue;
                                 }
-                                System.out.print(textValue + " ");
+                                while(true) {
+                                    int i = 0; for(String col: cols) {
+                                        Pipe p = result[i++];
+                                        String textValue;
+                                        switch(col) {
+                                            case "userUid": textValue = new UUID(p .readLong(),p .readLong()).toString();
+                                            break;
+                                            default: textValue = events.readAsText(col,p);
+                                            break;
+                                        }
+                                        System.out.print(textValue + " ");
+                                    }
+                                    System.out.println();
+                                }
+                            } catch (EOFException e) {
+                                System.out.println("\nselect(EOF) results: " + count + " time(ms): " + (System.currentTimeMillis() - t));
                             }
-                            System.out.println();
-                        }
-                    } catch (EOFException e) {
-                        System.out.println("\nselect(EOF) results: " + count + " time(ms): " + (System.currentTimeMillis() - t));
-                    }
 
-                    System.out.println("Num.segments: " + events.getNumSegments());
-                } else {
-                    System.out.println("No closed segments yet");
+                            System.out.println("Num.segments: " + events.getNumSegments());
+                        } else {
+                            System.out.println("No closed segments yet");
+                        }
+                        break;
                 }
                 System.out.println("Num.records: " + events.getCount());
             }
