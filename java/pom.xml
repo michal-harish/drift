@@ -1,6 +1,58 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.imagini.aim</groupId>
-  <artifactId>aim-interface</artifactId>
+  <artifactId>aim-loader</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+
+  <description>
+    LZ4 Implementation: https://github.com/jpountz/lz4-java
+    Fast I/O libs: http://commons.apache.org/proper/commons-io/description.html
+    Scala actors for sending mappers: http://www.scala-lang.org/node/7874
+  </description>
+
+  <dependencies>
+    <dependency>
+        <groupId>net.jpountz.lz4</groupId>
+        <artifactId>lz4</artifactId>
+        <version>1.1.2</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>1.3.2</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-core</artifactId>
+        <version>0.7.3-1</version>
+    </dependency>
+    <!-- this is app-specific for our kafka loader -->
+    <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-mapper-asl</artifactId>
+        <version>1.9.12</version>
+    </dependency>
+  </dependencies>
+
+  <repositories>
+    <repository>
+        <id>visualdna-releases</id>
+        <name>VisualDNA Releases</name>
+        <url>https://maven.visualdna.com/nexus/content/repositories/releases</url>
+    </repository>
+  </repositories>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.7</source>
+          <target>1.7</target>
+        </configuration>
+      </plugin>
+     </plugins>
+   </build>
+
 </project>
