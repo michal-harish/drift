@@ -10,10 +10,12 @@ import org.apache.commons.io.EndianUtils;
 
 public class AimFilter {
 
-    private AimColumn column;
+    private InputStream range;
+    private AimDataType type;
 
-    public AimFilter(AimColumn column) {
-        this.column = column;
+    public AimFilter(InputStream range, AimDataType type) {
+        this.range = range;
+        this.type = type;
     }
 
     /**
@@ -24,35 +26,36 @@ public class AimFilter {
     public BitSet any(String... values) throws IOException {
         byte[][] vals = new byte[values.length][]; 
         int i = 0;for(String value:values) {
-            vals[i++] = Aim.convert(column.type, value);
+            vals[i++] = Aim.convert(type, value);
         }
         BitSet result = new BitSet(); 
-        InputStream in = column.select();
         int len;
         byte[] int_buf = new byte[4];
         int record = 0;
         try {
             while (true) {
-                if (column.type.equals(Aim.STRING)) {
-                    read(in,4,int_buf);
+                if (type.equals(Aim.STRING)) {
+                    read(range, 4, int_buf);
                     len = EndianUtils.readSwappedInteger(int_buf,0);
                 } else {
-                    len = column.type.getSize();
+                    len = type.getSize();
                 }
-                result.set(record, anyEquals(compare(in,len,vals)));
+                result.set(record, matchAny(range, len, vals));
                 record++;
             }
         } catch (EOFException e) {}
         return result;
     }
 
-    private int[] compare(InputStream in, int len, byte[][] vals) throws IOException {
+    private boolean matchAny(InputStream in, int len, byte[][] vals) throws IOException {
         int[] result = new int[vals.length];
+        boolean match = false;
         Arrays.fill(result, 0);
         int i = 0;
         while (i<len) {
             int b = in.read();
             int r = -1;
+            match = false;
             for(byte[] val: vals) if (result[++r] == 0) {
                 if (len < val.length) {
                     result[r] = -1;
@@ -62,20 +65,17 @@ public class AimFilter {
                     result[r] = -1;
                 } else if (b > val[i]) {
                     result[r] = 1;
+                } else {
+                    match = true;
                 }
             }
             i++;
+            if (!match) {
+                break;
+            }
         }
-        return result;
+        return match;
     }
-
-    private boolean anyEquals(int[] diffs) {
-        for (int diff: diffs) {
-            if (diff == 0) return true;
-        }
-        return false;
-    }
-
 
     private void read(InputStream in, int fixedLen, byte[] buf) throws IOException {
         int totalRead = 0;

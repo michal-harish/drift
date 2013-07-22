@@ -80,11 +80,8 @@ public class AimColumn {
         }
     }
 
-    public InputStream select() throws IOException {
-        return new SegmentedInputStream(0, segments.size()-1);
-    }
-    public InputStream select(int segmentId) throws IOException {
-        return new SegmentedInputStream(segmentId, segmentId);
+    public InputStream range(Integer startSegment, Integer endSegment) throws IOException {
+        return new SegmentedInputStream(startSegment, endSegment);
     }
 
     private class SegmentedInputStream extends InputStream {
@@ -116,4 +113,5 @@ public class AimColumn {
     public int getLastSegmentId() {
         return segments.size()-1;
     }
+
 }

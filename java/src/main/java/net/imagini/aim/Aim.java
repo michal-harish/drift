@@ -3,6 +3,8 @@ package net.imagini.aim;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.apache.commons.io.EndianUtils;
+
 
 public enum Aim implements AimDataType {
     BOOL(1),
@@ -27,6 +29,23 @@ public enum Aim implements AimDataType {
         return size;
     }
 
+    static public String convert(AimDataType type, byte[] value) {
+        if (type.equals(Aim.BOOL)) {
+            return String.valueOf(value[0]>0);
+        } else if (type.equals(Aim.BYTE)) {
+            return String.valueOf(value[0]);
+        } else if (type.equals(Aim.INT)) {
+            return String.valueOf(EndianUtils.readSwappedInteger(value,0));
+        } else if (type.equals(Aim.LONG)) {
+            return String.valueOf(EndianUtils.readSwappedLong(value,0));
+        } else if (type.equals(Aim.STRING)) {
+            return new String(value);
+        } else if (type instanceof Aim.BYTEARRAY) {
+            return new String(value);
+        } else {
+            throw new IllegalArgumentException("Unknown column.type " + type);
+        }
+    }
     static public byte[] convert(AimDataType type, String value) {
         ByteBuffer bb;
         if (type.equals(BOOL)) {

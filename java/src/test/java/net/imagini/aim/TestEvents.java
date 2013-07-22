@@ -2,7 +2,6 @@ package net.imagini.aim;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
@@ -21,8 +20,8 @@ public class TestEvents {
             );
             final Pipe pipe = MockServer.type.getConstructor(OutputStream.class).newInstance(socket.getOutputStream());
 
-            try {
-                for (int i = 1; i <=1000000; i++) {
+            for (int i = 1; i <=10000000; i++) {
+                try {
                     UUID userUid  = UUID.randomUUID();
                     InetAddress clientIp = InetAddress.getByName("173.194.41.99");
                     pipe.write(10000L + i);
@@ -35,19 +34,18 @@ public class TestEvents {
                     pipe.write("test");
                     pipe.write("http://");
                     pipe.write(userUid.getMostSignificantBits());pipe.write(userUid.getLeastSignificantBits());
-                    pipe.write(false);
+                    pipe.write(userUid.hashCode() % 2 == 0);
+                } catch(IOException e) {
+                    break;
                 }
-            } catch(Exception e) {
-               e.printStackTrace();
             }
             pipe.close();
             socket.close();
-        }
-        catch (IOException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException ex) {
+        } catch (Exception  ex) {
            ex.printStackTrace();
+        } finally {
+            System.exit(0);
         }
-
-        server.interrupt();
 
     }
 }

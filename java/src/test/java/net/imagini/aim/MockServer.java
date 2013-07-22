@@ -1,14 +1,28 @@
 package net.imagini.aim;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+import net.jpountz.lz4.LZ4BlockOutputStream;
+
+import org.apache.commons.io.EndianUtils;
+
 
 public class MockServer extends Thread {
     ServerSocket serverSocket;
@@ -16,7 +30,7 @@ public class MockServer extends Thread {
     public static Class<? extends Pipe> type = PipeLZ4.class;
 
     @SuppressWarnings("serial")
-    public static AimTable events = new AimTable("events", 1000, new LinkedHashMap<String,AimDataType>() {{ 
+    public static AimTable events = new AimTable("events", 10000, new LinkedHashMap<String,AimDataType>() {{ 
         put("timestamp", Aim.LONG);
         put("client_ip", Aim.INT);
         put("type", Aim.STRING);
@@ -59,54 +73,73 @@ public class MockServer extends Thread {
                 System.out.println();
                 System.out.print(">");
                 String input = bufferRead.readLine();
+                Pipe[] result = null;
+                String[] cols = "timestamp,post_code,userUid,userQuizzed,url".split(",");
+                final AimQuery query;
                 switch(input) {
+                    case "exit": throw new InterruptedException();
                     case "test": 
-                        BitSet res = new AimFilter(events.columns.get("post_code")).any("EC2 A1","EC2 A8","EC2 A1000000");
-                        res.and(new AimFilter(events.columns.get("api_key")).any("test"));
-                        System.out.println("(post_code='EC2 A1' || post_code='EC2 A8' || post_code='EC2 A1000000') && api_key='test' cardinality: " + res.cardinality());
-                        break;
-                    case "": input = "timestamp,post_code,userUid";
-                    default:
-                        if (events.getNumSegments() > 0) {
-                            //query
-                            int count = 0;
-                            long t = System.currentTimeMillis();
-                            try {
-                                String[] cols = input.split(",");
-                                Pipe[] result;
-                                try {
-                                    result = events.select(cols);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                    continue;
-                                }
-                                while(true) {
-                                    int i = 0; for(String col: cols) {
-                                        Pipe p = result[i++];
-                                        String textValue;
-                                        switch(col) {
-                                            case "userUid": textValue = new UUID(p .readLong(),p .readLong()).toString();
-                                            break;
-                                            default: textValue = events.readAsText(col,p);
-                                            break;
-                                        }
-                                        System.out.print(textValue + " ");
-                                    }
-                                    System.out.println();
-                                }
-                            } catch (EOFException e) {
-                                System.out.println("\nselect(EOF) results: " + count + " time(ms): " + (System.currentTimeMillis() - t));
-                            }
+                        query = new AimQuery(MockServer.events);
+                        //filter
+                        long t = System.currentTimeMillis();
+                        ExecutorService collector = Executors.newFixedThreadPool(3);
+                        Future<BitSet> set1 = collector.submit(new Callable<BitSet>() {
+                            @Override public BitSet call() throws Exception { return query.filter("api_key").any("test"); }
+                        });
+                        Future<BitSet> set2 = collector.submit(new Callable<BitSet>() {
+                            @Override public BitSet call() throws Exception { return query.filter("post_code").any("EC2 A1","EC2 A8","EC2 A1000000","EC2 A6987000","EC2 A6987005"); }
+                        });
+                        Future<BitSet> set3 = collector.submit(new Callable<BitSet>() {
+                            @Override public BitSet call() throws Exception { return query.filter("userQuizzed").any("true","false"); }
+                        });
+                        BitSet res = set1.get();
+                        res.and( set2.get() );
+                        res.and( set3.get() );
+                        collector.shutdownNow();
+                        System.out.println("Filter time(ms): " + (System.currentTimeMillis()-t) );
+                        byte[] bits = res.toByteArray();
+                        ByteArrayOutputStream compressed = new ByteArrayOutputStream();
+                        LZ4BlockOutputStream lz4 = new LZ4BlockOutputStream(compressed);
+                        lz4.write(bits);
+                        lz4.close();
+                        System.out.println("Filter cardinality/bits/bytes/lz4: " + res.cardinality() + "/" + res.length() + "/" + bits.length + "/" + compressed.size());
+                        System.out.println();
+ 
+                        //select
+                        result = query.select(res,cols);
+                        collectResults(cols, result);
 
-                            System.out.println("Num.segments: " + events.getNumSegments());
-                        } else {
-                            System.out.println("No closed segments yet");
+                        break;
+                    case "": //default query
+                        try {
+                            query = new AimQuery(MockServer.events, MockServer.events.getNumSegments()-1);
+                            result = query.select(cols);
+                            collectResults(cols, result);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            continue;
                         }
                         break;
+                    default: //custom select query
+                        cols = input.split(",");
+                        try {
+                            query = new AimQuery(MockServer.events, MockServer.events.getNumSegments()-1);
+                            result = query.select(cols);
+                            collectResults(cols, result);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            continue;
+                        }
+                    break;
                 }
-                System.out.println("Num.records: " + events.getCount());
+                System.out.println("Total segments: " + events.getNumSegments());
+                System.out.println("Total records: " + events.getCount());
             }
-        } catch(IOException e) {
+        } catch(InterruptedException e) {
+            acceptor.interrupt();
+            loader.interrupt();
+            //
+        } catch(IOException | ExecutionException e) {
             e.printStackTrace();
         } finally {
             try {
@@ -117,7 +150,74 @@ public class MockServer extends Thread {
             if (loader != null) {
                 loader.interrupt();
             }
-            System.out.println("Mock AIM Server Closed");
+            System.err.println("Mock AIM Server Closed");
+        }
+    }
+
+    private void collectResults(final String[] cols, final Pipe[] result) throws IOException {
+        if (result == null) return;
+        int count = 0;
+        long t = System.currentTimeMillis();
+        try {
+            ExecutorService collector = Executors.newFixedThreadPool(cols.length);
+            @SuppressWarnings("unchecked")
+            Future<String>[] row = new Future[cols.length];
+            new ArrayList<Future<String>>(cols.length).toArray(row);
+            while(true) {
+                int colIndex = 0; 
+                for(final String col: cols) {
+                    final int j = colIndex++;
+                    row[j] = collector.submit(new Callable<String>() {
+                        @Override
+                        public String call() throws IOException {
+                            AimDataType type = events.column(col).type;
+                            byte[] value = result[j].read(type);
+                            switch(col) {
+                                default: return Aim.convert(type, value);
+                                case "userUid":
+                                    InputStream bi = new ByteArrayInputStream(value);
+                                    return new UUID(EndianUtils.readSwappedLong(bi) , EndianUtils.readSwappedLong(bi)).toString();
+                            }
+                        }
+                    });
+                }
+                for(Future<String> textValue: row) {
+                    System.out.print(textValue.get() + " ");
+                }
+                
+                /*
+                j = 0; 
+                for(String col: cols) {
+                    Pipe p = result[j++];
+                    AimDataType type = events.column(col).type;
+                    byte[] value = p.read(type);
+                    String textValue;
+                    switch(col) {
+                        case "userUid":
+                            InputStream bi = new ByteArrayInputStream(value);
+                            textValue = new UUID(EndianUtils.readSwappedLong(bi) , EndianUtils.readSwappedLong(bi)).toString();
+                        break;
+                        default:
+                            textValue = Aim.convert(type, value);
+                        break;
+                    }
+                    System.out.print(textValue + " ");
+                }
+                */
+                count++;
+                System.out.println();
+            }
+        } /*catch (EOFException e) {
+            System.out.println("\n(EOF) Selected records: " + count + ", retreive time(ms): " + (System.currentTimeMillis() - t));
+        } */catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof EOFException) {
+                System.out.println("\n(EOF) Selected records: " + count + ", retreive time(ms): " + (System.currentTimeMillis() - t));
+            } else {
+                e.printStackTrace();
+            }
         }
     }
 }

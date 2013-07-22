@@ -29,6 +29,7 @@ public class SimpleLoader extends Thread {
             try {
                 System.out.println("Server Loader activated");
                 while (true) {
+                    if (interrupted())  break;
                     MockServer.events.append(pipe);
                 }
             } catch (EOFException e) {

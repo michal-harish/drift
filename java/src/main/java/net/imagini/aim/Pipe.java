@@ -67,36 +67,22 @@ public class Pipe {
             outputPipe.write(data);
         }
     }
-
-
-    final public boolean readBool() throws IOException {
-        byte[] bb = readByteArray(1);
-        boolean result = bb[0] > 0 ? true : false;
-        //System.out.println("bool: " + result);
-        return result;
+    
+    private int readSize(AimDataType type) throws IOException {
+        if (type.equals(Aim.STRING)) {
+            return EndianUtils.readSwappedInteger(readByteArray(4),0);
+        } else if (type instanceof Aim.BYTEARRAY) {
+            return ((Aim.BYTEARRAY)type).size;
+        } else {
+            return type.getSize();
+        }
     }
 
-    final public byte readByte() throws IOException {
-        byte[] bb = readByteArray(1);
-        //System.out.println("byte: " + bb[0]);
-        return bb[0];
+    public byte[] read(AimDataType type) throws IOException {
+        return readByteArray(readSize(type));
     }
 
-    final public int readInt32() throws IOException {
-        byte[] bb = readByteArray(4);
-        int result = EndianUtils.readSwappedInteger(bb,0);
-        //System.out.println("int32: " + result);
-        return result;
-    }
-
-    final public long readLong() throws IOException {
-        byte[] bb = readByteArray(8);
-        long result = EndianUtils.readSwappedLong(bb,0);
-        //System.out.println("long: " + result);
-        return result;
-    }
-
-    final public byte[] readByteArray(int fixedLen) throws IOException {
+    final protected byte[] readByteArray(int fixedLen) throws IOException {
         byte[] data = new byte[fixedLen];
         int totalRead = 0;
         while (totalRead < fixedLen) {
@@ -107,11 +93,13 @@ public class Pipe {
         return data;
     }
 
-    final public String readString() throws IOException {
-        int len = readInt32();
-        byte[] data = readByteArray(len);
-        String result = new String(data,0,len);
-        //System.out.println("string: " + result);
-        return result;
+    public void skip(AimDataType type) throws IOException {
+        int skipLen = readSize(type);
+        long totalSkipped = 0;
+        while (totalSkipped < skipLen) {
+            long skipped = inputPipe.skip(skipLen-totalSkipped);
+            totalSkipped += skipped;
+        }
     }
+
 }
