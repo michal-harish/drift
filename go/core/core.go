@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"encoding/binary"
@@ -11,8 +11,7 @@ import (
 )
 
 const (
-	RECV_BUF_LEN     = 200
-	EVENT_BUFFER_LEN = 1000
+	RECV_BUF_LEN = 200
 )
 
 type Event struct {
@@ -25,11 +24,9 @@ type Event struct {
 	post_code    string
 	api_key      string
 	url          string
-	user_uid     string
+	user_uid     [16]byte
 	user_quizzed bool
 }
-
-var event_buffer []Event
 
 func create_map(file string, file_size int, create bool) []byte {
 	var mode int
@@ -70,19 +67,15 @@ func create_map(file string, file_size int, create bool) []byte {
 	return mmap
 }
 
-func read_string(conn *net.Conn) (string, error) {
+func read_string(conn *net.Conn) string {
 	len := int32(0)
 	buf := make([]byte, 256, 256)
 	binary.Read(*conn, binary.LittleEndian, &len)
-	if len > 255 {
-		log.Print("ERROR: string too long")
-		os.Exit(1)
-	}
 	b := buf[:len]
 	if _, err := io.ReadFull(*conn, b); err != nil {
-		return "", err
+		return ""
 	}
-	return string(b), nil
+	return string(b)
 }
 
 func HandleConn(conn net.Conn) {
@@ -91,100 +84,39 @@ func HandleConn(conn net.Conn) {
 	buf := make([]byte, 256, 256)
 	defer conn.Close()
 	for {
+		// TODO: error checking!
 		e := Event{}
-
 		// timestamp
-		err := binary.Read(conn, binary.LittleEndian, &e.timestamp)
-		if err != nil {
-			log.Print("Error reading timestamp:", err.Error())
-			return
-		}
+		binary.Read(conn, binary.LittleEndian, &e.timestamp)
 		// client_ip
-		err = binary.Read(conn, binary.LittleEndian, &e.client_ip)
-		if err != nil {
-			log.Print("Error reading:", err.Error())
-			return
-		}
-		e.event_type, err = read_string(&conn)
-		if err != nil {
-			log.Print("Error reading:", err.Error())
-			return
-		}
-		e.user_agent, err = read_string(&conn)
-		if err != nil {
-			log.Print("Error reading:", err.Error())
-			return
-		}
-
+		binary.Read(conn, binary.LittleEndian, &e.client_ip)
+		e.event_type = read_string(&conn)
+		e.user_agent = read_string(&conn)
 		// country_code
 		b := buf[:2]
-		_, err = io.ReadFull(conn, b)
-		if err != nil {
-			log.Print("Error reading:", err.Error())
-			return
-		}
+		io.ReadFull(conn, b)
 		copy(e.country_code[:], b)
 		// region_code
 		b = buf[:3]
-		_, err = io.ReadFull(conn, b)
-		if err != nil {
-			log.Print("Error reading:", err.Error())
-			return
-		}
+		io.ReadFull(conn, b)
 		copy(e.region_code[:], b)
-
-		e.post_code, err = read_string(&conn)
-		if err != nil {
-			log.Print("Error reading:", err.Error())
-			return
-		}
-
-		e.api_key, err = read_string(&conn)
-		if err != nil {
-			log.Print("Error reading:", err.Error())
-			return
-		}
-
-		e.url, err = read_string(&conn)
-		if err != nil {
-			log.Print("Error reading:", err.Error())
-			return
-		}
-
+		e.post_code = read_string(&conn)
+		e.api_key = read_string(&conn)
+		e.url = read_string(&conn)
 		// user_uid
-		e.user_uid, err = read_string(&conn)
-		if err != nil {
-			log.Print("Error reading:", err.Error())
-			return
-		}
-
+		b = buf[:16]
+		io.ReadFull(conn, b)
+		copy(e.user_uid[:], b)
 		// user_quizzed
 		b = buf[:1]
-		_, err = io.ReadFull(conn, b)
-		if err != nil {
-			log.Print("Error reading:", err.Error())
-			return
-		}
-
-		if b[0] == 0 {
+		io.ReadFull(conn, b)
+		if b[1] == 0 {
 			e.user_quizzed = false
 		} else {
 			e.user_quizzed = true
 		}
 		log.Printf("%+v\n", e)
-		event_buffer = append(event_buffer, e)
-		if len(event_buffer) == EVENT_BUFFER_LEN {
-			write_column()
-			event_buffer = make([]Event, 0, EVENT_BUFFER_LEN)
-		}
 	}
-}
-
-func write_column() {
-	// typ := reflect.TypeOf(event_buffer[0])
-	// for i := 0; i < typ.NumField(); i++ {
-	// 	p := typ.Field(i)
-	// }
 }
 
 func StartServer() {
@@ -208,6 +140,5 @@ func StartServer() {
 }
 
 func main() {
-	event_buffer = make([]Event, 0, EVENT_BUFFER_LEN)
 	StartServer()
 }
