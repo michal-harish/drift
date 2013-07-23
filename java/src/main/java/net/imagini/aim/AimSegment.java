@@ -1,25 +1,18 @@
 package net.imagini.aim;
 
-import java.io.ByteArrayOutputStream;
-import java.util.LinkedHashMap;
-import java.util.Map.Entry;
+import java.io.IOException;
+import java.io.InputStream;
 
-public class AimSegment {
+public interface AimSegment {
 
-    private LinkedHashMap<String,byte[]> columnar;
+    long getSize();
 
-    //TODO public AimSegment(..mmap file)
+    long getOriginalSize();
 
-    public AimSegment(LinkedHashMap<String,ByteArrayOutputStream> data) {
-        columnar = new LinkedHashMap<String,byte[]>();
-        for(Entry<String,ByteArrayOutputStream> c: data.entrySet()) {
-            columnar.put(c.getKey(), c.getValue().toByteArray());
-        }
-    }
+    void close() throws IllegalAccessException, IOException;
 
-    public byte[] get(String column) {
-        return columnar.get(column);
-    }
+    void write(int col, AimDataType type, byte[] value) throws IOException;
 
+    InputStream open(int column) throws IOException;
 
 }

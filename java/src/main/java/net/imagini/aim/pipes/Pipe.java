@@ -1,4 +1,4 @@
-package net.imagini.aim;
+package net.imagini.aim.pipes;
 
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -9,6 +9,8 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import net.imagini.aim.Aim;
+import net.imagini.aim.AimDataType;
 import net.imagini.aim.Aim.BYTEARRAY;
 
 import org.apache.commons.io.EndianUtils;

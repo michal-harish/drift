@@ -9,6 +9,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 
+import net.imagini.aim.pipes.Pipe;
+
+
 abstract public class AimFilter {
 
     public static AimFilter proxy(AimFilter prev, AimTable table, String expression) {
@@ -138,6 +141,9 @@ abstract public class AimFilter {
             for(String colName: colNames) add(table.def(colName));
         }}.toArray(new AimDataType[colNames.length]);
         byte[][] data = new byte[colNames.length][];
+        
+        //TODO run filters for each segment in parallel thread so don't use table.range(..)
+        //i.e. don't rely on ColumnInputStream but operate on the raw SegmentInputStream
         InputStream[] range = table.range(start.startSegment, start.endSegment, colNames);
         BitSet result = new BitSet(); 
         int record = 0;

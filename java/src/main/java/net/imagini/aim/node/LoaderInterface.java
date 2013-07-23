@@ -1,4 +1,4 @@
-package net.imagini.aim;
+package net.imagini.aim.node;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -6,18 +6,23 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 
-public class SimpleLoader extends Thread {
+import net.imagini.aim.AimTable;
+import net.imagini.aim.pipes.Pipe;
+
+public class LoaderInterface extends Thread  {
 
     private Socket socket;
+    private AimTable table;
 
-    public SimpleLoader(Socket clientConnection) {
+    public LoaderInterface(AimTable table,Socket clientConnection) {
         this.socket = clientConnection;
+        this.table = table;
     }
 
     @Override public void run() {
         Pipe pipe;
         try {
-            pipe = MockServer.type.getConstructor(InputStream.class).newInstance(socket.getInputStream());
+            pipe = Server.type.getConstructor(InputStream.class).newInstance(socket.getInputStream());
         } catch (IOException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e1) {
             System.out.println("Mock Server failed to establish client connection");
             return;
@@ -30,15 +35,15 @@ public class SimpleLoader extends Thread {
                 System.out.println("Server Loader activated");
                 while (true) {
                     if (interrupted())  break;
-                    MockServer.events.append(pipe);
+                    table.append(pipe);
                 }
             } catch (EOFException e) {
                 System.out.println("load(EOF) records: " 
-                        + MockServer.events.getCount() 
+                        + table.getCount() 
                         + " time(ms): " + (System.currentTimeMillis() - t)
                 );
             } finally {
-                MockServer.events.closeSegment();
+                table.close();
             }
 
         } catch (IOException e) {

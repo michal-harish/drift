@@ -7,18 +7,18 @@ import java.net.Socket;
 import java.util.Arrays;
 import java.util.UUID;
 
+import net.imagini.aim.node.Server;
+import net.imagini.aim.pipes.Pipe;
+
 public class TestEvents {
     public static void main(String[] args) throws InterruptedException, IOException {
-
-        MockServer server = new MockServer(4000);
-        server.start();
 
         try {
             Socket socket = new Socket(
                 InetAddress.getByName("localhost"), //10.100.11.239 
                 4000
             );
-            final Pipe pipe = MockServer.type.getConstructor(OutputStream.class).newInstance(socket.getOutputStream());
+            final Pipe pipe = Server.type.getConstructor(OutputStream.class).newInstance(socket.getOutputStream());
 
             for (long i = 1; i <=1000000; i++) {
                 try {
@@ -36,6 +36,7 @@ public class TestEvents {
                     pipe.write(userUid.getMostSignificantBits());pipe.write(userUid.getLeastSignificantBits());
                     pipe.write(userUid.hashCode() % 100 == 0);
                 } catch(IOException e) {
+                    e.printStackTrace();
                     break;
                 }
             }

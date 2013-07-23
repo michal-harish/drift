@@ -7,6 +7,9 @@ import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.imagini.aim.pipes.Pipe;
+
+
 public class AimQuery {
 
     private AimTable table;

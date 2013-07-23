@@ -20,6 +20,9 @@ import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.Message;
 import kafka.message.MessageAndMetadata;
 
+import net.imagini.aim.node.Server;
+import net.imagini.aim.pipes.Pipe;
+
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -30,15 +33,12 @@ public class KafkaEvents {
     @SuppressWarnings("deprecation")
     public static void main(String[] args) throws InterruptedException, IOException {
 
-        MockServer server = new MockServer(4000);
-        server.start();
-
         try {
             Socket socket = new Socket(
                 InetAddress.getByName("localhost"), //10.100.11.239 
                 4000
             );
-            final Pipe pipe = MockServer.type.getConstructor(OutputStream.class).newInstance(socket.getOutputStream());
+            final Pipe pipe = Server.type.getConstructor(OutputStream.class).newInstance(socket.getOutputStream());
 
             Properties consumerProps = new Properties();
             consumerProps.put("zk.connect", "zookeeper-01.stag.visualdna.com");
@@ -49,6 +49,7 @@ public class KafkaEvents {
             ConsumerIterator<Message> it = stream.iterator();
             ObjectMapper jsonMapper = new ObjectMapper();
             boolean started = false;
+            int count = 0;
             while(it.hasNext()) {
                 if (!started) {
                     System.out.println("Consuming messages..");
@@ -79,6 +80,9 @@ public class KafkaEvents {
                     pipe.write(userUid.getLeastSignificantBits());
                     pipe.write(userQuizzed);
                     
+                    if (++count == 10 * 1000000) {
+                        break;
+                    }
                 } catch(Exception e) {
                     continue;
                 }
@@ -89,8 +93,6 @@ public class KafkaEvents {
         catch (IOException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException ex) {
            ex.printStackTrace();
         }
-
-        server.interrupt();
 
     }
 }
