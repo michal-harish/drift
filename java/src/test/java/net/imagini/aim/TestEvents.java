@@ -20,11 +20,11 @@ public class TestEvents {
             );
             final Pipe pipe = MockServer.type.getConstructor(OutputStream.class).newInstance(socket.getOutputStream());
 
-            for (int i = 1; i <=10000000; i++) {
+            for (long i = 1; i <=1000000; i++) {
                 try {
                     UUID userUid  = UUID.randomUUID();
                     InetAddress clientIp = InetAddress.getByName("173.194.41.99");
-                    pipe.write(10000L + i);
+                    pipe.write(i);
                     pipe.write(Arrays.copyOfRange(clientIp.getAddress(),0,4));
                     pipe.write("VDNAUserTestEvent");
                     pipe.write("user agent info ..");
@@ -34,7 +34,7 @@ public class TestEvents {
                     pipe.write("test");
                     pipe.write("http://");
                     pipe.write(userUid.getMostSignificantBits());pipe.write(userUid.getLeastSignificantBits());
-                    pipe.write(userUid.hashCode() % 2 == 0);
+                    pipe.write(userUid.hashCode() % 100 == 0);
                 } catch(IOException e) {
                     break;
                 }
@@ -43,9 +43,7 @@ public class TestEvents {
             socket.close();
         } catch (Exception  ex) {
            ex.printStackTrace();
-        } finally {
-            System.exit(0);
-        }
-
+           System.exit(0);
+        } 
     }
 }

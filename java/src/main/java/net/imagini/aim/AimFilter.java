@@ -5,86 +5,214 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.Map.Entry;
 
-import org.apache.commons.io.EndianUtils;
+abstract public class AimFilter {
 
-public class AimFilter {
-
-    private InputStream range;
-    private AimDataType type;
-
-    public AimFilter(InputStream range, AimDataType type) {
-        this.range = range;
-        this.type = type;
+    public static AimFilter proxy(AimFilter prev, AimTable table, String expression) {
+        AimFilter result = proxy(table, null, null, expression);
+        result.prev = prev;
+        return result;
+    }
+    public static AimFilter proxy(AimTable table, Integer startSegment, Integer  endSegment, String expression) {
+        AimFilter result = new AimFilterSimple(null, table, expression);
+        result.startSegment = startSegment;
+        result.endSegment = endSegment;
+        return result;
     }
 
-    /**
-     * Zero-copy filter routine which scans the column for any
-     * match against a set of values..effectively val1 OR val2 OR ...
-     * @throws IOException 
-     */
-    public BitSet any(String... values) throws IOException {
-        byte[][] vals = new byte[values.length][]; 
-        int i = 0;for(String value:values) {
-            vals[i++] = Aim.convert(type, value);
+    private AimTable table;
+    private Integer startSegment;
+    private Integer endSegment;
+    protected AimFilter prev;
+    protected AimDataType type;
+    protected AimFilter next;
+
+    public AimFilter(AimFilter prev, AimTable table, AimDataType type) {
+        this.table = table;
+        this.type = type;
+        this.prev = prev;
+    }
+
+    final protected AimFilter start() {
+        return prev == null ? this : prev.start();
+    }
+
+    protected void updateFormula(LinkedHashMap<String,AimDataType> def) {
+        if (prev != null) prev.updateFormula(def);
+    }
+
+    protected boolean match(boolean soFar, byte[][] data) {
+        return next == null ? soFar : next.match(soFar, data);
+    }
+
+    protected boolean match( byte[] value, byte[][] data) {
+        throw new IllegalAccessError(this.getClass().getSimpleName() + " cannot be matched against a value");
+    }
+
+    public AimFilter eq(String value) {
+        if (type == null) return next.eq(value);
+        final byte[] val = Pipe.convert(type, value);
+        return next = new AimFilter(this,table,type) {
+            @Override protected boolean match(byte[] value, byte[][] data) {
+                return super.match(Arrays.equals(value, val), data);
+            }
+        };
+    } 
+    public AimFilter in(String... values) {
+        if (type == null) return next.in(values);
+        final byte[][] vals = new byte[values.length][]; 
+        int i = 0; for(String value:values) {
+            vals[i++] = Pipe.convert(type, value);
         }
+        return next = new AimFilter(this,table,type) {
+            @Override
+            protected boolean match(byte[] value, byte[][] data) {
+                boolean localResult = false;
+                for(byte[] val: vals) {
+                    if (Arrays.equals(value, val)) {
+                        localResult = true;
+                        break;
+                    }
+                }
+                return super.match(localResult, data);
+            }
+        };
+    }
+    public AimFilter greater(final String than) {
+        if (type == null) return next.greater(than);
+        final byte[][] vals = new byte[1][];
+        vals[0] = Pipe.convert(type, than);
+        return next = new AimFilter(this,table,type) {
+            @Override protected boolean match(byte[] value, byte[][] data) {
+                int[] cmp = AimFilter.compare(value, vals);
+                return super.match(cmp[0] == 1, data);
+            }
+        };
+    }
+    public AimFilter smaller(final String than) {
+        if (type == null) return next.smaller(than);
+        final byte[][] vals = new byte[1][];
+        vals[0] = Pipe.convert(type, than);
+        return next = new AimFilter(this,table,type) {
+            @Override protected boolean match(byte[] value, byte[][] data) {
+                int[] cmp = AimFilter.compare(value, vals);
+                return super.match(cmp[0] == -1, data);
+            }
+        };
+    }
+
+
+    public AimFilter and(String expression) {
+        return next = new AimFilterOp(this, table, expression) {
+            @Override protected boolean compare(boolean a, boolean b) {
+                return a & b;
+            }
+        };
+    }
+
+    public AimFilter or(String expression) {
+        return next = new AimFilterOp(this, table, expression) {
+            @Override protected boolean compare(boolean a, boolean b) {
+                return a | b;
+            }
+        };
+    }
+
+    @SuppressWarnings("serial")
+    final public BitSet go() throws IOException {
+        LinkedHashMap<String,AimDataType> cols = new LinkedHashMap<String,AimDataType>() {{
+            put("userQuizzed",Aim.BOOL);
+            put("post_code",Aim.STRING);
+            put("api_key",Aim.STRING);
+            put("timestamp",Aim.LONG);
+        }};
+        //TODO dig colNames
+        updateFormula(cols);
+        AimFilter start = start();
+        final AimTable table = start.table;
+        final String[] colNames = cols.keySet().toArray(new String[cols.size()]);
+        final AimDataType[] types = new LinkedList<AimDataType>() {{
+            for(String colName: colNames) add(table.def(colName));
+        }}.toArray(new AimDataType[colNames.length]);
+        byte[][] data = new byte[colNames.length][];
+        InputStream[] range = table.range(start.startSegment, start.endSegment, colNames);
         BitSet result = new BitSet(); 
-        int len;
-        byte[] int_buf = new byte[4];
         int record = 0;
         try {
             while (true) {
-                if (type.equals(Aim.STRING)) {
-                    read(range, 4, int_buf);
-                    len = EndianUtils.readSwappedInteger(int_buf,0);
-                } else {
-                    len = type.getSize();
+                for(int i=0;i<types.length;i++) {
+                    data[i] = Pipe.read(range[i],types[i]);
                 }
-                result.set(record, matchAny(range, len, vals));
+                if (start.match(true,data)) {
+                    result.set(record);
+                }
                 record++;
             }
         } catch (EOFException e) {}
         return result;
     }
 
-    private boolean matchAny(InputStream in, int len, byte[][] vals) throws IOException {
+    public static class AimFilterSimple extends AimFilter {
+        private int colIndex;
+        private String colName;
+        public AimFilterSimple(AimFilter prev, AimTable table, String field) {
+            super(prev, table, table.def(field));
+            this.colName = field;
+        }
+        @Override protected void updateFormula(LinkedHashMap<String,AimDataType> def) {
+            super.updateFormula(def);
+            int i=0; for(Entry<String,AimDataType> col: def.entrySet()) {
+                if (col.getKey().equals(colName)) {
+                    colIndex = i;
+                }
+                i++;
+            }
+        }
+        @Override protected boolean match(boolean soFar, byte[][] data) {
+            return next.match(data[colIndex], data);
+        }
+        @Override public String toString() {
+            return "field(" +colName + ")";
+        }
+
+    }
+    
+    abstract static public class AimFilterOp extends AimFilter {
+        public AimFilterOp(AimFilter prev, AimTable table, String expression) {
+            super(prev, table, null);
+            next = AimFilter.proxy(prev,table,expression);
+        }
+        @Override
+        protected boolean match(boolean soFar, byte[][] data) {
+            boolean localResult = compare(soFar, next.match(true, data));
+            return localResult;
+        }
+        abstract protected boolean compare(boolean a, boolean b);
+    }
+
+    static public int[] compare(byte[] data, byte[][] vals) {
         int[] result = new int[vals.length];
-        boolean match = false;
         Arrays.fill(result, 0);
         int i = 0;
-        while (i<len) {
-            int b = in.read();
+        while (i<data.length) {
             int r = -1;
-            match = false;
             for(byte[] val: vals) if (result[++r] == 0) {
-                if (len < val.length) {
+                if (data.length < val.length) {
                     result[r] = -1;
-                } else if (len > val.length) {
+                } else if (data.length > val.length) {
                     result[r] = 1;
-                } else if (b == -1 || b < val[i]) {
+                } else if ((data[i] & 0xFF) < (val[i] & 0xFF)) {
                     result[r] = -1;
-                } else if (b > val[i]) {
+                } else if ((data[i] & 0xFF) > (val[i] & 0xFF) ) {
                     result[r] = 1;
-                } else {
-                    match = true;
                 }
             }
             i++;
-            if (!match) {
-                break;
-            }
         }
-        return match;
+        return result;
     }
-
-    private void read(InputStream in, int fixedLen, byte[] buf) throws IOException {
-        int totalRead = 0;
-        while (totalRead < fixedLen) {
-            int read = in.read(buf,totalRead,fixedLen-totalRead);
-            if (read < 0 ) throw new EOFException();
-            else totalRead += read;
-        }
-    }
-
 
 }

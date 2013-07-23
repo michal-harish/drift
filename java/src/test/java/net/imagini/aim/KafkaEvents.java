@@ -6,7 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -15,6 +15,7 @@ import kafka.consumer.Consumer;
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
+import kafka.consumer.Whitelist;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.Message;
 import kafka.message.MessageAndMetadata;
@@ -23,9 +24,10 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 
 public class KafkaEvents {
-    
+
     static ConsumerConnector consumer;
 
+    @SuppressWarnings("deprecation")
     public static void main(String[] args) throws InterruptedException, IOException {
 
         MockServer server = new MockServer(4000);
@@ -43,14 +45,9 @@ public class KafkaEvents {
             consumerProps.put("groupid", "aim-kafka-loader-dev");
             System.out.println("Connecting to Kafka " + consumerProps.getProperty("zk.connect") +"..");
             consumer = Consumer.createJavaConsumerConnector(new ConsumerConfig(consumerProps));
-            @SuppressWarnings("serial")
-            KafkaStream<Message> stream = consumer.createMessageStreams(new HashMap<String,Integer>() {{
-                put("prod_conversions", 1);
-            }}).get("prod_conversions").get(0);
-
+            KafkaStream<Message> stream = consumer.createMessageStreamsByFilter(new Whitelist("prod_conversions,prod_pageviews,prod_interactions"),1).get(0);
             ConsumerIterator<Message> it = stream.iterator();
             ObjectMapper jsonMapper = new ObjectMapper();
-            long t = System.currentTimeMillis();
             boolean started = false;
             while(it.hasNext()) {
                 if (!started) {
@@ -63,30 +60,28 @@ public class KafkaEvents {
                 byte [] bytes = new byte[buffer.remaining()];
                 buffer.get(bytes);
                 JsonNode json = jsonMapper.readValue(bytes, JsonNode.class);
-                Event event;
                 try {
-                    event = new Event(
-                        Long.valueOf(json.get("timestamp").getValueAsText()), 
-                        InetAddress.getByName(json.get("client_ip").getTextValue()), 
-                        json.get("event_type").getTextValue(), 
-                        json.get("useragent").getTextValue(), 
-                        json.get("country_code").getTextValue(),
-                        json.get("region_code").getTextValue(),
-                        "??? ??", 
-                        json.get("campaignId").getTextValue(),
-                        json.get("url").getTextValue(), 
-                        UUID.fromString(json.get("extradata").get("vdna_widget_mc").getTextValue()), 
-                        !Strings.isNullOrEmpty(json.get("userUid").getTextValue())
-                    );
+                    Long timestamp = Long.valueOf(json.get("timestamp").getValueAsText());
+                    UUID userUid  = UUID.randomUUID();
+                    InetAddress clientIp = InetAddress.getByName(json.get("client_ip").getTextValue());
+                    Boolean userQuizzed = !Strings.isNullOrEmpty(json.get("userUid").getTextValue()) && json.get("userUid").getTextValue().length() > 10;
+                    
+                    pipe.write(timestamp);
+                    pipe.write(Arrays.copyOfRange(clientIp.getAddress(),0,4));
+                    pipe.write(json.get("event_type").getTextValue());
+                    pipe.write(json.get("useragent").getTextValue());
+                    pipe.write(Arrays.copyOfRange((json.get("country_code").getTextValue() + "??").getBytes(), 0, 2));
+                    pipe.write(Arrays.copyOfRange((json.get("region_code").getTextValue() +"???").getBytes(), 0, 3));
+                    pipe.write("??? ??");
+                    pipe.write(json.get("campaignId").getTextValue());
+                    pipe.write(json.get("url").getTextValue());
+                    pipe.write(userUid.getMostSignificantBits());
+                    pipe.write(userUid.getLeastSignificantBits());
+                    pipe.write(userQuizzed);
+                    
                 } catch(Exception e) {
                     continue;
                 }
-                if (System.currentTimeMillis() - t  > 100) {
-                    t = System.currentTimeMillis();
-                } else {
-                    continue;
-                }
-                event.write(pipe);
             }
             pipe.close();
             socket.close();
