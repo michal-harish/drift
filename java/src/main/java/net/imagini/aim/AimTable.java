@@ -8,7 +8,6 @@ import java.net.Socket;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.imagini.aim.node.LoaderInterface;
 import net.imagini.aim.pipes.Pipe;
 
 /**

@@ -1,4 +1,4 @@
-package net.imagini.aim.node;
+package net.imagini.aim;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 
-import net.imagini.aim.AimTable;
+import net.imagini.aim.node.Server;
 import net.imagini.aim.pipes.Pipe;
 
 public class LoaderInterface extends Thread  {
