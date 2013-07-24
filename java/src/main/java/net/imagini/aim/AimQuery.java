@@ -4,12 +4,13 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.BitSet;
-import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.imagini.aim.pipes.Pipe;
 
-
+/**
+ * @author mharis
+ */
 public class AimQuery {
 
     private AimTable table;
@@ -38,44 +39,34 @@ public class AimQuery {
         return AimFilter.proxy(table, startSegment, endSegment, expression);
     }
 
-    @SuppressWarnings("serial")
     public Pipe select(final String... colNames) throws IOException {
-        final InputStream[] range = table.range(startSegment, endSegment, colNames);
-        final AimDataType[] types = new LinkedList<AimDataType>() {{
-            for(String colName: colNames) add(table.def(colName));
-        }}.toArray(new AimDataType[colNames.length]);
-
+        final InputStream[] range = table.open(startSegment, endSegment, colNames);
         return new Pipe() {
             private int fieldIndex = -1;
             @Override public byte[] read(AimDataType type) throws IOException {
-                if (++fieldIndex == types.length) fieldIndex = 0;
-                return Pipe.read(range[fieldIndex], types[fieldIndex]);
+                if (++fieldIndex == range.length) fieldIndex = 0;
+                return Pipe.read(range[fieldIndex], type);
             }
         };
     }
 
-    @SuppressWarnings("serial")
     public Pipe select(final BitSet filter, final String... colNames) throws IOException {
-        final InputStream[] range = table.range(startSegment, endSegment, colNames);
-        final AimDataType[] types = new LinkedList<AimDataType>() {{
-            for(String colName: colNames) add(table.def(colName));
-        }}.toArray(new AimDataType[colNames.length]);
-
+        final InputStream[] range = table.open(startSegment, endSegment, colNames);
         return new Pipe() {
-            private int fieldIndex = types.length;
+            private int fieldIndex = range.length;
             private AtomicInteger index = new AtomicInteger(0);
             private AtomicInteger remaining = new AtomicInteger(filter.cardinality()); 
             @Override public byte[] read(AimDataType type) throws IOException {
-                if (++fieldIndex >= types.length) {
+                if (++fieldIndex >= range.length) {
                     fieldIndex = 0;
                     if (remaining.decrementAndGet() < 0)  throw new EOFException();
                     while (!filter.get(index.getAndIncrement())) {
                         for(int i=0; i<range.length; i++) {
-                            Pipe.skip(range[i],types[i]);
+                            Pipe.skip(range[i],type);
                         }
                     }
                 }
-                return Pipe.read(range[fieldIndex], types[fieldIndex]);
+                return Pipe.read(range[fieldIndex], type);
             }
         };
     }

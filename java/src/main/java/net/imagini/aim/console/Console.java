@@ -1,19 +1,20 @@
 package net.imagini.aim.console;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.BitSet;
 import java.util.UUID;
 
 import net.imagini.aim.AimDataType;
+import net.imagini.aim.AimFilterSet;
 import net.imagini.aim.AimQuery;
 import net.imagini.aim.AimTable;
 import net.imagini.aim.node.Server;
 import net.imagini.aim.pipes.Pipe;
-import net.jpountz.lz4.LZ4BlockOutputStream;
+import net.imagini.aim.pipes.PipeLZ4;
+
+import org.apache.commons.io.output.ByteArrayOutputStream;
 
 public class Console extends Thread {
 
@@ -58,28 +59,25 @@ public class Console extends Thread {
                             //filter
                             long t = System.currentTimeMillis();
     
-                            BitSet res = query.filter("userQuizzed").in("true")
-                                .and("timestamp").smaller("1374598963")
-                                .and("api_key").eq("mirror")
-                                //.and("region_code").eq("LDN")
-                                //.and("post_code").in("EC2 A1","EC2 A11","EC2 A21")
+                            AimFilterSet set = query.filter("userQuizzed").in("true")
+                                .and("timestamp").greaterThan("20")
+                                .and("api_key").equals("test")
+                                .and("post_code").not().in("EC2 A1","EC2 A11","EC2 A21")
                                 .go();
                             t = (System.currentTimeMillis()-t);
-    
+
                             //select
-                            result = query.select(res,cols);
-                            collectResults(cols, result);
-    
+                            //result = query.select(set,cols);
+                            //collectResults(cols, result);
+
                             //debug
                             System.out.println("Filter time(ms): " + t );
-                            byte[] bits = res.toByteArray();
+
                             ByteArrayOutputStream compressed = new ByteArrayOutputStream();
-                            LZ4BlockOutputStream lz4 = new LZ4BlockOutputStream(compressed);
-                            lz4.write(bits);
-                            lz4.close();
-                            System.out.println("Filter cardinality/bits/bytes/lz4: " + res.cardinality() + "/" + res.length() + "/" + bits.length + "/" + compressed.size());
+                            Pipe test = new PipeLZ4(compressed); set.write(test); test.close();
+                            System.out.println("Filter cardinality/bits/lz4size: " + set.cardinality() + "/" + set.length() + "/" + compressed.size());
                             System.out.println();
-    
+
                             break;
                         case "last": //default query
                             try {

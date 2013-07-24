@@ -20,7 +20,7 @@ public class TestEvents {
             );
             final Pipe pipe = Server.type.getConstructor(OutputStream.class).newInstance(socket.getOutputStream());
 
-            for (long i = 1; i <=1000000; i++) {
+            for (long i = 1; i <=10000000; i++) {
                 try {
                     UUID userUid  = UUID.randomUUID();
                     InetAddress clientIp = InetAddress.getByName("173.194.41.99");

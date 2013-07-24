@@ -5,13 +5,12 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import net.imagini.aim.Aim;
-import net.imagini.aim.AimDataType;
 import net.imagini.aim.Aim.BYTEARRAY;
+import net.imagini.aim.AimDataType;
 
 import org.apache.commons.io.EndianUtils;
 
@@ -23,7 +22,6 @@ public class Pipe {
      */
     private static ByteOrder endian = ByteOrder.BIG_ENDIAN;
 
-    private Socket socket;
     private OutputStream outputPipe;
     private InputStream inputPipe;
 
@@ -48,7 +46,6 @@ public class Pipe {
     final public void close() throws IOException {
         if (inputPipe != null) inputPipe.close();
         if (outputPipe != null) outputPipe.close();
-        if (socket != null) socket.close();
     }
 
     final public void write(boolean value) throws IOException {

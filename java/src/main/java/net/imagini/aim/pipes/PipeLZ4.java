@@ -6,6 +6,7 @@ import java.io.OutputStream;
 
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
+import net.jpountz.lz4.LZ4Factory;
 
 public class PipeLZ4 extends Pipe {
      private LZ4BlockOutputStream lz4OutputStream;
@@ -18,7 +19,7 @@ public class PipeLZ4 extends Pipe {
      }
 
      @Override protected OutputStream getOutputPipe(OutputStream out) throws IOException {
-         lz4OutputStream = new LZ4BlockOutputStream(out, 65535);
+         lz4OutputStream = new LZ4BlockOutputStream(out, 65535, LZ4Factory.fastestInstance().highCompressor());
          return lz4OutputStream;
      }
 

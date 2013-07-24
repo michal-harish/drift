@@ -3,11 +3,9 @@ package net.imagini.aim.node;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.LinkedHashMap;
 
-import net.imagini.aim.Aim;
-import net.imagini.aim.AimDataType;
 import net.imagini.aim.AimTable;
+import net.imagini.aim.EventsSchema;
 import net.imagini.aim.pipes.Pipe;
 import net.imagini.aim.pipes.PipeLZ4;
 
@@ -17,20 +15,8 @@ public class Server extends Thread {
 
     public static Class<? extends Pipe> type = PipeLZ4.class;
 
-    @SuppressWarnings("serial")
-    private static AimTable events = new AimTable("events", 50000, new LinkedHashMap<String,AimDataType>() {{ 
-        put("timestamp", Aim.LONG);
-        put("client_ip", Aim.INT);
-        put("type", Aim.STRING);
-        put("user_agent", Aim.STRING);
-        put("country_code", Aim.BYTEARRAY(2));
-        put("region_code", Aim.BYTEARRAY(3));
-        put("post_code", Aim.STRING);
-        put("api_key", Aim.STRING);
-        put("url", Aim.STRING);
-        put("userUid", Aim.BYTEARRAY(16));
-        put("userQuizzed", Aim.BOOL);
-    }});
+    //TODO Node Server should not be aware about tables
+    private static AimTable events = new AimTable("events", 1000000, new EventsSchema());
 
     private Thread loaderAcceptor;
     private Thread loader;

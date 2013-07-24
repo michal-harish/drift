@@ -1,50 +1,58 @@
 package net.imagini.aim;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.Map.Entry;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import net.imagini.aim.pipes.Pipe;
 
-
+/**
+ * @author mharis
+ */
 abstract public class AimFilter {
 
-    public static AimFilter proxy(AimFilter prev, AimTable table, String expression) {
-        AimFilter result = proxy(table, null, null, expression);
-        result.prev = prev;
+    public static AimFilter proxy(AimFilter root, AimTable table, String expression) {
+        AimFilter result = new AimFilterSimple(root, table, expression);
+        result.root = root;
         return result;
     }
     public static AimFilter proxy(AimTable table, Integer startSegment, Integer  endSegment, String expression) {
-        AimFilter result = new AimFilterSimple(null, table, expression);
+        AimFilter result = proxy(null, table,  expression);
+        result.table = table;
         result.startSegment = startSegment;
         result.endSegment = endSegment;
+        result.root = result;
         return result;
     }
 
     private AimTable table;
     private Integer startSegment;
     private Integer endSegment;
-    protected AimFilter prev;
+    protected AimFilter root;
     protected AimDataType type;
     protected AimFilter next;
 
-    public AimFilter(AimFilter prev, AimTable table, AimDataType type) {
-        this.table = table;
+    public AimFilter(AimFilter root, AimDataType type) {
+        this(root,type,null);
+    }
+
+    public AimFilter(AimFilter root, AimDataType type, AimFilter next) {
         this.type = type;
-        this.prev = prev;
+        this.root = root;
+        this.next = next;
     }
 
-    final protected AimFilter start() {
-        return prev == null ? this : prev.start();
+    public void updateFormula(LinkedList<String> usedColumns) {
+        if (next != null) next.updateFormula(usedColumns);
     }
 
-    protected void updateFormula(LinkedHashMap<String,AimDataType> def) {
-        if (prev != null) prev.updateFormula(def);
+    public boolean match(byte[][] data) {
+        return root.match(true, data);
     }
 
     protected boolean match(boolean soFar, byte[][] data) {
@@ -55,22 +63,71 @@ abstract public class AimFilter {
         throw new IllegalAccessError(this.getClass().getSimpleName() + " cannot be matched against a value");
     }
 
-    public AimFilter eq(String value) {
-        if (type == null) return next.eq(value);
+    public AimFilter and(String expression) {
+        return next = new AimFilterOp(root, expression) {
+            @Override protected boolean compare(boolean a, boolean b) {
+                return a & b;
+            }
+        };
+    }
+
+    public AimFilter or(String expression) {
+        return next = new AimFilterOp(root, expression) {
+            @Override protected boolean compare(boolean a, boolean b) {
+                return a | b;
+            }
+        };
+    }
+
+    public AimFilter not() {
+        return next = new AimFilter(root, type, next) {
+            @Override protected boolean match(boolean soFar, byte[][] data) {
+                return !next.match(soFar, data);
+            }
+        };
+    }
+
+    public AimFilter equals(String value) {
+        if (type == null) return next.equals(value);
         final byte[] val = Pipe.convert(type, value);
-        return next = new AimFilter(this,table,type) {
+        return next = new AimFilter(root,type) {
             @Override protected boolean match(byte[] value, byte[][] data) {
                 return super.match(Arrays.equals(value, val), data);
             }
         };
-    } 
+    }
+
+    public AimFilter greaterThan(final String than) {
+        if (type == null) return next.greaterThan(than);
+        final byte[][] vals = new byte[1][];
+        vals[0] = Pipe.convert(type, than);
+        return next = new AimFilter(root,type) {
+            @Override protected boolean match(byte[] value, byte[][] data) {
+                int[] cmp = AimFilter.compare(value, vals);
+                return super.match(cmp[0] == 1, data);
+            }
+        };
+    }
+
+    public AimFilter lessThan(final String than) {
+        if (type == null) return next.lessThan(than);
+        final byte[][] vals = new byte[1][];
+        vals[0] = Pipe.convert(type, than);
+        return next = new AimFilter(root,type) {
+            @Override protected boolean match(byte[] value, byte[][] data) {
+                int[] cmp = AimFilter.compare(value, vals);
+                return super.match(cmp[0] == -1, data);
+            }
+        };
+    }
+
     public AimFilter in(String... values) {
         if (type == null) return next.in(values);
         final byte[][] vals = new byte[values.length][]; 
         int i = 0; for(String value:values) {
             vals[i++] = Pipe.convert(type, value);
         }
-        return next = new AimFilter(this,table,type) {
+        return next = new AimFilter(root,type) {
             @Override
             protected boolean match(byte[] value, byte[][] data) {
                 boolean localResult = false;
@@ -84,98 +141,55 @@ abstract public class AimFilter {
             }
         };
     }
-    public AimFilter greater(final String than) {
-        if (type == null) return next.greater(than);
-        final byte[][] vals = new byte[1][];
-        vals[0] = Pipe.convert(type, than);
-        return next = new AimFilter(this,table,type) {
-            @Override protected boolean match(byte[] value, byte[][] data) {
-                int[] cmp = AimFilter.compare(value, vals);
-                return super.match(cmp[0] == 1, data);
-            }
-        };
-    }
-    public AimFilter smaller(final String than) {
-        if (type == null) return next.smaller(than);
-        final byte[][] vals = new byte[1][];
-        vals[0] = Pipe.convert(type, than);
-        return next = new AimFilter(this,table,type) {
-            @Override protected boolean match(byte[] value, byte[][] data) {
-                int[] cmp = AimFilter.compare(value, vals);
-                return super.match(cmp[0] == -1, data);
-            }
-        };
-    }
 
+    /**
+     * filters run for each segment in parallel thread and should be sending 
+     * the serialized filter over the pipe "to" the segment.
+     */
+    final public AimFilterSet go() throws IOException {
+        final AimFilterSet result = new AimFilterSet();
+        final List<Integer> segments = new LinkedList<Integer>();
+        for(int s = root.startSegment; s <= root.endSegment; s++) segments.add(s);
+        final ExecutorService collector = Executors.newFixedThreadPool(segments.size());
 
-    public AimFilter and(String expression) {
-        return next = new AimFilterOp(this, table, expression) {
-            @Override protected boolean compare(boolean a, boolean b) {
-                return a & b;
-            }
-        };
-    }
-
-    public AimFilter or(String expression) {
-        return next = new AimFilterOp(this, table, expression) {
-            @Override protected boolean compare(boolean a, boolean b) {
-                return a | b;
-            }
-        };
-    }
-
-    @SuppressWarnings("serial")
-    final public BitSet go() throws IOException {
-        LinkedHashMap<String,AimDataType> cols = new LinkedHashMap<String,AimDataType>() {{
-            put("userQuizzed",Aim.BOOL);
-            put("post_code",Aim.STRING);
-            put("api_key",Aim.STRING);
-            put("timestamp",Aim.LONG);
-        }};
-        //TODO dig colNames
-        updateFormula(cols);
-        AimFilter start = start();
-        final AimTable table = start.table;
-        final String[] colNames = cols.keySet().toArray(new String[cols.size()]);
-        final AimDataType[] types = new LinkedList<AimDataType>() {{
-            for(String colName: colNames) add(table.def(colName));
-        }}.toArray(new AimDataType[colNames.length]);
-        byte[][] data = new byte[colNames.length][];
-        
-        //TODO run filters for each segment in parallel thread so don't use table.range(..)
-        //i.e. don't rely on ColumnInputStream but operate on the raw SegmentInputStream
-        InputStream[] range = table.range(start.startSegment, start.endSegment, colNames);
-        BitSet result = new BitSet(); 
-        int record = 0;
+        for(final Integer s : segments) {
+            final AimSegment segment = root.table.open(s);
+            collector.submit(new Runnable() {
+                @Override
+                public void run() {
+                    BitSet segmentResult = new BitSet();
+                    try {
+                        int length = segment.filter(root, segmentResult);
+                        result.put(s, segmentResult);
+                        result.length(s, length);
+                    } catch (IOException e) {
+                        result.put(s, null);
+                        e.printStackTrace();
+                        collector.shutdownNow();
+                    }
+                }
+            });
+        }
+        collector.shutdown();
         try {
-            while (true) {
-                for(int i=0;i<types.length;i++) {
-                    data[i] = Pipe.read(range[i],types[i]);
-                }
-                if (start.match(true,data)) {
-                    result.set(record);
-                }
-                record++;
-            }
-        } catch (EOFException e) {}
+            collector.awaitTermination(1, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        }
+
         return result;
     }
 
     public static class AimFilterSimple extends AimFilter {
         private int colIndex;
         private String colName;
-        public AimFilterSimple(AimFilter prev, AimTable table, String field) {
-            super(prev, table, table.def(field));
+        public AimFilterSimple(AimFilter root, AimTable table, String field) {
+            super(root, table.def(field));
             this.colName = field;
         }
-        @Override protected void updateFormula(LinkedHashMap<String,AimDataType> def) {
-            super.updateFormula(def);
-            int i=0; for(Entry<String,AimDataType> col: def.entrySet()) {
-                if (col.getKey().equals(colName)) {
-                    colIndex = i;
-                }
-                i++;
-            }
+        @Override public void updateFormula(LinkedList<String> usedColumns) {
+            super.updateFormula(usedColumns);
+            colIndex = usedColumns.indexOf(colName);
         }
         @Override protected boolean match(boolean soFar, byte[][] data) {
             return next.match(data[colIndex], data);
@@ -185,16 +199,15 @@ abstract public class AimFilter {
         }
 
     }
-    
+
     abstract static public class AimFilterOp extends AimFilter {
-        public AimFilterOp(AimFilter prev, AimTable table, String expression) {
-            super(prev, table, null);
-            next = AimFilter.proxy(prev,table,expression);
+        public AimFilterOp(AimFilter root, String expression) {
+            super(root, null);
+            next = AimFilter.proxy(root, root.table,expression);
         }
         @Override
         protected boolean match(boolean soFar, byte[][] data) {
-            boolean localResult = compare(soFar, next.match(true, data));
-            return localResult;
+            return compare(soFar, next.match(true, data));
         }
         abstract protected boolean compare(boolean a, boolean b);
     }

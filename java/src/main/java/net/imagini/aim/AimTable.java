@@ -3,14 +3,9 @@ package net.imagini.aim;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
-import joptsimple.internal.Strings;
 import net.imagini.aim.node.Segment;
 import net.imagini.aim.pipes.Pipe;
 
@@ -21,8 +16,7 @@ public class AimTable {
 
     private String name;
     private Integer segmentSize;
-    private LinkedList<AimDataType> def = new LinkedList<>();
-    private Map<String,Integer> colIndex = new HashMap<>();
+    private AimSchema schema;
     private LinkedList<AimSegment> segments = new LinkedList<>();
     private AimSegment currentSegment; 
     private AtomicLong originalSize = new AtomicLong(0);
@@ -30,18 +24,15 @@ public class AimTable {
     private AtomicLong count = new AtomicLong(0);
 
     //TODO segmentSize in bytes rather than records
-    public AimTable(String name, Integer segmentSize, LinkedHashMap<String,AimDataType> columnDefs) {
+    public AimTable(String name, Integer segmentSize, AimSchema schema) {
         this.name = name;
-        for(Entry<String,AimDataType> columnDef: columnDefs.entrySet()) {
-            def.add(columnDef.getValue());
-            colIndex.put(columnDef.getKey(), def.size()-1);
-        }
+        this.schema = schema;
         this.segmentSize = segmentSize;
     }
 
     public AimDataType def(String colName) {
         checkColumn(colName);
-        return def.get(colIndex.get(colName));
+        return schema.def(colName);
     }
 
     public String getName() {
@@ -66,10 +57,10 @@ public class AimTable {
 
 
     private void checkColumn(String colName) throws IllegalArgumentException {
-        if (!colIndex.containsKey(colName)) {
+        if (!schema.has(colName)) {
             throw new IllegalArgumentException(
                 "Column `"+colName+"` is not defined for table `"+name+"`. Available columns are: " 
-                + Strings.join(colIndex.keySet().toArray(new String[def.size()-1]), ",")
+                + schema.describe()
             );
         }
     }
@@ -77,13 +68,13 @@ public class AimTable {
     public void append(Pipe pipe) throws IOException {
         //TODO thread-safe concurrent atomic appends, e.g. one record as whole, and strictly no more than segmentSize
         boolean hasData = false;
-        for(int col = 0; col < def.size() ; col++) {
-            AimDataType type = def.get(col); 
+        for(int col = 0; col < schema.size() ; col++) {
+            AimDataType type = schema.def(col); 
             byte[] value = pipe.read(type);
             if (!hasData) {
                 hasData = true;
                 if (count.get() % segmentSize == 0) {
-                    currentSegment = new Segment(def.size());
+                    currentSegment = new Segment(schema);
                 }
             }
             currentSegment.write(col, type,value);
@@ -109,17 +100,16 @@ public class AimTable {
             }
         }
     }
-
-    public InputStream[] range(int startSegment, int endSegment, String... columnNames) throws IOException {
-        InputStream[] result = new InputStream[columnNames.length];
-        int i = 0; for(String colName: columnNames) {
-            result[i++] = new ColumnInputStream(startSegment, endSegment, colIndex.get(colName));
-        }
-        return result;
+    public AimSegment open(int segmentId) throws IOException {
+        return segments.get(segmentId);
     }
 
-    public InputStream range(int startSegment, int endSegment, String column) throws IOException {
-        return new ColumnInputStream(startSegment, endSegment, colIndex.get(column));
+    public InputStream[] open(int startSegment, int endSegment, String... columnNames) throws IOException {
+        InputStream[] result = new InputStream[columnNames.length];
+        int i = 0; for(String colName: columnNames) {
+            result[i++] = new ColumnInputStream(startSegment, endSegment, schema.get(colName));
+        }
+        return result;
     }
 
     private class ColumnInputStream extends InputStream {
@@ -146,5 +136,4 @@ public class AimTable {
             return result;
         }
     }
-
 }
