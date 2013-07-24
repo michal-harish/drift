@@ -10,7 +10,6 @@ import net.imagini.aim.AimDataType;
 import net.imagini.aim.AimFilterSet;
 import net.imagini.aim.AimQuery;
 import net.imagini.aim.AimTable;
-import net.imagini.aim.node.Server;
 import net.imagini.aim.pipes.Pipe;
 import net.imagini.aim.pipes.PipeLZ4;
 
@@ -21,9 +20,9 @@ public class Console extends Thread {
     private AimTable table;
 
     public static void main(String[] args) throws IOException {
-        Server server = new Server(4000);
-        server.start();
-        new Console(server.getTestTable()).run();
+        //Server server = new Server(4000);
+        //server.start();
+        new Console(new AimTable("events", 1000000, new EventsSchema())).run();
     }
 
     public Console(AimTable table) {

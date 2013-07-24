@@ -75,7 +75,16 @@ public class Pipe {
             outputPipe.write(data);
         }
     }
-
+    public int write(AimDataType type, byte[] value) throws IOException {
+        int written = 0;
+        if (type.equals(Aim.STRING)) {
+            outputPipe.write(value.length);
+            written += 4;
+        }
+        outputPipe.write(value);
+        written += value.length;
+        return written;
+    }
 
     public byte[] read(AimDataType type) throws IOException {
         return read(inputPipe, type);

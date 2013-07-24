@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.BitSet;
 
+import net.imagini.aim.pipes.Pipe;
+
 public interface AimSegment {
 
-    void write(int col, AimDataType type, byte[] value) throws IOException;
+    void append(Pipe pipe) throws IOException;
 
     void close() throws IllegalAccessException, IOException;
 
@@ -15,8 +17,6 @@ public interface AimSegment {
     long getOriginalSize();
 
     InputStream open(int column) throws IOException;
-
-    InputStream[] open(Integer... columnNames) throws IOException;
 
     Integer filter(AimFilter filter, BitSet segmentResult)  throws IOException; 
 

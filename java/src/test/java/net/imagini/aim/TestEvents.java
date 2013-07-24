@@ -16,7 +16,7 @@ public class TestEvents {
         try {
             Socket socket = new Socket(
                 InetAddress.getByName("localhost"), //10.100.11.239 
-                4000
+                4001
             );
             final Pipe pipe = Server.type.getConstructor(OutputStream.class).newInstance(socket.getOutputStream());
 

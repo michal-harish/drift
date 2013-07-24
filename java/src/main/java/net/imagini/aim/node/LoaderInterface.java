@@ -15,7 +15,9 @@ public class LoaderInterface extends Thread  {
     private AimTable table;
 
     public LoaderInterface(AimTable table,Socket clientConnection) {
+        
         this.socket = clientConnection;
+        //TODO hand-shake and init (pipe_type, schema)
         this.table = table;
     }
 

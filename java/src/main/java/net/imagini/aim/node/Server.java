@@ -5,7 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 import net.imagini.aim.AimTable;
-import net.imagini.aim.EventsSchema;
+import net.imagini.aim.console.EventsSchema;
 import net.imagini.aim.pipes.Pipe;
 import net.imagini.aim.pipes.PipeLZ4;
 
@@ -15,13 +15,14 @@ public class Server extends Thread {
 
     public static Class<? extends Pipe> type = PipeLZ4.class;
 
-    //TODO Node Server should not be aware about tables
-    private static AimTable events = new AimTable("events", 1000000, new EventsSchema());
+    private static AimTable events;
 
     private Thread loaderAcceptor;
     private Thread loader;
 
     public Server(int port) throws IOException {
+        events = new AimTable("events", 1000000, new EventsSchema());
+        
         //TODO Query Interface
 
         //Loader Interface
@@ -41,10 +42,6 @@ public class Server extends Thread {
                 }
             }
         };
-    }
-
-    public AimTable getTestTable() {
-        return events;
     }
 
     @Override public void run() {

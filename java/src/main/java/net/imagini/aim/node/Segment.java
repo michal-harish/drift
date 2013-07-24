@@ -105,7 +105,7 @@ public class Segment implements AimSegment {
         return new LZ4BlockInputStream(new ByteArrayInputStream(columnar.get(column)));
     }
 
-    @Override public InputStream[] open(Integer... columns) throws IOException {
+    private InputStream[] open(Integer... columns) throws IOException {
         final InputStream[] streams = new InputStream[columns.length];
         int i = 0; for(Integer col: columns) {
             streams[i++] = open(col);
@@ -127,7 +127,25 @@ public class Segment implements AimSegment {
         }
     }
 
-    @Override public void write(int column, AimDataType type, byte[] value) throws IOException {
+    @Override public void append(Pipe pipe) throws IOException {
+        try {
+            checkWritable(true);
+            try {
+                for(int col = 0; col < schema.size() ; col++) {
+                    AimDataType type = schema.def(col); 
+                    byte[] value = pipe.read(type);
+                    write(col, type,value);
+                }
+            } catch (EOFException e) {
+                close();
+                throw e;
+            }
+        } catch (IllegalAccessException e1) {
+            throw new IOException(e1);
+        }
+    }
+
+    private void write(int column, AimDataType type, byte[] value) throws IOException {
         try {
             checkWritable(true);
         } catch (IllegalAccessException e) {

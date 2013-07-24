@@ -3,10 +3,12 @@ package net.imagini.aim;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.imagini.aim.node.Segment;
+import net.imagini.aim.node.LoaderInterface;
 import net.imagini.aim.pipes.Pipe;
 
 /**
@@ -22,12 +24,41 @@ public class AimTable {
     private AtomicLong originalSize = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
     private AtomicLong count = new AtomicLong(0);
+    ServerSocket loaderInterfaceSocket;
+    private Thread loaderAcceptor;
 
     //TODO segmentSize in bytes rather than records
-    public AimTable(String name, Integer segmentSize, AimSchema schema) {
+    public AimTable(String name, Integer segmentSize, AimSchema schema) throws IOException {
         this.name = name;
         this.schema = schema;
         this.segmentSize = segmentSize;
+        loaderInterfaceSocket = new ServerSocket(4001);
+        loaderAcceptor = new Thread() {
+            @Override public void run() {
+                System.out.println("Table `"+AimTable.this.name+"` Loader Interface Started");
+                try {
+                    while(true) {
+                        Socket socket = loaderInterfaceSocket.accept();
+                        if (interrupted()) break;
+                        new LoaderInterface(AimTable.this,socket).start();
+                    }
+                } catch (IOException e) {
+                    System.out.println("Mock Server failed to establish accepted client connection");
+                }
+            }
+        };
+        loaderAcceptor.start();
+    }
+
+    public void close() throws IOException {
+        try {
+            loaderInterfaceSocket.close();
+            loaderAcceptor.interrupt();
+            //TODO close loader threads 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        closeSegment();
     }
 
     public AimDataType def(String colName) {
@@ -55,7 +86,6 @@ public class AimTable {
         return originalSize.get();
     }
 
-
     private void checkColumn(String colName) throws IllegalArgumentException {
         if (!schema.has(colName)) {
             throw new IllegalArgumentException(
@@ -67,33 +97,25 @@ public class AimTable {
 
     public void append(Pipe pipe) throws IOException {
         //TODO thread-safe concurrent atomic appends, e.g. one record as whole, and strictly no more than segmentSize
-        boolean hasData = false;
-        for(int col = 0; col < schema.size() ; col++) {
-            AimDataType type = schema.def(col); 
-            byte[] value = pipe.read(type);
-            if (!hasData) {
-                hasData = true;
-                if (count.get() % segmentSize == 0) {
-                    currentSegment = new Segment(schema);
-                }
-            }
-            currentSegment.write(col, type,value);
-            //System.out.println("loading " + type);
-            //System.out.println("value " + Pipe.convert(type, value));
+        if (count.get() % segmentSize == 0) {
+            currentSegment = new AimSegmentConnection(schema,4000);
         }
+        currentSegment.append(pipe);
         if (count.incrementAndGet() % segmentSize == 0) {
-            close();
+            closeSegment();
         }
     }
 
-    public void close() throws IOException {
+    private void closeSegment() throws IOException {
         //TODO thread-safe swap
         if (currentSegment != null) {
             try {
                 currentSegment.close();
-                size.addAndGet(currentSegment.getSize());
-                originalSize.addAndGet(currentSegment.getOriginalSize());
-                segments.add(currentSegment);
+                if (currentSegment.getOriginalSize() > 0) {
+                    size.addAndGet(currentSegment.getSize());
+                    originalSize.addAndGet(currentSegment.getOriginalSize());
+                    segments.add(currentSegment);
+                }
                 currentSegment = null;
             } catch (IllegalAccessException e) {
                 throw new IOException(e);
