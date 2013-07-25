@@ -12,6 +12,8 @@ public interface AimSegment {
 
     void close() throws IllegalAccessException, IOException;
 
+    long getCount();
+
     long getSize();
 
     long getOriginalSize();

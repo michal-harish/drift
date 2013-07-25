@@ -4,22 +4,22 @@ import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import net.imagini.aim.Aim;
-import net.imagini.aim.AimDataType;
 import net.imagini.aim.AimFilter;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimSegment;
+import net.imagini.aim.AimType;
+import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.pipes.Pipe;
-import net.jpountz.lz4.LZ4BlockInputStream;
-import net.jpountz.lz4.LZ4BlockOutputStream;
-import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.xxhash.XXHashFactory;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
@@ -34,10 +34,10 @@ public class Segment implements AimSegment {
     private AimSchema schema;
     private LinkedHashMap<Integer,byte[]> columnar = new LinkedHashMap<>();
     private LinkedHashMap<Integer,ByteArrayOutputStream> buffers = null;
-    private LinkedHashMap<Integer,LZ4BlockOutputStream> lz4 = null;
+    private LinkedHashMap<Integer,OutputStream> writers = null;
     private AtomicLong size = new AtomicLong(0);
+    private AtomicLong count = new AtomicLong(0);
     private AtomicLong originalSize = new AtomicLong(0);
-    //private AtomicLong originalSize = new AtomicLong(0);
 
     //TODO public AimSegment(..mmap file)
 
@@ -55,29 +55,32 @@ public class Segment implements AimSegment {
 
     /**
      * Append-only segment
+     * @throws IOException 
      */
-    public Segment(AimSchema schema) {
+    public Segment(AimSchema schema) throws IOException {
         this.schema = schema;
         this.writable = true;
-        lz4 = new LinkedHashMap<>();
+        writers = new LinkedHashMap<>();
         buffers = new LinkedHashMap<>();
         for(int col=0; col < schema.size(); col++) {
-            ByteArrayOutputStream currentColumnSegment = new ByteArrayOutputStream(65535);
-            buffers.put(col, currentColumnSegment);
-            lz4.put(col, new LZ4BlockOutputStream(
-                currentColumnSegment, 
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream(65535);
+            buffers.put(col, buffer);
+            writers.put(col, new GZIPOutputStream(buffer,true));
+            /* TODO store segment with compression flag to allow choosing between gzip & lz4
+            writers.put(col, new LZ4BlockOutputStream(
+                buffer, 
                 65535,
                 LZ4Factory.fastestInstance().highCompressor(),
                 XXHashFactory.fastestInstance().newStreamingHash32(0x9747b28c).asChecksum(), 
                 true
-            ));
+            ));*/
         }
     }
 
     protected void flushSegment() throws IOException, IllegalAccessException {
         checkWritable(true);
-        for(LZ4BlockOutputStream lz4stream: lz4.values()) {
-            lz4stream.flush(); 
+        for(OutputStream writer: writers.values()) {
+            writer.flush(); 
         }
     }
 
@@ -85,14 +88,14 @@ public class Segment implements AimSegment {
         checkWritable(true);
         this.writable = false;
         for(Entry<Integer,ByteArrayOutputStream> c: buffers.entrySet()) {
-            LZ4BlockOutputStream lz4stream = lz4.get(c.getKey());
-            lz4stream.close();
+            OutputStream writer = writers.get(c.getKey());
+            writer.close();
             byte[] buffer = c.getValue().toByteArray();
             columnar.put(c.getKey(), buffer);
             size.addAndGet(buffer.length);
         }
         buffers = null;
-        lz4 = null;
+        writers = null;
     }
 
 
@@ -102,7 +105,9 @@ public class Segment implements AimSegment {
         } catch (IllegalAccessException e) {
             throw new IOException(e); 
         }
-        return new LZ4BlockInputStream(new ByteArrayInputStream(columnar.get(column)));
+        InputStream buffer = new ByteArrayInputStream(columnar.get(column));
+        return new GZIPInputStream(buffer);
+        //return new LZ4BlockInputStream(buffer);
     }
 
     private InputStream[] open(Integer... columns) throws IOException {
@@ -111,6 +116,10 @@ public class Segment implements AimSegment {
             streams[i++] = open(col);
         }
         return streams;
+    }
+
+    @Override public long getCount() {
+        return count.get();
     }
 
     @Override public long getSize() {
@@ -130,16 +139,14 @@ public class Segment implements AimSegment {
     @Override public void append(Pipe pipe) throws IOException {
         try {
             checkWritable(true);
-            try {
-                for(int col = 0; col < schema.size() ; col++) {
-                    AimDataType type = schema.def(col); 
-                    byte[] value = pipe.read(type);
-                    write(col, type,value);
-                }
-            } catch (EOFException e) {
-                close();
-                throw e;
+            //System.out.println("--------");
+            for(int col = 0; col < schema.size() ; col++) {
+                AimDataType type = schema.dataType(col); 
+                byte[] value = pipe.read(type);
+                write(col, type,value);
+                //System.out.println(col + " " + type + " "+ type.convert(value));
             }
+            count.incrementAndGet();
         } catch (IllegalAccessException e1) {
             throw new IOException(e1);
         }
@@ -152,10 +159,10 @@ public class Segment implements AimSegment {
             throw new IOException(e); 
         }
         if (type.equals(Aim.STRING)) {
-            Pipe.write(lz4.get(column),value.length);
+            Pipe.write(writers.get(column),value.length);
             originalSize.addAndGet(4);
         }
-        lz4.get(column).write(value);
+        writers.get(column).write(value);
         originalSize.addAndGet(value.length);
     }
 
@@ -164,7 +171,7 @@ public class Segment implements AimSegment {
 
         //TODO dig colNames
         final LinkedList<String> usedColumns = new LinkedList<String>() {{
-            add("userQuizzed");
+            add("user_quizzed");
             add("post_code");
             add("api_key");
             add("timestamp");
@@ -175,7 +182,7 @@ public class Segment implements AimSegment {
         final Integer[] cols = new LinkedList<Integer>() {{
             for(String colName: usedColumns) add(schema.get(colName));
         }}.toArray(new Integer[usedColumns.size()]);
-        final AimDataType[] types = new LinkedList<AimDataType>() {{
+        final AimDataType[] types = new LinkedList<AimType>() {{
             for(String colName: usedColumns) add(schema.def(colName));
         }}.toArray(new AimDataType[usedColumns.size()]);
         final byte[][] data = new byte[usedColumns.size()][];

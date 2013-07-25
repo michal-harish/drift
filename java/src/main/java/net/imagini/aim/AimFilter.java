@@ -9,7 +9,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import net.imagini.aim.pipes.Pipe;
+import net.imagini.aim.node.AimTable;
 
 /**
  * @author mharis
@@ -34,14 +34,14 @@ abstract public class AimFilter {
     private Integer startSegment;
     private Integer endSegment;
     protected AimFilter root;
-    protected AimDataType type;
+    protected AimType type;
     protected AimFilter next;
 
-    public AimFilter(AimFilter root, AimDataType type) {
+    public AimFilter(AimFilter root, AimType type) {
         this(root,type,null);
     }
 
-    public AimFilter(AimFilter root, AimDataType type, AimFilter next) {
+    public AimFilter(AimFilter root, AimType type, AimFilter next) {
         this.type = type;
         this.root = root;
         this.next = next;
@@ -89,18 +89,34 @@ abstract public class AimFilter {
 
     public AimFilter equals(String value) {
         if (type == null) return next.equals(value);
-        final byte[] val = Pipe.convert(type, value);
+        final byte[] val = type.convert(value);
         return next = new AimFilter(root,type) {
             @Override protected boolean match(byte[] value, byte[][] data) {
                 return super.match(Arrays.equals(value, val), data);
             }
         };
     }
+    public AimFilter contains(String value) {
+        if (type == null) return next.contains(value);
+        final byte[] val = type.convert(value);
+        return next = new AimFilter(root,type) {
+            @Override protected boolean match(byte[] value, byte[][] data) {
+                int v = 0;for(byte b: val) {
+                    if (val[v]!=b) v = 0;
+                    else if (++v==val.length) {
+                        return super.match(true, data);
+                    }
+                }
+                return super.match(false, data);
+            }
+        };
+    }
+
 
     public AimFilter greaterThan(final String than) {
         if (type == null) return next.greaterThan(than);
         final byte[][] vals = new byte[1][];
-        vals[0] = Pipe.convert(type, than);
+        vals[0] = type.convert(than);
         return next = new AimFilter(root,type) {
             @Override protected boolean match(byte[] value, byte[][] data) {
                 int[] cmp = AimFilter.compare(value, vals);
@@ -112,7 +128,7 @@ abstract public class AimFilter {
     public AimFilter lessThan(final String than) {
         if (type == null) return next.lessThan(than);
         final byte[][] vals = new byte[1][];
-        vals[0] = Pipe.convert(type, than);
+        vals[0] = type.convert(than);
         return next = new AimFilter(root,type) {
             @Override protected boolean match(byte[] value, byte[][] data) {
                 int[] cmp = AimFilter.compare(value, vals);
@@ -125,7 +141,7 @@ abstract public class AimFilter {
         if (type == null) return next.in(values);
         final byte[][] vals = new byte[values.length][]; 
         int i = 0; for(String value:values) {
-            vals[i++] = Pipe.convert(type, value);
+            vals[i++] = type.convert(value);
         }
         return next = new AimFilter(root,type) {
             @Override

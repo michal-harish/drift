@@ -29,21 +29,28 @@ Architecture Decisions Overview
   - Memory Mapped Files are used for storage 
   - Go , C and other low-level languages can be used to implement the central component
   - Filter and Select Interfaces should be done in Scala as this allows for passing mapper/select code around nicely
-* Trivial binary protocol with transparnt LZ4 streaming compression is used, with following data types:
+* The protocol uses BIG_ENDIAN format as it is better suited for filtering comparsions 
+* Trivial binary protocol with transparent LZ4 streaming compression is used, with following data types:
 
-    ID  Data Type      Size(bytes)
-    ...............................
-    1   BOOL            1
-    2   BYTE            1
-    3   INT             4
-    4   LONG            8
-    5   STRING          4 + n
-    6   BYTEARRAY(N)    N
-  
+    ID  Data Type      Size(bytes)      Description
+    ...................................................................................................
+    1   BOOL            1               true or false boolean stored as byte
+    2   BYTE            1               unsigned byte
+    3   INT             4               32-bit signed integer
+    4   LONG            8               64-bit unsigned long
+    5   STRING          4 + ?           string of bytes with dynamic length stored as first 32-bits
+    6   STRING[N]       N               fixed length string of bytes
+    7-20   -            -               reserved
+å
 Architecture TODOs and NOTEs
 ============================
 - We should try to wrap segement processing units into cpu-bound threads (may require C programming) 
-- We need to compensate reduction with Hashtable 
+- We need to compensate reduction with Hashtable or some clever Indexing mechanism
+- Think about UTF8 column type before it's too late (everything is just a byte array atm)
+- We'll surely need a 64-bit DOUBLE too
+- Think about custom column types like UUID[16] IPV4[4] IPV6[6] UTC[4] or schema-mapping functions
+    - shema-mapping functions is cleaner as it is only in the wolrd of loaders 
+    - but then the filters still need to do the same so probably custom fields
 
 
 Protocol Message Types

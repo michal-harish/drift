@@ -1,14 +1,11 @@
 package net.imagini.aim;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Properties;
-import java.util.UUID;
 
 import joptsimple.internal.Strings;
 import kafka.consumer.Consumer;
@@ -19,9 +16,9 @@ import kafka.consumer.Whitelist;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.Message;
 import kafka.message.MessageAndMetadata;
-
-import net.imagini.aim.node.Server;
+import net.imagini.aim.node.EventsSchema;
 import net.imagini.aim.pipes.Pipe;
+import net.imagini.aim.pipes.PipeLZ4;
 
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -31,14 +28,16 @@ public class KafkaEvents {
     static ConsumerConnector consumer;
 
     @SuppressWarnings("deprecation")
-    public static void main(String[] args) throws InterruptedException, IOException {
+    public static void main(String[] args) throws InterruptedException, IOException, IllegalAccessException {
 
         try {
             Socket socket = new Socket(
                 InetAddress.getByName("localhost"), //10.100.11.239 
                 4000
             );
-            final Pipe pipe = Server.type.getConstructor(OutputStream.class).newInstance(socket.getOutputStream());
+            final Pipe pipe = new PipeLZ4(socket.getOutputStream(), Pipe.Protocol.LOADER);
+            AimSchema schema = new EventsSchema();
+            pipe.write(schema.serialize());
 
             Properties consumerProps = new Properties();
             consumerProps.put("zk.connect", "zookeeper-01.stag.visualdna.com");
@@ -63,12 +62,10 @@ public class KafkaEvents {
                 JsonNode json = jsonMapper.readValue(bytes, JsonNode.class);
                 try {
                     Long timestamp = Long.valueOf(json.get("timestamp").getValueAsText());
-                    UUID userUid  = UUID.randomUUID();
-                    InetAddress clientIp = InetAddress.getByName(json.get("client_ip").getTextValue());
-                    Boolean userQuizzed = !Strings.isNullOrEmpty(json.get("userUid").getTextValue()) && json.get("userUid").getTextValue().length() > 10;
-                    
+                    Boolean user_quizzed = !Strings.isNullOrEmpty(json.get("userUid").getTextValue()) && json.get("userUid").getTextValue().length() > 10;
+
                     pipe.write(timestamp);
-                    pipe.write(Arrays.copyOfRange(clientIp.getAddress(),0,4));
+                    pipe.write(schema.def("client_ip").convert(json.get("client_ip").getTextValue()));
                     pipe.write(json.get("event_type").getTextValue());
                     pipe.write(json.get("useragent").getTextValue());
                     pipe.write(Arrays.copyOfRange((json.get("country_code").getTextValue() + "??").getBytes(), 0, 2));
@@ -76,10 +73,9 @@ public class KafkaEvents {
                     pipe.write("??? ??");
                     pipe.write(json.get("campaignId").getTextValue());
                     pipe.write(json.get("url").getTextValue());
-                    pipe.write(userUid.getMostSignificantBits());
-                    pipe.write(userUid.getLeastSignificantBits());
-                    pipe.write(userQuizzed);
-                    
+                    pipe.write(schema.def("user_uid").convert(json.get("userUid").getTextValue()));
+                    pipe.write(user_quizzed);
+ 
                     if (++count == 10 * 1000000) {
                         break;
                     }
@@ -90,7 +86,7 @@ public class KafkaEvents {
             pipe.close();
             socket.close();
         }
-        catch (IOException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException ex) {
+        catch (IOException | IllegalArgumentException | SecurityException ex) {
            ex.printStackTrace();
         }
 

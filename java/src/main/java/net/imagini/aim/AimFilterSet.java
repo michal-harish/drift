@@ -36,7 +36,8 @@ public class AimFilterSet extends ConcurrentHashMap<Integer,BitSet> {
     }
 
     public void write(Pipe out) throws IOException {
-        out.write("AIM_FILTER_SET".getBytes());
+        out.write("AIM".getBytes());                // HEADER [3]
+        out.write((byte)100);                       // BYTE[1] connection type
         out.write(this.size());                     // INT num_segments
         for(Integer segment: this.keySet()) {       // ...
             out.write(segment);                     // INT segment_id

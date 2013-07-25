@@ -1,13 +1,14 @@
-package net.imagini.aim;
+package net.imagini.aim.node;
 
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 
+import net.imagini.aim.AimSchema;
+import net.imagini.aim.AimSegment;
+import net.imagini.aim.AimType;
 import net.imagini.aim.pipes.Pipe;
 
 /**
@@ -15,68 +16,50 @@ import net.imagini.aim.pipes.Pipe;
  */
 public class AimTable {
 
-    private String name;
-    private Integer segmentSize;
-    private AimSchema schema;
+    public final AimSchema schema;
+    public final String name;
+    public final Integer segmentSize;
     private LinkedList<AimSegment> segments = new LinkedList<>();
     private AimSegment currentSegment; 
     private AtomicLong originalSize = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
-    private AtomicLong count = new AtomicLong(0);
-    ServerSocket loaderInterfaceSocket;
-    private Thread loaderAcceptor;
+    private TableServer server;
 
     //TODO segmentSize in bytes rather than records
     public AimTable(String name, Integer segmentSize, AimSchema schema) throws IOException {
         this.name = name;
         this.schema = schema;
         this.segmentSize = segmentSize;
-        loaderInterfaceSocket = new ServerSocket(4001);
-        loaderAcceptor = new Thread() {
-            @Override public void run() {
-                System.out.println("Table `"+AimTable.this.name+"` Loader Interface Started");
-                try {
-                    while(true) {
-                        Socket socket = loaderInterfaceSocket.accept();
-                        if (interrupted()) break;
-                        new LoaderInterface(AimTable.this,socket).start();
-                    }
-                } catch (IOException e) {
-                    System.out.println("Mock Server failed to establish accepted client connection");
-                }
-            }
-        };
-        loaderAcceptor.start();
+        System.out.println("Table " + name + " (" + schema.serialize() + ")");
+        server = new TableServer(this, 4000);
+        server.start();
     }
 
     public void close() throws IOException {
         try {
-            loaderInterfaceSocket.close();
-            loaderAcceptor.interrupt();
-            //TODO close loader threads 
+            server.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
         closeSegment();
     }
 
-    public AimDataType def(String colName) {
+    public AimType def(String colName) {
         checkColumn(colName);
         return schema.def(colName);
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public long getCount() {
-        return count.get();
     }
 
     public int getNumSegments() {
         return segments.size();
     }
 
+    public long getCount() {
+        Long result = 0L;
+        for(AimSegment segment: segments) {
+            result += segment.getCount();
+        }
+        return result;
+    }
     public long getSize() {
         return size.get();
     }
@@ -94,14 +77,20 @@ public class AimTable {
         }
     }
 
-    public void append(Pipe pipe) throws IOException {
-        //TODO thread-safe concurrent atomic appends, e.g. one record as whole, and strictly no more than segmentSize
-        if (count.get() % segmentSize == 0) {
-            currentSegment = new AimSegmentConnection(schema,4000);
+    //TODO thread-safe concurrent atomic appends instead of synchronization, 
+    //e.g. one record as whole, and strictly no more than segmentSize
+    public synchronized void append(Pipe pipe) throws IOException {
+        if (currentSegment == null || currentSegment.getCount() % segmentSize == 0) {
+            currentSegment = new Segment(schema);
         }
-        currentSegment.append(pipe);
-        if (count.incrementAndGet() % segmentSize == 0) {
+        try {
+            currentSegment.append(pipe);
+            if (currentSegment.getCount() % segmentSize == 0) {
+                closeSegment();
+            }
+        } catch (EOFException e) {
             closeSegment();
+            throw e;
         }
     }
 
@@ -157,4 +146,5 @@ public class AimTable {
             return result;
         }
     }
+
 }

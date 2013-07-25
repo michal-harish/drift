@@ -12,11 +12,16 @@ public class PipeGZIP extends Pipe {
     public PipeGZIP(OutputStream out) throws IOException {
        super(out);
     }
-
+    public PipeGZIP(OutputStream out, Protocol protocol) throws IOException {
+        super(out, protocol);
+    }
     public PipeGZIP(InputStream in) throws IOException {
        super(in);
     }
 
+    public PipeGZIP(InputStream in, Protocol protocol) throws IOException {
+        super(in, protocol);
+    }
     @Override protected OutputStream getOutputPipe(OutputStream out) throws IOException {
         return new GZIPOutputStream(out, true);
     }
