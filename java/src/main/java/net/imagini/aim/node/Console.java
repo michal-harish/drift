@@ -1,16 +1,13 @@
-package net.imagini.aim.console;
+package net.imagini.aim.node;
 
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.UUID;
 
-import net.imagini.aim.AimDataType;
 import net.imagini.aim.AimFilterSet;
 import net.imagini.aim.AimQuery;
-import net.imagini.aim.AimTable;
-import net.imagini.aim.node.Server;
+import net.imagini.aim.AimType;
 import net.imagini.aim.pipes.Pipe;
 import net.imagini.aim.pipes.PipeLZ4;
 
@@ -21,9 +18,9 @@ public class Console extends Thread {
     private AimTable table;
 
     public static void main(String[] args) throws IOException {
-        Server server = new Server(4000);
-        server.start();
-        new Console(server.getTestTable()).run();
+        new Console(
+            new AimTable("events", 100000, new EventsSchema())
+        ).run();
     }
 
     public Console(AimTable table) {
@@ -38,13 +35,13 @@ public class Console extends Thread {
                 System.out.print(">");
                 String input = bufferRead.readLine();
                 Pipe result = null;
-                String[] cols = "timestamp,post_code,userUid,userQuizzed,url".split(",");
+                String[] cols = "timestamp,post_code,user_uid,user_quizzed,url".split(",");
                 final AimQuery query;
 
                 try {
                     switch(input) {
                         case "": 
-                            System.out.println("Table " + table.getName());
+                            System.out.println("Table " + table.name);
                             System.out.println("Total records: " + table.getCount());
                             System.out.println("Total segments: " + table.getNumSegments());
                             System.out.print("Total compressed/original size: " 
@@ -59,9 +56,9 @@ public class Console extends Thread {
                             //filter
                             long t = System.currentTimeMillis();
     
-                            AimFilterSet set = query.filter("userQuizzed").in("true")
+                            AimFilterSet set = query.filter("user_quizzed").in("true")
                                 .and("timestamp").greaterThan("20")
-                                .and("api_key").equals("test")
+                                .and("api_key").contains("test")
                                 .and("post_code").not().in("EC2 A1","EC2 A11","EC2 A21")
                                 .go();
                             t = (System.currentTimeMillis()-t);
@@ -119,17 +116,9 @@ public class Console extends Thread {
         try {
             while(true) {
                 for(String col: cols) {
-                    AimDataType type = table.def(col);
-                    byte[] value = result.read(type);
-                    String textValue;
-                    switch(col) {
-                        case "userUid":
-                            textValue = new UUID(Pipe.readLong(value,0) , Pipe.readLong(value,8)).toString();
-                        break;
-                        default:
-                            textValue = Pipe.convert(type, value);
-                        break;
-                    }
+                    AimType type = table.def(col); 
+                    byte[] value = result.read(type.getDataType());
+                    String textValue = type.convert(value);
                     System.out.print(textValue + " ");
                 }
                 count++;

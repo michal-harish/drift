@@ -1,13 +1,12 @@
 package net.imagini.aim;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.UUID;
 
-import net.imagini.aim.node.Server;
+import net.imagini.aim.node.EventsSchema;
 import net.imagini.aim.pipes.Pipe;
 
 public class TestEvents {
@@ -18,14 +17,14 @@ public class TestEvents {
                 InetAddress.getByName("localhost"), //10.100.11.239 
                 4000
             );
-            final Pipe pipe = Server.type.getConstructor(OutputStream.class).newInstance(socket.getOutputStream());
-
-            for (long i = 1; i <=10000000; i++) {
+            final Pipe pipe = new Pipe(socket.getOutputStream(), Pipe.Protocol.LOADER);
+            AimSchema schema = new EventsSchema();
+            pipe.write(schema.serialize());
+            for (long i = 1; i <=100000; i++) {
                 try {
                     UUID userUid  = UUID.randomUUID();
-                    InetAddress clientIp = InetAddress.getByName("173.194.41.99");
                     pipe.write(i);
-                    pipe.write(Arrays.copyOfRange(clientIp.getAddress(),0,4));
+                    pipe.write(schema.def("client_ip").convert("173.194.41.99"));
                     pipe.write("VDNAUserTestEvent");
                     pipe.write("user agent info ..");
                     pipe.write(Arrays.copyOfRange("GB".getBytes(), 0, 2));
@@ -33,7 +32,7 @@ public class TestEvents {
                     pipe.write("EC2 A"+ i);
                     pipe.write("test");
                     pipe.write("http://");
-                    pipe.write(userUid.getMostSignificantBits());pipe.write(userUid.getLeastSignificantBits());
+                    pipe.write(schema.def("user_uid").convert(userUid.toString()));
                     pipe.write(userUid.hashCode() % 100 == 0);
                 } catch(IOException e) {
                     e.printStackTrace();

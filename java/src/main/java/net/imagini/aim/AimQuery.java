@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.imagini.aim.AimTypeAbstract.AimDataType;
+import net.imagini.aim.node.AimTable;
 import net.imagini.aim.pipes.Pipe;
 
 /**

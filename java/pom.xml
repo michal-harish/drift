@@ -52,6 +52,29 @@
           <target>1.7</target>
         </configuration>
       </plugin>
+
+        <plugin>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <executions>
+            <execution>
+              <phase>package</phase>
+              <goals><goal>single</goal></goals>
+              <configuration>
+                  <attach>false</attach>
+                  <appendAssemblyId>false</appendAssemblyId>
+                  <finalName>load-csv</finalName>
+                  <archive> 
+                      <manifest>
+                          <mainClass>net.imagini.aim.CSVLoader</mainClass>
+                      </manifest>
+                  </archive>
+                  <descriptorRefs>
+                    <descriptorRef>jar-with-dependencies</descriptorRef>
+                </descriptorRefs>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
      </plugins>
    </build>
 
