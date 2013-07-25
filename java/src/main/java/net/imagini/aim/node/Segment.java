@@ -10,8 +10,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import net.imagini.aim.Aim;
 import net.imagini.aim.AimFilter;
@@ -20,6 +18,10 @@ import net.imagini.aim.AimSegment;
 import net.imagini.aim.AimType;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.pipes.Pipe;
+import net.jpountz.lz4.LZ4BlockInputStream;
+import net.jpountz.lz4.LZ4BlockOutputStream;
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.xxhash.XXHashFactory;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
@@ -53,6 +55,17 @@ public class Segment implements AimSegment {
         }
     }
 
+    @Override public InputStream open(int column) throws IOException {
+        try {
+            checkWritable(false);
+        } catch (IllegalAccessException e) {
+            throw new IOException(e); 
+        }
+        InputStream buffer = new ByteArrayInputStream(columnar.get(column));
+        //return new GZIPInputStream(buffer);
+        return new LZ4BlockInputStream(buffer);
+    }
+
     /**
      * Append-only segment
      * @throws IOException 
@@ -65,15 +78,15 @@ public class Segment implements AimSegment {
         for(int col=0; col < schema.size(); col++) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream(65535);
             buffers.put(col, buffer);
-            writers.put(col, new GZIPOutputStream(buffer,true));
-            /* TODO store segment with compression flag to allow choosing between gzip & lz4
+            //writers.put(col, new GZIPOutputStream(buffer,true));
+            /**/ // TODO store segment with compression flag to allow choosing between gzip & lz4
             writers.put(col, new LZ4BlockOutputStream(
                 buffer, 
                 65535,
                 LZ4Factory.fastestInstance().highCompressor(),
                 XXHashFactory.fastestInstance().newStreamingHash32(0x9747b28c).asChecksum(), 
                 true
-            ));*/
+            ));/**/
         }
     }
 
@@ -96,18 +109,6 @@ public class Segment implements AimSegment {
         }
         buffers = null;
         writers = null;
-    }
-
-
-    @Override public InputStream open(int column) throws IOException {
-        try {
-            checkWritable(false);
-        } catch (IllegalAccessException e) {
-            throw new IOException(e); 
-        }
-        InputStream buffer = new ByteArrayInputStream(columnar.get(column));
-        return new GZIPInputStream(buffer);
-        //return new LZ4BlockInputStream(buffer);
     }
 
     private InputStream[] open(Integer... columns) throws IOException {
