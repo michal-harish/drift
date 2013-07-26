@@ -13,6 +13,8 @@ public class AimFilterSet extends ConcurrentHashMap<Integer,BitSet> {
     private static final long serialVersionUID = 1L;
     private Map<Integer,Long> lengths = new ConcurrentHashMap<>();
 
+    public AimFilterSet() {}
+
     public long cardinality() {
         long result = 0;
         for(BitSet segmentSet: this.values()) {
@@ -35,9 +37,18 @@ public class AimFilterSet extends ConcurrentHashMap<Integer,BitSet> {
         return this.keySet();
     }
 
+    public AimFilterSet(Pipe in) throws IOException {
+        int size = in.readInt();
+        for(int i =0; i<size; i++) {
+            int segmentId = in.readInt();
+            long length = in.readLong();
+            int byteSize = in.readInt();
+            BitSet set = BitSet.valueOf(in.read(Aim.STRING(byteSize)));
+            put(segmentId, set);
+            lengths.put(segmentId, length);
+        }
+    }
     public void write(Pipe out) throws IOException {
-        out.write("AIM".getBytes());                // HEADER [3]
-        out.write((byte)100);                       // BYTE[1] connection type
         out.write(this.size());                     // INT num_segments
         for(Integer segment: this.keySet()) {       // ...
             out.write(segment);                     // INT segment_id

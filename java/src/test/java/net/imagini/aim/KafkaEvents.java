@@ -37,7 +37,7 @@ public class KafkaEvents {
             );
             final Pipe pipe = new PipeLZ4(socket.getOutputStream(), Pipe.Protocol.LOADER);
             AimSchema schema = new EventsSchema();
-            pipe.write(schema.serialize());
+            pipe.write(schema.toString());
 
             Properties consumerProps = new Properties();
             consumerProps.put("zk.connect", "zookeeper-01.stag.visualdna.com");

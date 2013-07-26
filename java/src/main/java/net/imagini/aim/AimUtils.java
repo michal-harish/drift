@@ -1,6 +1,9 @@
 package net.imagini.aim;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
+
+import net.imagini.aim.pipes.Pipe;
 
 
 public class AimUtils {
@@ -12,10 +15,15 @@ public class AimUtils {
             String name = String.valueOf(f+1);
             String function = null;
             Integer length = null;
-            String type = dec[f].trim().toUpperCase();
+            String type = dec[f].trim();
+            if (type.contains("(")) {
+                name = type.substring(0, type.indexOf("("));
+                type = type.substring(type.indexOf("(")+1,type.indexOf(")"));
+            }
+            type = type.toUpperCase();
             if (type.contains(":")) {
-                function = dec[f].split(":")[0];
-                type = dec[f].split(":")[1];
+                function = type.split(":")[0];
+                type = type.split(":")[1];
             }
             if (type.contains("[")) {
                 length = Integer.valueOf(type.substring(type.indexOf("[")+1,type.indexOf("]")));
@@ -38,5 +46,15 @@ public class AimUtils {
             }
         }
         return new AimSchema(result);
+    }
+
+    public static String[] collect(final AimSchema schema, final Pipe in) throws IOException {
+        if (in == null) return null;
+        String[] result = new String[schema.size()];
+        int i = 0; for(AimType type: schema.def()) {
+            byte[] value = in.read(type.getDataType());
+            result[i++] = type.convert(value);
+        }
+        return result;
     }
 }

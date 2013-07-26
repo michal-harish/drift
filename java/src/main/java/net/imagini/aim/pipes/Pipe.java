@@ -5,6 +5,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Socket;
 import java.nio.ByteOrder;
 
 import net.imagini.aim.Aim;
@@ -17,7 +18,10 @@ import scala.actors.threadpool.Arrays;
 public class Pipe {
 
     public static enum Protocol {
-        BINARY,LOADER,FILTER,SELECT;
+        BINARY(0),LOADER(1),QUERY(2);
+        public final int id;
+        private Protocol(int id) { this.id = id; }
+        static public Protocol get(int id) { for(Protocol p: Protocol.values()) if (p.id == id) return p; return null;}
     }
     final public Protocol protocol;
     private OutputStream outputPipe;
@@ -26,6 +30,11 @@ public class Pipe {
     public Pipe() { 
         this.protocol = Pipe.Protocol.BINARY; 
     }
+    public Pipe(Socket socket, Protocol protocol) throws IOException {
+        this(socket.getOutputStream(), protocol);
+        inputPipe = getInputPipe(socket.getInputStream());
+    }
+
     public Pipe(OutputStream out) throws IOException {
         outputPipe = getOutputPipe(out);
         this.protocol = Pipe.Protocol.BINARY;
@@ -38,7 +47,7 @@ public class Pipe {
         else throw new IOException("Unsupported pipe type " + getClass().getSimpleName());
         out.write("AIM".getBytes());
         out.write(pipe_type);
-        write(out, protocol.ordinal());
+        write(out, protocol.id);
         this.protocol = protocol;
         outputPipe = getOutputPipe(out);
     }
@@ -52,17 +61,19 @@ public class Pipe {
         inputPipe = getInputPipe(in);
         this.protocol = protocol;
     }
-    static public Pipe header(InputStream in) throws IOException {
+    static public Pipe open(Socket socket) throws IOException {
+        Pipe pipe = open(socket.getInputStream());
+        pipe.outputPipe = pipe.getOutputPipe(socket.getOutputStream());
+        return pipe;
+    }
+    static public Pipe open(InputStream in) throws IOException {
         if (!Arrays.equals("AIM".getBytes(),readByteArray(in, 3))) {
             throw new IOException("Invalid pipe header signature");
         }
         byte pipe_type = readByteArray(in, 1)[0];
         int pipe_protocol = readInteger(readByteArray(in,4));
-        Protocol protocol = null;
-        for(Protocol p: Protocol.values()) if (p.ordinal() == pipe_protocol) {
-            protocol = p; break;
-        }
-        if (protocol == null) throw new IOException("Unknown protocol value " + pipe_protocol);
+        Protocol protocol = Protocol.get(pipe_protocol);
+        if (protocol == null) throw new IOException("Unknown protocol id " + pipe_protocol);
         switch(pipe_type) {
             case 0: return new Pipe(in,protocol);
             case 1: return new PipeLZ4(in,protocol);
@@ -78,9 +89,14 @@ public class Pipe {
         return new DataOutputStream(out);
     }
 
+    final public void flush() throws IOException {
+        outputPipe.flush();
+    }
     final public void close() throws IOException {
         if (inputPipe != null) inputPipe.close();
+        inputPipe = null;
         if (outputPipe != null) outputPipe.close();
+        outputPipe = null;
     }
 
     final public void write(boolean value) throws IOException {
@@ -101,7 +117,7 @@ public class Pipe {
         outputPipe.write(bytes);
     }
 
-    final public void write(String value) throws IOException {
+    final public Pipe write(String value) throws IOException {
         if (value == null) {
             write((int) 0);
         } else {
@@ -109,6 +125,7 @@ public class Pipe {
             write(data.length);
             outputPipe.write(data);
         }
+        return this;
     }
     public int write(AimDataType type, byte[] value) throws IOException {
         int written = 0;
@@ -119,6 +136,22 @@ public class Pipe {
         outputPipe.write(value);
         written += value.length;
         return written;
+    }
+
+    public String read() throws IOException {
+        return new String(read(Aim.STRING));
+    }
+    public boolean readBool() throws IOException {
+        return inputPipe.read() == 0 ? false : true;
+    }
+    public byte readByte() throws IOException {
+        return (byte)inputPipe.read();
+    }
+    public Integer readInt() throws IOException {
+        return Pipe.readInteger(read(Aim.INT));
+    }
+    public Long readLong() throws IOException {
+        return Pipe.readLong(read(Aim.LONG),0);
     }
 
     public byte[] read(AimDataType type) throws IOException {
@@ -212,6 +245,7 @@ public class Pipe {
             totalSkipped += skipped;
         }
     }
+
 
 /*
     static public int readZeroCopy(InputStream in, AimDataType type, byte[] buf) throws IOException {

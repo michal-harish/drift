@@ -1,6 +1,6 @@
 package net.imagini.aim;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -11,7 +11,7 @@ import net.imagini.aim.AimTypeAbstract.AimDataType;
 
 public class AimSchema {
     private final LinkedList<AimType> def = new LinkedList<>();
-    private final Map<String,Integer> colIndex = new HashMap<>();
+    private final Map<String,Integer> colIndex = new LinkedHashMap<>();
     public AimSchema(LinkedHashMap<String,AimType> columnDefs) {
         for(Entry<String,AimType> columnDef: columnDefs.entrySet()) {
             def.add(columnDef.getValue());
@@ -48,12 +48,18 @@ public class AimSchema {
     public int size() {
         return def.size();
     }
-    public String serialize() {
+
+    @Override public String toString() {
         String result = "";
-        for(AimType type: def) {
-            result += (result != "" ? "," : "") + type.toString();
+        for(Entry<String,Integer> c: colIndex.entrySet()) {
+            String name = c.getKey();
+            AimType type = def.get(c.getValue());
+            result += (result != "" ? "," : "") + name + "(" + type.toString() + ")";
         }
         return result;
+    }
+    public String[] getNames() {
+        return new ArrayList<String>(colIndex.keySet()).toArray(new String[colIndex.size()]);
     }
 
 }

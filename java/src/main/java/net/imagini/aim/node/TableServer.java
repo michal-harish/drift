@@ -24,6 +24,7 @@ public class TableServer extends Thread {
                         Socket socket;
                         try {
                             socket = controllerListener.accept();
+                            if (interrupted()) break;
                         } catch (IOException e) {
                             e.printStackTrace();
                             break;
@@ -31,9 +32,12 @@ public class TableServer extends Thread {
                         Pipe pipe;
                         try {
                             if (interrupted()) break;
-                            pipe = Pipe.header(socket.getInputStream());
+                            pipe = Pipe.open(socket);
+                            System.out.println(pipe.protocol + " connection from " + socket.getRemoteSocketAddress().toString());
                             switch(pipe.protocol) {
-                                case LOADER: new LoaderThread(TableServer.this.table,pipe).start(); break;
+                                //TODO case BINARY: new ReaderThread(); break;
+                                case LOADER: new TableServerLoaderThread(TableServer.this.table,pipe).start(); break;
+                                case QUERY: new TableServerQueryThread(TableServer.this.table,pipe).start(); break;
                                 default: System.out.println("Unsupported protocol request " + pipe.protocol);
                             }
                         } catch (IOException e) {
