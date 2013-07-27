@@ -7,17 +7,17 @@ import java.util.Arrays;
 import java.util.UUID;
 
 import net.imagini.aim.AimSchema;
-import net.imagini.aim.node.EventsSchema;
 import net.imagini.aim.pipes.Pipe;
 import net.imagini.aim.pipes.PipeLZ4;
 
 public class TestEventsLoader extends Thread{
+
     public static void main(String[] args) throws InterruptedException, IOException {
         TestEventsLoader loader = new TestEventsLoader();
         loader.start();
         loader.join();
-        
     }
+
     public void run() {
         try {
             Socket socket = new Socket(
@@ -27,7 +27,7 @@ public class TestEventsLoader extends Thread{
             final Pipe pipe = new PipeLZ4(socket.getOutputStream(), Pipe.Protocol.LOADER);
             AimSchema schema = new EventsSchema();
             pipe.write(schema.toString());
-            for (long i = 1; i <=100000; i++) {
+            for (long i = 1; i <=3000000; i++) {
                 try {
                     UUID userUid  = UUID.randomUUID();
                     pipe.write(i);

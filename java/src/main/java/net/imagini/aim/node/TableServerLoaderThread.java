@@ -12,8 +12,6 @@ public class TableServerLoaderThread extends Thread  {
     private Pipe pipe;
     private AimTable table;
     private Integer count = 0;
-    //private AtomicLong originalSize = new AtomicLong(0);
-    //private AtomicLong size = new AtomicLong(0);
     private AimSegment currentSegment; 
 
     public TableServerLoaderThread(AimTable table, Pipe pipe) throws IOException {
@@ -55,7 +53,9 @@ public class TableServerLoaderThread extends Thread  {
 
     private synchronized void append(Pipe pipe) throws IOException {
         if (currentSegment == null || currentSegment.getCount() % table.segmentSize == 0) {
-            currentSegment = new Segment(table.schema);
+            //FIXME add sortColumn to schema and if set instantiate sorted
+            //currentSegment = new Segment(table.schema);
+            currentSegment = new SegmentSorted(table.schema, table.sortColumn, table.sortOrder);
         }
         try {
             currentSegment.append(pipe);
@@ -82,4 +82,6 @@ public class TableServerLoaderThread extends Thread  {
             }
         }
     }
+    
+
 }

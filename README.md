@@ -15,9 +15,9 @@ Motivation
 Architecture Decisions Overview
 ===============================
  
-* Table is a virtual entity which has strictly-typed structure of columns and records
-* Each record must be stored in a single location for sophisticated mapping, i.e. columns cannot be stored across multiple locations
+* Table is a virtual entity which has strictly-typed structure of columns, however individual records are not directly accessible
 * Multiple records are stored together in an Segment, which can be distributed across different nodes
+* All columns must be present in each segment for sophisticated mapping, i.e. columns cannot be stored across multiple locations
 * Each segment is stored as an LZ4-compressed in-memory buffer, therefore records cannot be addressed individually but can be 
   stored efficiently in memory and thus queried and filtered at very high speeds
 * All the communication storage and streaming is compressed with LZ4 High Compression algorithm.
@@ -31,6 +31,7 @@ Architecture Decisions Overview
   - Filter and Select Interfaces should be done in Scala as this allows for passing mapper/select code around nicely
 * The protocol uses BIG_ENDIAN format as it is better suited for filtering comparsions 
 * Trivial binary protocol with transparent LZ4 streaming compression is used, with following data types:
+* Each segment can be sorted at load-time with quick-sort and multiple segments are sorted with merge-sort at query time
 
     ID  Data Type      Size(bytes)      Description
     ...................................................................................................
@@ -45,6 +46,7 @@ Architecture Decisions Overview
 Architecture TODOs and NOTEs
 ============================
 - We should try to wrap segement processing units into cpu-bound threads (may require C programming) 
+    -> https://github.com/peter-lawrey/Java-Thread-Affinity
 - We need to compensate reduction with Hashtable or some clever Indexing mechanism
 - Think about UTF8 column type before it's too late (everything is just a byte array atm)
 - We'll surely need a 64-bit DOUBLE too

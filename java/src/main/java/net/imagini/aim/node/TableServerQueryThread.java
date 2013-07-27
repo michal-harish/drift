@@ -5,7 +5,7 @@ import java.io.IOException;
 
 import net.imagini.aim.AimFilterSet;
 import net.imagini.aim.AimQuery;
-import net.imagini.aim.AimType;
+import net.imagini.aim.AimSchema;
 import net.imagini.aim.pipes.Pipe;
 
 public class TableServerQueryThread extends Thread {
@@ -23,7 +23,10 @@ public class TableServerQueryThread extends Thread {
         try {
             while(true) {
                 String cmd = pipe.read();
+                AimSchema schema;
+                AimFilterSet set;
                 AimQuery query;
+                Pipe result;
                 switch(cmd) {
                     case "STATS":
                         pipe.write(table.name);
@@ -38,7 +41,7 @@ public class TableServerQueryThread extends Thread {
                         query = new AimQuery(table);
                         long t = System.currentTimeMillis();
 
-                        AimFilterSet set = query.filter("user_quizzed").in("true")
+                        set = query.filter("user_quizzed").in("true")
                             .and("timestamp").greaterThan("20")
                             .and("api_key").contains("test")
                             .and("post_code").not().in("EC2 A1","EC2 A11","EC2 A21")
@@ -52,8 +55,27 @@ public class TableServerQueryThread extends Thread {
                         break;
                     case "LAST":
                         query = new AimQuery(table, table.getNumSegments()-1);
-                        Pipe result = query.select();
-                        copy(result,pipe);
+                        schema = table.schema.subset("user_uid","user_quizzed","timestamp","post_code");
+                        result = query.select(schema.names());
+                        copy(schema,result,pipe);
+                        break;
+                    case "ALL":
+                        query = new AimQuery(table);
+                        schema = table.schema.subset("user_uid","user_quizzed","timestamp","post_code");
+                        result = query.select(schema.names());
+                        copy(schema,result,pipe);
+                        break;
+                    case "TEST":
+                        t = System.currentTimeMillis();
+                        query = new AimQuery(table);
+                        schema = table.schema.subset("timestamp","user_uid","user_quizzed","api_key","post_code","url");
+                        result = query.select(
+                            query.filter("user_quizzed").in("true").and("api_key").equals("debenhams"),
+                            schema.names()
+                        );
+                        t = (System.currentTimeMillis()-t);
+                        copy(schema,result,pipe);
+                        System.out.println("Filetered & sorted select: " + t +" ms");
                         break;
                     default: pipe.write("Unknown command " + cmd);
                 }
@@ -64,18 +86,16 @@ public class TableServerQueryThread extends Thread {
         }
     }
 
-    private void copy(Pipe result, Pipe pipe) throws IOException {
-        pipe.write(table.schema.toString());
+    private void copy(AimSchema schema, Pipe result, Pipe pipe) throws IOException {
+        pipe.write(schema.toString());
         try {
             while(true) {
-                int i = 0 ; for(AimType type: table.schema.def()) {
-                    byte[] value = result.read(type.getDataType());
-                    if (i++==0) pipe.write((byte)1);
-                    pipe.write(type.getDataType(), value);
-                }
+                AimRecord record = new AimRecord(schema, result, table.sortColumn);
+                pipe.write(true);
+                pipe.write(record.getBytes());
             }
         } catch (EOFException e) {
-            pipe.write((byte)0);
+            pipe.write(false);
             pipe.flush();
         }
     }

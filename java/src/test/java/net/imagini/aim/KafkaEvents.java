@@ -16,7 +16,7 @@ import kafka.consumer.Whitelist;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.Message;
 import kafka.message.MessageAndMetadata;
-import net.imagini.aim.node.EventsSchema;
+import net.imagini.aim.loaders.EventsSchema;
 import net.imagini.aim.pipes.Pipe;
 import net.imagini.aim.pipes.PipeLZ4;
 

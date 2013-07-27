@@ -1,10 +1,6 @@
 package net.imagini.aim;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.BitSet;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.node.AimTable;
@@ -42,36 +38,48 @@ public class AimQuery {
     }
 
     public Pipe select(final String... colNames) throws IOException {
-        final InputStream[] range = table.open(startSegment, endSegment, colNames);
+        final Pipe range = table.open(startSegment, endSegment, null, colNames);
         return new Pipe() {
             private int fieldIndex = -1;
             @Override public byte[] read(AimDataType type) throws IOException {
-                if (++fieldIndex == range.length) fieldIndex = 0;
-                return Pipe.read(range[fieldIndex], type);
+                if (++fieldIndex == colNames.length) fieldIndex = 0;
+                return range.read(type);
             }
         };
     }
 
-    public Pipe select(final BitSet filter, final String... colNames) throws IOException {
-        final InputStream[] range = table.open(startSegment, endSegment, colNames);
+    public Pipe select(AimFilter filter, final String... colNames) throws IOException {
+        final Pipe range = table.open(startSegment, endSegment, filter, colNames);
         return new Pipe() {
-            private int fieldIndex = range.length;
-            private AtomicInteger index = new AtomicInteger(0);
-            private AtomicInteger remaining = new AtomicInteger(filter.cardinality()); 
+            private int fieldIndex = -1;
             @Override public byte[] read(AimDataType type) throws IOException {
-                if (++fieldIndex >= range.length) {
+                if (++fieldIndex == colNames.length) fieldIndex = 0;
+                return range.read(type);
+            }
+        };
+    }
+
+/*
+    public Pipe select(final AimFilterSet filter, final String... colNames) throws IOException {
+        final Pipe range = table.open(startSegment, endSegment, colNames);
+        return new Pipe() {
+            private int fieldIndex = colNames.length;
+            private AtomicLong index = new AtomicLong(0);
+            private AtomicLong remaining = new AtomicLong(filter.cardinality()); 
+            @Override public byte[] read(AimDataType type) throws IOException {
+                if (++fieldIndex >= colNames.length) {
                     fieldIndex = 0;
                     if (remaining.decrementAndGet() < 0)  throw new EOFException();
                     while (!filter.get(index.getAndIncrement())) {
-                        for(int i=0; i<range.length; i++) {
-                            Pipe.skip(range[i],type);
+                        for(int i=0; i<colNames.length; i++) {
+                            range.skip(type);
                         }
                     }
                 }
-                return Pipe.read(range[fieldIndex], type);
+                return range.read(type);
             }
         };
     }
-
+*/
 
 }

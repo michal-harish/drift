@@ -7,12 +7,13 @@ import java.net.InetAddress;
 import java.net.Socket;
 
 import joptsimple.internal.Strings;
+import net.imagini.aim.Aim.SortOrder;
 import net.imagini.aim.AimFilterSet;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimUtils;
-import net.imagini.aim.loaders.TestEventsLoader;
+import net.imagini.aim.loaders.CSVLoader;
+import net.imagini.aim.loaders.EventsSchema;
 import net.imagini.aim.node.AimTable;
-import net.imagini.aim.node.EventsSchema;
 import net.imagini.aim.node.TableServer;
 import net.imagini.aim.pipes.Pipe;
 import net.imagini.aim.pipes.Pipe.Protocol;
@@ -23,9 +24,15 @@ public class Console extends Thread {
     final private Pipe pipe;
 
     public static void main(String[] args) throws IOException {
-        AimTable table = new AimTable("events", 100000, new EventsSchema());
+        AimTable table = new AimTable("events", 100000, new EventsSchema(), "user_uid", SortOrder.DESC);
         new TableServer(table, 4000).start();
-        new TestEventsLoader().start();
+        //new TestEventsLoader().start();
+        new CSVLoader(new String[]{
+                "--gzip", 
+                "--limit","10000000",
+                "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(STRING[2]),region_code(STRING[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:STRING[16]),user_quizzed(BOOL)",
+                "/Users/mharis/events-2013-07-23.csv.gz"
+        }).start();
         new Console("localhost", 4000).run();
     }
 
@@ -72,10 +79,13 @@ public class Console extends Thread {
                             System.out.println("Filter time(ms): " + (System.currentTimeMillis()-t) );
                             System.out.println("Filter cardinality/bits/lz4size: " + set.cardinality() + "/" + set.length() );
                             System.out.println();
+                            //TODO http://en.wikipedia.org/wiki/External_sorting
                             break;
                         //TODO case "select": cols = input[1].split(",");break;
                         case "last":
-                            pipe.write("LAST").flush();
+                        case "all":
+                        case "test":
+                            pipe.write(input[0].toUpperCase()).flush();
                             AimSchema schema = AimUtils.parseSchema(pipe.read());
                             long count = 0;
                             while (pipe.readBool()) {

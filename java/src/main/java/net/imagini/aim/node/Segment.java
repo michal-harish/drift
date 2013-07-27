@@ -5,13 +5,14 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.imagini.aim.Aim;
 import net.imagini.aim.AimFilter;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimSegment;
@@ -32,14 +33,15 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
  */
 public class Segment implements AimSegment {
 
-    private boolean writable;
-    private AimSchema schema;
-    private LinkedHashMap<Integer,byte[]> columnar = new LinkedHashMap<>();
+    final protected AimSchema schema;
+    final protected LinkedHashMap<Integer,byte[]> columnar = new LinkedHashMap<>();
+    protected LinkedHashMap<Integer,OutputStream> writers = null;
     private LinkedHashMap<Integer,ByteArrayOutputStream> buffers = null;
-    private LinkedHashMap<Integer,OutputStream> writers = null;
-    private AtomicLong size = new AtomicLong(0);
+    private boolean writable;
     private AtomicLong count = new AtomicLong(0);
     private AtomicLong originalSize = new AtomicLong(0);
+    private AtomicLong size = new AtomicLong(0);
+
 
     //TODO public AimSegment(..mmap file)
 
@@ -53,17 +55,6 @@ public class Segment implements AimSegment {
         int i = 0; for(ByteArrayOutputStream b: data) {
             columnar.put(i++, b.toByteArray());
         }
-    }
-
-    @Override public InputStream open(int column) throws IOException {
-        try {
-            checkWritable(false);
-        } catch (IllegalAccessException e) {
-            throw new IOException(e); 
-        }
-        InputStream buffer = new ByteArrayInputStream(columnar.get(column));
-        //return new GZIPInputStream(buffer);
-        return new LZ4BlockInputStream(buffer);
     }
 
     /**
@@ -90,12 +81,32 @@ public class Segment implements AimSegment {
         }
     }
 
-    protected void flushSegment() throws IOException, IllegalAccessException {
-        checkWritable(true);
-        for(OutputStream writer: writers.values()) {
-            writer.flush(); 
+    final protected void checkWritable(boolean canBe) throws IllegalAccessException {
+        if (this.writable != canBe) {
+            throw new IllegalAccessException("Segment state is not valid for the operation");
         }
     }
+
+    @Override final public void append(Pipe pipe) throws IOException {
+        try {
+            checkWritable(true);
+            //System.out.println("--------");
+            for(int col = 0; col < schema.size() ; col++) {
+                AimDataType type = schema.dataType(col); 
+                byte[] value = pipe.read(type);
+                originalSize.addAndGet(write(col, type,value));
+                //System.out.println(col + " " + type + " "+ type.convert(value));
+            }
+            count.incrementAndGet();
+        } catch (IllegalAccessException e1) {
+            throw new IOException(e1);
+        }
+    }
+
+    protected int write(int column, AimDataType type, byte[] value) throws IOException {
+        return Pipe.write(type, value, writers.get(column));
+    }
+
 
     @Override public void close() throws IOException, IllegalAccessException {
         checkWritable(true);
@@ -111,14 +122,6 @@ public class Segment implements AimSegment {
         writers = null;
     }
 
-    private InputStream[] open(Integer... columns) throws IOException {
-        final InputStream[] streams = new InputStream[columns.length];
-        int i = 0; for(Integer col: columns) {
-            streams[i++] = open(col);
-        }
-        return streams;
-    }
-
     @Override public long getCount() {
         return count.get();
     }
@@ -131,52 +134,54 @@ public class Segment implements AimSegment {
         return originalSize.get();
     }
 
-    private void checkWritable(boolean canBe) throws IllegalAccessException {
-        if (this.writable != canBe) {
-            throw new IllegalAccessException("Segment state is not valid for the operation");
-        }
-    }
-
-    @Override public void append(Pipe pipe) throws IOException {
+    @Override public Pipe open(final AimFilter filter, final List<String> columns) throws IOException {
         try {
-            checkWritable(true);
-            //System.out.println("--------");
-            for(int col = 0; col < schema.size() ; col++) {
-                AimDataType type = schema.dataType(col); 
-                byte[] value = pipe.read(type);
-                write(col, type,value);
-                //System.out.println(col + " " + type + " "+ type.convert(value));
-            }
-            count.incrementAndGet();
-        } catch (IllegalAccessException e1) {
-            throw new IOException(e1);
-        }
-    }
-
-    private void write(int column, AimDataType type, byte[] value) throws IOException {
-        try {
-            checkWritable(true);
+            checkWritable(false);
         } catch (IllegalAccessException e) {
             throw new IOException(e); 
         }
-        if (type.equals(Aim.STRING)) {
-            Pipe.write(writers.get(column),value.length);
-            originalSize.addAndGet(4);
+        //TODO detect missing filter columns 
+        final List<String> usedColumns  = columns;
+        if (filter != null) filter.updateFormula(usedColumns);
+
+        final AimSchema subSchema = schema.subset(columns);
+        final InputStream[] streams = new InputStream[columns.size()];
+        int i = 0; for(String colName: columns) {
+            InputStream buffer = new ByteArrayInputStream(columnar.get(schema.get(colName)));
+            streams[i++] = new LZ4BlockInputStream(buffer); //return new GZIPInputStream(buffer);
         }
-        writers.get(column).write(value);
-        originalSize.addAndGet(value.length);
+        return new Pipe() {
+            private int colIndex = columns.size()-1;
+            private AimRecord record;
+            @Override public byte[] read(AimDataType type) throws IOException {
+                if (++colIndex == columns.size()) {
+                    colIndex = 0;
+                    while(true) {
+                        record = getNextRecord();
+                        if (filter == null || filter.match(record.data)) {
+                            break;
+                        }
+                    }
+                }
+                return record.data[colIndex];
+            }
+            private AimRecord getNextRecord() throws IOException {
+                byte[][] data = new byte[columns.size()][];
+                for(String colName: columns) {
+                    int c = columns.indexOf(colName);
+                    AimType type = subSchema.get(c);
+                    data[subSchema.get(colName)] = Pipe.read(streams[c],type.getDataType());
+                }
+                return new AimRecord(subSchema, data, null);
+            }
+        };
     }
 
     @SuppressWarnings("serial")
-    @Override public Integer filter(AimFilter filter, BitSet out) throws IOException {
+    @Override final public Integer filter(AimFilter filter, BitSet out) throws IOException {
 
         //TODO dig colNames
-        final LinkedList<String> usedColumns = new LinkedList<String>() {{
-            add("user_quizzed");
-            add("post_code");
-            add("api_key");
-            add("timestamp");
-        }};
+        final List<String> usedColumns  = Arrays.asList("user_quizzed","post_code","api_key","timestamp");
 
         filter.updateFormula(usedColumns);
 
@@ -187,12 +192,12 @@ public class Segment implements AimSegment {
             for(String colName: usedColumns) add(schema.def(colName));
         }}.toArray(new AimDataType[usedColumns.size()]);
         final byte[][] data = new byte[usedColumns.size()][];
-        final InputStream[] range = open(cols);
+        final Pipe range = open(null, usedColumns);
         int length = 0;
         try {
             while (true) {
                 for(int i=0;i<cols.length;i++) {
-                    data[i] = Pipe.read(range[i],types[i]);
+                    data[i] = range.read(types[i]);
                 }
                 if (filter.match(data)) {
                     out.set(length);

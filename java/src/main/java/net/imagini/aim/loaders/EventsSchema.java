@@ -1,4 +1,4 @@
-package net.imagini.aim.node;
+package net.imagini.aim.loaders;
 
 import java.util.LinkedHashMap;
 

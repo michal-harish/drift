@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import net.imagini.aim.node.AimRecord;
 import net.imagini.aim.node.AimTable;
 
 /**
@@ -47,10 +48,18 @@ abstract public class AimFilter {
         this.next = next;
     }
 
-    public void updateFormula(LinkedList<String> usedColumns) {
-        if (next != null) next.updateFormula(usedColumns);
+    final public void updateFormula(List<String> usedColumns) {
+        root.update(usedColumns);
+    }
+    
+    protected void update(List<String> usedColumns) {
+        if (next != null) next.update(usedColumns);
     }
 
+    final public boolean match(AimRecord record) {
+        // TODO Auto-generated method stub
+        return false;
+    }
     public boolean match(byte[][] data) {
         return root.match(true, data);
     }
@@ -203,8 +212,8 @@ abstract public class AimFilter {
             super(root, table.def(field));
             this.colName = field;
         }
-        @Override public void updateFormula(LinkedList<String> usedColumns) {
-            super.updateFormula(usedColumns);
+        @Override public void update(List<String> usedColumns) {
+            super.update(usedColumns);
             colIndex = usedColumns.indexOf(colName);
         }
         @Override protected boolean match(boolean soFar, byte[][] data) {

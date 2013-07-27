@@ -10,7 +10,6 @@ import net.imagini.aim.pipes.Pipe;
 public class TableServer extends Thread {
     ServerSocket controllerListener;
     private Thread controllerAcceptor;
-    //TODO connections private Thread loader;
     private AimTable table;
 
     public TableServer(AimTable table, int port) throws IOException {

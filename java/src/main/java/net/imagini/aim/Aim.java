@@ -22,6 +22,14 @@ public enum Aim implements AimDataType {
     public static AimType UUID(AimDataType dataType) { return new AimTypeUUID(dataType); }
     //TODO AimType UTF8(4) extends AimTypeAbstract implements AimDataType
 
+    public static enum SortOrder {
+        ASC(-1),
+        DESC(1);
+        private int cmp;
+        private SortOrder(int cmp) { this.cmp = cmp; }
+        public int getComparator() { return cmp; }
+    }
+
     /**
      * We need to use BIG_ENDIAN because the pro(s) are favourable 
      * to our usecase, e.g. lot of streaming filtering.

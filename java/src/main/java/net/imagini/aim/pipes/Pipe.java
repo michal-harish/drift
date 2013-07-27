@@ -128,14 +128,7 @@ public class Pipe {
         return this;
     }
     public int write(AimDataType type, byte[] value) throws IOException {
-        int written = 0;
-        if (type.equals(Aim.STRING)) {
-            write(outputPipe,value.length);
-            written += 4;
-        }
-        outputPipe.write(value);
-        written += value.length;
-        return written;
+        return Pipe.write(type, value, outputPipe);
     }
 
     public String read() throws IOException {
@@ -156,6 +149,10 @@ public class Pipe {
 
     public byte[] read(AimDataType type) throws IOException {
         return read(inputPipe, type);
+    }
+
+    public void skip(AimDataType type) throws IOException {
+        skip(inputPipe, type);
     }
 
     static public byte[] read(InputStream in, AimDataType type) throws IOException {
@@ -245,29 +242,14 @@ public class Pipe {
             totalSkipped += skipped;
         }
     }
-
-
-/*
-    static public int readZeroCopy(InputStream in, AimDataType type, byte[] buf) throws IOException {
-        int len;
+    public static int write(AimDataType type, byte[] value, OutputStream out) throws IOException {
+        int written = 0;
         if (type.equals(Aim.STRING)) {
-            readByteArrayZeroCopy(in, 4, buf);
-            len = readInteger(buf);
-        } else if (type instanceof Aim.BYTEARRAY) {
-            len = ((Aim.BYTEARRAY)type).size;
-        } else {
-            len = type.getSize();
+            write(out,value.length);
+            written += 4;
         }
-        readByteArrayZeroCopy(in, len, buf);
-        return len;
+        out.write(value);
+        written += value.length;
+        return written;
     }
-
-    static public void readByteArrayZeroCopy(InputStream in, int fixedLen, byte[] buf) throws IOException {
-        int totalRead = 0;
-        while (totalRead < fixedLen) {
-            int read = in.read(buf,totalRead,fixedLen-totalRead);
-            if (read < 0 ) throw new EOFException();
-            else totalRead += read;
-        }
-    }*/
 }
