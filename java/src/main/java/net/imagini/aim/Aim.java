@@ -23,8 +23,8 @@ public enum Aim implements AimDataType {
     //TODO AimType UTF8(4) extends AimTypeAbstract implements AimDataType
 
     public static enum SortOrder {
-        ASC(-1),
-        DESC(1);
+        ASC(1),
+        DESC(-1);
         private int cmp;
         private SortOrder(int cmp) { this.cmp = cmp; }
         public int getComparator() { return cmp; }

@@ -142,7 +142,7 @@ public class AimTable {
                 AimRecord winner = null;
                 Integer s = null;
                 for(int i=0; i<seg.length; i++) if (records[i] !=null) {
-                    if (winner == null || winner.compareTo(records[i]) == sortOrder.getComparator()) {
+                    if (winner == null || (winner.compareTo(records[i]) == sortOrder.getComparator())) {
                         winner = records[i];
                         s = i;
                     }

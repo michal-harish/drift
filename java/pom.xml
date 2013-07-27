@@ -57,6 +57,7 @@
           <artifactId>maven-assembly-plugin</artifactId>
           <executions>
             <execution>
+              <id>loader-assembly</id>
               <phase>package</phase>
               <goals><goal>single</goal></goals>
               <configuration>
@@ -66,6 +67,24 @@
                   <archive> 
                       <manifest>
                           <mainClass>net.imagini.aim.CSVLoader</mainClass>
+                      </manifest>
+                  </archive>
+                  <descriptorRefs>
+                    <descriptorRef>jar-with-dependencies</descriptorRef>
+                </descriptorRefs>
+              </configuration>
+            </execution>
+            <execution>
+              <id>console-assembly</id>
+              <phase>package</phase>
+              <goals><goal>single</goal></goals>
+              <configuration>
+                  <attach>false</attach>
+                  <appendAssemblyId>false</appendAssemblyId>
+                  <finalName>aim-console</finalName>
+                  <archive> 
+                      <manifest>
+                          <mainClass>net.imagini.aim.console.Console</mainClass>
                       </manifest>
                   </archive>
                   <descriptorRefs>
