@@ -7,14 +7,14 @@ import net.imagini.aim.Aim;
 import net.imagini.aim.AimSegment;
 import net.imagini.aim.pipes.Pipe;
 
-public class TableServerLoaderThread extends Thread  {
+public class TableServerLoaderSession extends Thread  {
 
     private Pipe pipe;
     private AimTable table;
     private Integer count = 0;
     private AimSegment currentSegment; 
 
-    public TableServerLoaderThread(AimTable table, Pipe pipe) throws IOException {
+    public TableServerLoaderSession(AimTable table, Pipe pipe) throws IOException {
         this.pipe = pipe;
         this.table = table;
         String expectSchema = table.schema.toString();

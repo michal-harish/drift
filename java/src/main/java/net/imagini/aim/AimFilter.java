@@ -9,8 +9,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import joptsimple.internal.Strings;
+
 import net.imagini.aim.node.AimRecord;
 import net.imagini.aim.node.AimTable;
+import net.imagini.aim.pipes.Pipe;
 
 /**
  * @author mharis
@@ -51,7 +54,15 @@ abstract public class AimFilter {
     final public void updateFormula(List<String> usedColumns) {
         root.update(usedColumns);
     }
+
+    final public void write(Pipe pipe) throws IOException {
+        pipe.write(root.toString());
+    }
     
+    @Override public String toString() {
+        return (next != null) ? " " + next.toString() : "";
+    }
+
     protected void update(List<String> usedColumns) {
         if (next != null) next.update(usedColumns);
     }
@@ -74,6 +85,7 @@ abstract public class AimFilter {
 
     public AimFilter and(String expression) {
         return next = new AimFilterOp(root, expression) {
+            @Override public String toString() { return "&" + super.toString(); }
             @Override protected boolean compare(boolean a, boolean b) {
                 return a & b;
             }
@@ -82,6 +94,7 @@ abstract public class AimFilter {
 
     public AimFilter or(String expression) {
         return next = new AimFilterOp(root, expression) {
+            @Override public String toString() { return "|"+ super.toString(); }
             @Override protected boolean compare(boolean a, boolean b) {
                 return a | b;
             }
@@ -90,25 +103,28 @@ abstract public class AimFilter {
 
     public AimFilter not() {
         return next = new AimFilter(root, type, next) {
+            @Override public String toString() { return "!" + super.toString(); }
             @Override protected boolean match(boolean soFar, byte[][] data) {
                 return !next.match(soFar, data);
             }
         };
     }
 
-    public AimFilter equals(String value) {
+    public AimFilter equals(final String value) {
         if (type == null) return next.equals(value);
         final byte[] val = type.convert(value);
         return next = new AimFilter(root,type) {
+            @Override public String toString() { return "= '" + value +"'" + super.toString(); }
             @Override protected boolean match(byte[] value, byte[][] data) {
                 return super.match(Arrays.equals(value, val), data);
             }
         };
     }
-    public AimFilter contains(String value) {
+    public AimFilter contains(final String value) {
         if (type == null) return next.contains(value);
         final byte[] val = type.convert(value);
         return next = new AimFilter(root,type) {
+            @Override public String toString() { return "CONTAINS '" + value +"'" + super.toString(); }
             @Override protected boolean match(byte[] value, byte[][] data) {
                 int v = 0;for(byte b: val) {
                     if (val[v]!=b) v = 0;
@@ -122,11 +138,12 @@ abstract public class AimFilter {
     }
 
 
-    public AimFilter greaterThan(final String than) {
-        if (type == null) return next.greaterThan(than);
+    public AimFilter greaterThan(final String value) {
+        if (type == null) return next.greaterThan(value);
         final byte[][] vals = new byte[1][];
-        vals[0] = type.convert(than);
+        vals[0] = type.convert(value);
         return next = new AimFilter(root,type) {
+            @Override public String toString() { return "> '" + value +"'" + super.toString(); }
             @Override protected boolean match(byte[] value, byte[][] data) {
                 int[] cmp = AimFilter.compare(value, vals);
                 return super.match(cmp[0] == 1, data);
@@ -134,11 +151,12 @@ abstract public class AimFilter {
         };
     }
 
-    public AimFilter lessThan(final String than) {
-        if (type == null) return next.lessThan(than);
+    public AimFilter lessThan(final String value) {
+        if (type == null) return next.lessThan(value);
         final byte[][] vals = new byte[1][];
-        vals[0] = type.convert(than);
+        vals[0] = type.convert(value);
         return next = new AimFilter(root,type) {
+            @Override public String toString() { return "<'" + value +"'" + super.toString(); }
             @Override protected boolean match(byte[] value, byte[][] data) {
                 int[] cmp = AimFilter.compare(value, vals);
                 return super.match(cmp[0] == -1, data);
@@ -146,15 +164,15 @@ abstract public class AimFilter {
         };
     }
 
-    public AimFilter in(String... values) {
+    public AimFilter in(final String... values) {
         if (type == null) return next.in(values);
         final byte[][] vals = new byte[values.length][]; 
         int i = 0; for(String value:values) {
             vals[i++] = type.convert(value);
         }
         return next = new AimFilter(root,type) {
-            @Override
-            protected boolean match(byte[] value, byte[][] data) {
+            @Override public String toString() { return "IN(" + Strings.join(values, ",") +")" + super.toString(); }
+            @Override protected boolean match(byte[] value, byte[][] data) {
                 boolean localResult = false;
                 for(byte[] val: vals) {
                     if (Arrays.equals(value, val)) {
@@ -175,10 +193,12 @@ abstract public class AimFilter {
         final AimFilterSet result = new AimFilterSet();
         final List<Integer> segments = new LinkedList<Integer>();
         for(int s = root.startSegment; s <= root.endSegment; s++) segments.add(s);
+        if (segments.size() == 0) return result;
         final ExecutorService collector = Executors.newFixedThreadPool(segments.size());
 
         for(final Integer s : segments) {
             final AimSegment segment = root.table.open(s);
+            if (segment == null) return result;
             collector.submit(new Runnable() {
                 @Override
                 public void run() {
@@ -220,7 +240,7 @@ abstract public class AimFilter {
             return next.match(data[colIndex], data);
         }
         @Override public String toString() {
-            return "field(" +colName + ")";
+            return colName + super.toString();
         }
 
     }
@@ -235,6 +255,7 @@ abstract public class AimFilter {
             return compare(soFar, next.match(true, data));
         }
         abstract protected boolean compare(boolean a, boolean b);
+
     }
 
     static public int[] compare(byte[] data, byte[][] vals) {

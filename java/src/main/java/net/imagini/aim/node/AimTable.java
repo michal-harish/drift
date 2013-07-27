@@ -91,7 +91,7 @@ public class AimTable {
      * @throws IOException
      */
     public AimSegment open(int segmentId) throws IOException {
-        return segments.get(segmentId);
+        return segmentId >=0 && segmentId < segments.size() ? segments.get(segmentId) : null;
     }
 
     /**

@@ -35,8 +35,8 @@ public class TableServer extends Thread {
                             System.out.println(pipe.protocol + " connection from " + socket.getRemoteSocketAddress().toString());
                             switch(pipe.protocol) {
                                 //TODO case BINARY: new ReaderThread(); break;
-                                case LOADER: new TableServerLoaderThread(TableServer.this.table,pipe).start(); break;
-                                case QUERY: new TableServerQueryThread(TableServer.this.table,pipe).start(); break;
+                                case LOADER: new TableServerLoaderSession(TableServer.this.table,pipe).start(); break;
+                                case QUERY: new TableServerQuerySession(TableServer.this.table,pipe).start(); break;
                                 default: System.out.println("Unsupported protocol request " + pipe.protocol);
                             }
                         } catch (IOException e) {

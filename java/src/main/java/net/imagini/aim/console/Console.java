@@ -11,8 +11,8 @@ import net.imagini.aim.Aim.SortOrder;
 import net.imagini.aim.AimFilterSet;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimUtils;
-import net.imagini.aim.loaders.CSVLoader;
 import net.imagini.aim.loaders.EventsSchema;
+import net.imagini.aim.loaders.TestEventsLoader;
 import net.imagini.aim.node.AimTable;
 import net.imagini.aim.node.TableServer;
 import net.imagini.aim.pipes.Pipe;
@@ -26,13 +26,15 @@ public class Console extends Thread {
     public static void main(String[] args) throws IOException {
         AimTable table = new AimTable("events", 100000, new EventsSchema(), "user_uid", SortOrder.DESC);
         new TableServer(table, 4000).start();
-        //new TestEventsLoader().start();
+        new TestEventsLoader().start();
+        /*
         new CSVLoader(new String[]{
                 "--gzip", 
                 "--limit","10000000",
                 "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(STRING[2]),region_code(STRING[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:STRING[16]),user_quizzed(BOOL)",
                 "/Users/mharis/events-2013-07-23.csv.gz"
         }).start();
+        */
         new Console("localhost", 4000).run();
     }
 
@@ -53,46 +55,20 @@ public class Console extends Thread {
             while(true) {
                 System.out.println();
                 System.out.print(">");
-                String[] input = bufferRead.readLine().trim().split("\\s+",1);
+                String instruction = bufferRead.readLine().trim();
+                String[] input = instruction.split("\\s+",1);
                 try {
                     switch(input[0]) {
                         case "exit": return;
                         case "": 
                             pipe.write("STATS").flush();
-                            System.out.println("Table name: " + pipe.read()); 
-                            System.out.println("Schema: " + pipe.read());
-                            System.out.println("Total records: " + pipe.readLong()); 
-                            System.out.println("Total segments: " + pipe.readInt());
-                            long size = pipe.readLong();
-                            long originalSize = pipe.readLong();
-                            System.out.print("Total compressed/original size: " 
-                                    + (size / 1024 / 1024) + " Mb / "
-                                    + (originalSize / 1024 / 1024));
-                            if (originalSize>0) System.out.print(" Mb = " + ( size * 100 / originalSize ) + "%");
-                            System.out.println();
+                            processResponse();
                             continue;
-                        //TODO case "range": break;
-                        case "filter":
+                        default: 
                             long t = (System.currentTimeMillis());
-                            pipe.write("FILTER").flush();
-                            AimFilterSet set = new AimFilterSet(pipe);
-                            System.out.println("Filter time(ms): " + (System.currentTimeMillis()-t) );
-                            System.out.println("Filter cardinality/bits/lz4size: " + set.cardinality() + "/" + set.length() );
-                            System.out.println();
-                            //TODO http://en.wikipedia.org/wiki/External_sorting
-                            break;
-                        //TODO case "select": cols = input[1].split(",");break;
-                        case "last":
-                        case "all":
-                        case "test":
-                            pipe.write(input[0].toUpperCase()).flush();
-                            AimSchema schema = AimUtils.parseSchema(pipe.read());
-                            long count = 0;
-                            while (pipe.readBool()) {
-                                print(Strings.join(AimUtils.collect(schema, pipe), ", "));
-                                count++;
-                            }
-                            print("Num.records: " + count);
+                            pipe.write(instruction).flush();
+                            processResponse();
+                            System.out.println("Query took: " + (System.currentTimeMillis() - t) + " ms");
                             break;
                     }
                 } catch (Exception e) {
@@ -107,6 +83,44 @@ public class Console extends Thread {
             } catch (IOException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+            }
+        }
+    }
+
+    private void processResponse() throws IOException {
+        while(pipe.readBool()) {
+            switch(pipe.read()) {
+                case "STATS":
+                    System.out.println("Table name: " + pipe.read()); 
+                    System.out.println("Schema: " + pipe.read());
+                    System.out.println("Total records: " + pipe.readLong()); 
+                    System.out.println("Total segments: " + pipe.readInt());
+                    long size = pipe.readLong();
+                    long originalSize = pipe.readLong();
+                    System.out.print("Total compressed/original size: " 
+                            + (size / 1024 / 1024) + " Mb / "
+                            + (originalSize / 1024 / 1024));
+                    if (originalSize>0) System.out.print(" Mb = " + ( size * 100 / originalSize ) + "%");
+                    System.out.println();
+                    break;
+                case "FILTER_SET":
+                    System.out.println("Filter: " + pipe.read());
+                    AimFilterSet set = new AimFilterSet(pipe);
+                    //TODO Filter segments:
+                    System.out.println("Filter cardinality/bits/lz4size: " + set.cardinality() + "/" + set.length() );
+                    System.out.println();
+                    break;
+                case "RESULT":
+                    pipe.write("SELECT").flush();
+                    AimSchema schema = AimUtils.parseSchema(pipe.read());
+                    long count = 0;
+                    while (pipe.readBool()) {
+                        print(Strings.join(AimUtils.collect(schema, pipe), ", "));
+                        count++;
+                    }
+                    print("Num.records: " + count);
+                    break;
+
             }
         }
     }

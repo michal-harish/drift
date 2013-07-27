@@ -15,12 +15,12 @@ public class AimQuery {
     private int startSegment;
     private int endSegment;
 
-    public AimQuery(AimTable table) {
-        this(table, null);
+
+    public AimQuery(AimTable table) { 
+        this.table = table;
     }
 
-    public AimQuery(AimTable table, Integer segmentRange) { 
-        this.table = table;
+    public void range(Integer segmentRange) {
         int segmentCount = table.getNumSegments();
         if (segmentRange == null) { //all segments
             startSegment = 0;
