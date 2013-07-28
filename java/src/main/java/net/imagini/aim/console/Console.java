@@ -68,7 +68,7 @@ public class Console extends Thread {
                             long t = (System.currentTimeMillis());
                             pipe.write(instruction).flush();
                             processResponse();
-                            System.out.println("Query took: " + (System.currentTimeMillis() - t) + " ms");
+                            print("Query took: " + (System.currentTimeMillis() - t) + " ms");
                             break;
                     }
                 } catch (Exception e) {
@@ -77,6 +77,7 @@ public class Console extends Thread {
             }
         } catch (IOException e1) {
             e1.printStackTrace();
+            //TODO reconnect
         } finally {
             try {
                 pipe.close();
@@ -111,7 +112,6 @@ public class Console extends Thread {
                     System.out.println();
                     break;
                 case "RESULT":
-                    pipe.write("SELECT").flush();
                     AimSchema schema = AimUtils.parseSchema(pipe.read());
                     long count = 0;
                     while (pipe.readBool()) {
@@ -120,7 +120,11 @@ public class Console extends Thread {
                     }
                     print("Num.records: " + count);
                     break;
-
+                case "ERROR":
+                   print("Error: " + pipe.read());
+                   break;
+                default:
+                    throw new IOException("Stream is curroupt, clsing..");
             }
         }
     }

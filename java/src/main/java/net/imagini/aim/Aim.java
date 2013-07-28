@@ -50,6 +50,10 @@ public enum Aim implements AimDataType {
         return this;
     }
 
+    @Override public String wrap(String value) {
+        return this.equals(STRING) ? "'"+value+"'" : value;
+    }
+
     @Override
     public byte[] convert(String value) {
         ByteBuffer bb;
@@ -100,6 +104,8 @@ public enum Aim implements AimDataType {
         private STRING(int size) {  this.size = size; }
         @Override public int getSize() { return size; }
         @Override public String toString() { return "STRING["+size+"]"; }
+        @Override public String wrap(String value) { return "'" + value +"'"; }
+
         @Override public boolean equals(Object object) {
             return object instanceof STRING && this.size == ((STRING)object).getSize();
         }

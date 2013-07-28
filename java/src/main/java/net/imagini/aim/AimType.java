@@ -10,4 +10,6 @@ public interface AimType {
 
     public String convert(byte[] value);
 
+    public String wrap(String value);
+
 }

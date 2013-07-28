@@ -33,8 +33,8 @@ public class AimQuery {
         }
     }
 
-    public AimFilter filter(String expression) {
-        return AimFilter.proxy(table, startSegment, endSegment, expression);
+    public AimFilter filter() {
+        return AimFilter.proxy(table, startSegment, endSegment);
     }
 
     public Pipe select(final String... colNames) throws IOException {

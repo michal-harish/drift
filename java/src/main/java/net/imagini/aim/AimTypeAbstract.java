@@ -15,4 +15,9 @@ abstract public class AimTypeAbstract implements AimType {
     public int hashCode() {
         return this.toString().hashCode();
     }
+
+    @Override public String wrap(String value) {
+        return value;
+    }
+
 }
