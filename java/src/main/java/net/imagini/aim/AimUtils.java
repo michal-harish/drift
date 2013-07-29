@@ -110,14 +110,18 @@ public class AimUtils {
     }
 
     static public int getIntegerValue(byte[] value) {
+        return getIntegerValue(value, 0);
+    }
+
+    static public int getIntegerValue(byte[] value, int offset) {
         if (Aim.endian.equals(ByteOrder.LITTLE_ENDIAN)) {
             return EndianUtils.readSwappedInteger(value,0);
         } else {
             return (
-                (((int)value[0]) << 24) + 
-                (((int)value[1] & 0xff) << 16) + 
-                (((int)value[2] & 0xff) << 8) + 
-                (((int)value[3] & 0xff) << 0)
+                (((int)value[offset+0]) << 24) + 
+                (((int)value[offset+1] & 0xff) << 16) + 
+                (((int)value[offset+2] & 0xff) << 8) + 
+                (((int)value[offset+3] & 0xff) << 0)
             );
         }
     }
@@ -134,6 +138,17 @@ public class AimUtils {
                     (((long)value[o+5] & 0xff) << 16) +
                     (((long)value[o+6] & 0xff) <<  8) +
                     (((long)value[o+7] & 0xff) <<  0));
+        }
+    }
+
+    public static void putIntegerValue(int value, byte[] result, int offset) {
+        if (Aim.endian.equals(ByteOrder.LITTLE_ENDIAN)) {
+            EndianUtils.writeSwappedInteger(result,offset,value);
+        } else {
+            result[offset+0] = (byte)((value >>> 24) & 0xFF);
+            result[offset+1] = (byte)((value >>> 16) & 0xFF);
+            result[offset+2] = (byte)((value >>>  8) & 0xFF);
+            result[offset+3] = (byte)((value >>>  0) & 0xFF);
         }
     }
 

@@ -24,7 +24,7 @@ public class Console extends Thread {
     final private Pipe pipe;
 
     public static void main(String[] args) throws IOException {
-        AimTable table = new AimTable("events", 100000, new EventsSchema(), "user_uid", SortOrder.DESC);
+        AimTable table = new AimTable("events", 10000, new EventsSchema(), "user_uid", SortOrder.DESC);
         new TableServer(table, 4000).start();
         //new TestEventsLoader().start();
         /**/

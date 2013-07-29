@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import net.imagini.aim.Aim;
@@ -141,10 +140,10 @@ public class Pipe {
         return Aim.STRING.convert(read(Aim.STRING));
     }
     public boolean readBool() throws IOException {
-        return inputPipe.read() == 0 ? false : true;
+        return read(Aim.BOOL)[0] == 0 ? false : true;
     }
     public byte readByte() throws IOException {
-        return (byte)inputPipe.read();
+        return (byte)read(Aim.BYTE)[0];
     }
     public Integer readInt() throws IOException {
         return AimUtils.getIntegerValue(read(Aim.INT));
@@ -166,9 +165,7 @@ public class Pipe {
         byte[] result;
         if (type.equals(Aim.STRING)) {
             result = new byte[size + 4];
-            ByteBuffer bb = ByteBuffer.wrap(result);
-            bb.order(Aim.endian);
-            bb.putInt(size);
+            AimUtils.putIntegerValue(size,result,0);
             AimUtils.read( in, result, 4 , size);
         } else {
             result = new byte[size];

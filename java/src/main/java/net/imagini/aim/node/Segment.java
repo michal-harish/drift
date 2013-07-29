@@ -69,17 +69,13 @@ public class Segment implements AimSegment {
         for(int col=0; col < schema.size(); col++) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream(65535);
             buffers.put(col, buffer);
-            
-            //writers.put(col, buffer);
-            //writers.put(col, new GZIPOutputStream(buffer,true));
-            /**/ // TODO store segment with compression flag to allow choosing between gzip & lz4
             writers.put(col, new LZ4BlockOutputStream(
                 buffer, 
                 65535,
                 LZ4Factory.fastestInstance().highCompressor(),
                 XXHashFactory.fastestInstance().newStreamingHash32(0x9747b28c).asChecksum(), 
                 true
-            ));/**/
+            ));
         }
     }
 
@@ -153,9 +149,7 @@ public class Segment implements AimSegment {
         final InputStream[] streams = new InputStream[subSchema.size()];
         int i = 0; for(String colName: subSchema.names()) {
             InputStream stream = new ByteArrayInputStream(columnar.get(schema.get(colName)));
-            //streams[i++] = buffer;
             streams[i++] = new LZ4BlockInputStream(stream); 
-            //streams[i++] = new GZIPInputStream(buffer);
         }
         return new InputStream() {
             private int colIndex = -1;

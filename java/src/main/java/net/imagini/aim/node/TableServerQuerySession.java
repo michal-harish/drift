@@ -87,8 +87,10 @@ public class TableServerQuerySession extends Thread {
         int n = table.getNumSegments();
         Pipe scanner = table.open(0, n-1, null, schema.names());
         System.err.println("Open ms: " + (System.currentTimeMillis()-t));
-        t = System.currentTimeMillis();
         long count = 0;
+        table.loadRecordsMs = 0;
+        table.readMs = 0;
+        table.mergeSortMs = 0;
         try {
             while(true) {
                 for (AimType type : schema.def()) {
@@ -97,8 +99,10 @@ public class TableServerQuerySession extends Thread {
                 count++;
             }
         } catch (EOFException e) {
-            System.err.println("Segment scan records: "+count+", ms: " + (System.currentTimeMillis()-t));
-            t = System.currentTimeMillis();
+            System.err.println("Segment scanned records: "+count);
+            System.err.println("-nextRecord ms: " + table.loadRecordsMs);
+            System.err.println("--table.mergeSortMs ms: " + table.mergeSortMs);
+            System.err.println("--table.readMs ms: " + table.readMs);
         }
     }
 

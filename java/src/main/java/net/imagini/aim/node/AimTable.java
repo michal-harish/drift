@@ -111,6 +111,9 @@ public class AimTable {
      * @return
      * @throws IOException
      */
+    public long loadRecordsMs = 0;
+    public long readMs = 0;
+    public long mergeSortMs = 0;
     public Pipe open(
             int startSegment, 
             int endSegment,
@@ -121,12 +124,15 @@ public class AimTable {
             final int[] seg = new int[endSegment-startSegment+1];
             for(int i=startSegment; i<= endSegment; i++) seg[i-startSegment] = i;
             final InputStream[] str = new InputStream[segments.size()];
+//            final ByteArrayWrapper[][] str = new ByteArrayWrapper[segments.size()][];
             final AimSchema subSchema = schema.subset(columnNames);
             for(int s = 0; s <seg.length; s++) {
                 str[s] = segments.get(seg[s]).open(filter, columnNames);
+//                str[s] = segments.get(seg[s]).bytes(filter, columnNames);
             }
 
             final int sortSubColumn = subSchema.get(schema.name(sortColumn));
+            loadRecordsMs = 0;
             return new Pipe() {
                 private int currentSegment = -1;
                 private int currentColumn = columnNames.length-1;
@@ -155,6 +161,7 @@ public class AimTable {
                     } else if (hasData[currentSegment]) {
                         loadRecordFromSegment(currentSegment);
                     }
+                    long t = System.currentTimeMillis();
                     if (sortIndex.size() == 0) {
                         throw new EOFException();
                     }
@@ -164,19 +171,27 @@ public class AimTable {
                         default: case ASC: next = sortIndex.pollLastEntry();break;
                     }
                     currentSegment = next.getValue();
+                    mergeSortMs += System.currentTimeMillis() - t;
                 }
                 private void loadRecordFromSegment(int s) throws IOException {
+                    long t = System.currentTimeMillis();
                     try {
                         for(String colName: columnNames) {
                             int c = subSchema.get(colName);
                             AimType type = subSchema.get(c);
+                            long t2 = System.currentTimeMillis();
                             AimUtils.read(str[s],type.getDataType(), buffer[s][c]);
+                            readMs += System.currentTimeMillis() - t2;
                         }
+                        long t2 = System.currentTimeMillis();
                         sortIndex.put(new ByteArrayWrapper(buffer[s][sortSubColumn],s), s);
                         hasData[s] = true;
+                        mergeSortMs += System.currentTimeMillis() - t2;
                     } catch (EOFException e) {
                         hasData[s] = false;
                     }
+                    loadRecordsMs += System.currentTimeMillis() - t;
+
                 }
             };
         }
