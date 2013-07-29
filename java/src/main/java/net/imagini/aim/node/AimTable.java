@@ -3,7 +3,6 @@ package net.imagini.aim.node;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.TreeMap;
@@ -124,16 +123,23 @@ public class AimTable {
             final InputStream[] str = new InputStream[segments.size()];
             final AimSchema subSchema = schema.subset(columnNames);
             for(int s = 0; s <seg.length; s++) {
-                str[s] = segments.get(seg[s]).open(filter, Arrays.asList(columnNames));
+                str[s] = segments.get(seg[s]).open(filter, columnNames);
             }
 
-            final int sortSubColumn = subSchema.get(schema.name( sortColumn));
+            final int sortSubColumn = subSchema.get(schema.name(sortColumn));
             return new Pipe() {
                 private int currentSegment = -1;
                 private int currentColumn = columnNames.length-1;
                 private TreeMap<ByteArrayWrapper,Integer> sortIndex = new TreeMap<>();
                 final private Boolean[] hasData = new Boolean[segments.size()];
                 final private byte[][][] buffer = new byte[segments.size()][schema.size()][Aim.COLUMN_BUFFER_SIZE];
+                @Override
+                public void skip(AimDataType type) throws IOException {
+                    if (++currentColumn == columnNames.length) {
+                        currentColumn = 0;
+                        readNextRecord();
+                    }
+                }
                 @Override public byte[] read(AimDataType type) throws IOException {
                     if (++currentColumn == columnNames.length) {
                         currentColumn = 0;
@@ -146,14 +152,17 @@ public class AimTable {
                         for(int s = 0; s <seg.length; s++) {
                             loadRecordFromSegment(s);
                         }
-                    }
-                    if (currentSegment >=0) {
-                        if (hasData[currentSegment]) loadRecordFromSegment(currentSegment);
+                    } else if (hasData[currentSegment]) {
+                        loadRecordFromSegment(currentSegment);
                     }
                     if (sortIndex.size() == 0) {
                         throw new EOFException();
                     }
-                    Entry<ByteArrayWrapper,Integer> next = sortIndex.pollFirstEntry();
+                    Entry<ByteArrayWrapper,Integer> next;
+                    switch(sortOrder) {
+                        case DESC: next = sortIndex.pollLastEntry();break;
+                        default: case ASC: next = sortIndex.pollLastEntry();break;
+                    }
                     currentSegment = next.getValue();
                 }
                 private void loadRecordFromSegment(int s) throws IOException {

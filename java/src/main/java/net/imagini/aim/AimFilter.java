@@ -32,7 +32,7 @@ public class AimFilter {
         return result;
     }
 
-    private AimTable table;
+    private AimTable table; //TODO remove table and use schema only
     private Integer startSegment;
     private Integer endSegment;
     protected AimFilter root;
@@ -49,7 +49,7 @@ public class AimFilter {
         this.next = next;
     }
 
-    final public void updateFormula(List<String> usedColumns) {
+    final public void updateFormula(String[] usedColumns) {
         root.update(usedColumns);
     }
 
@@ -61,7 +61,7 @@ public class AimFilter {
         return (next != null) ? " " + next.toString() : "";
     }
 
-    protected void update(List<String> usedColumns) {
+    protected void update(String[] usedColumns) {
         if (next != null) next.update(usedColumns);
     }
 
@@ -76,7 +76,7 @@ public class AimFilter {
     protected boolean match( byte[] value, byte[][] data) {
         throw new IllegalAccessError(this.getClass().getSimpleName() + " cannot be matched against a value");
     }
-    
+
     public AimFilter where(String expression) {
         return next = new AimFilterSimple(root,root.table,expression);
     }
@@ -114,10 +114,13 @@ public class AimFilter {
         return next = new AimFilter(root,type) {
             @Override public String toString() { return "= " + type.wrap(value) + super.toString(); }
             @Override protected boolean match(byte[] value, byte[][] data) {
+                //FIXME with buffers the arrays have to be compared not checked for equality, probably use ByteArrayWrappers 
                 return super.match(Arrays.equals(value, val), data);
             }
         };
     }
+    
+    //FIXME contains is now broken because we're adding string size to the converted bytes
     public AimFilter contains(final String value) {
         if (type == null) return next.contains(value);
         final byte[] val = type.convert(value);
@@ -233,9 +236,11 @@ public class AimFilter {
             super(root, table.def(field));
             this.colName = field;
         }
-        @Override public void update(List<String> usedColumns) {
+        @Override public void update(String[] usedColumns) {
             super.update(usedColumns);
-            colIndex = usedColumns.indexOf(colName);
+            for(colIndex=0;colIndex<usedColumns.length;colIndex++) {
+                if (usedColumns[colIndex].equals(colName)) break;
+            }
             if (colIndex == -1) {
                 throw new IllegalArgumentException("Unknwon filter column " + colName);
             }

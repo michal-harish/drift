@@ -5,11 +5,9 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -141,34 +139,33 @@ public class Segment implements AimSegment {
     /**
      * ZeroCopy, Not Thread-safe
      */
-    @Override public InputStream open(final AimFilter filter, final List<String> columns) throws IOException {
+    @Override public InputStream open(final AimFilter filter, final String[] colums) throws IOException {
         try {
             checkWritable(false);
         } catch (IllegalAccessException e) {
             throw new IOException(e); 
         }
+        final AimSchema subSchema = schema.subset(colums);
         //TODO detect missing filter columns 
-        final List<String> usedColumns  = columns;
-        if (filter != null) filter.updateFormula(usedColumns);
+ 
+        if (filter != null) filter.updateFormula(subSchema.names());
 
-        final AimSchema subSchema = schema.subset(columns);
-        final InputStream[] streams = new InputStream[columns.size()];
-        int i = 0; for(String colName: columns) {
-            InputStream buffer = new ByteArrayInputStream(columnar.get(schema.get(colName)));
-
+        final InputStream[] streams = new InputStream[subSchema.size()];
+        int i = 0; for(String colName: subSchema.names()) {
+            InputStream stream = new ByteArrayInputStream(columnar.get(schema.get(colName)));
             //streams[i++] = buffer;
-            streams[i++] = new LZ4BlockInputStream(buffer); 
+            streams[i++] = new LZ4BlockInputStream(stream); 
             //streams[i++] = new GZIPInputStream(buffer);
         }
         return new InputStream() {
             private int colIndex = -1;
             private int read = 0;
-            final int[] sizes = new int[columns.size()];
-            final byte[][] buffer = new byte[columns.size()][Aim.COLUMN_BUFFER_SIZE];
+            final int[] sizes = new int[subSchema.size()];
+            final byte[][] buffer = new byte[subSchema.size()][Aim.COLUMN_BUFFER_SIZE];
             @Override public int read() throws IOException {
                 if (colIndex == -1 || read == sizes[colIndex]) {
                     read = 0;
-                    if (colIndex == -1 || ++colIndex == columns.size()) {
+                    if (colIndex == -1 || ++colIndex == subSchema.size()) {
                         colIndex = 0;
                         while(true) {
                             if (!readNextRecord()) {
@@ -184,8 +181,8 @@ public class Segment implements AimSegment {
             }
             private boolean readNextRecord() throws IOException {
                 try {
-                    for(String colName: columns) {
-                        int c = columns.indexOf(colName);
+                    for(String colName: subSchema.names()) {
+                        int c = subSchema.get(colName);
                         AimType type = subSchema.get(c);
                         byte[] b = buffer[subSchema.get(colName)];
                         sizes[c] = AimUtils.read(streams[c],type.getDataType(), b);
@@ -202,17 +199,19 @@ public class Segment implements AimSegment {
     @Override final public Integer filter(AimFilter filter, BitSet out) throws IOException {
 
         //TODO dig colNames
-        final List<String> usedColumns  = Arrays.asList("user_quizzed","post_code","api_key","timestamp");
-
+        final String[] usedColumns  = new String[]{"timestamp","user_quizzed","post_code","api_key","user_uid"};
         filter.updateFormula(usedColumns);
 
         final Integer[] cols = new LinkedList<Integer>() {{
             for(String colName: usedColumns) add(schema.get(colName));
-        }}.toArray(new Integer[usedColumns.size()]);
-        final AimDataType[] types = new LinkedList<AimType>() {{
-            for(String colName: usedColumns) add(schema.def(colName));
-        }}.toArray(new AimDataType[usedColumns.size()]);
-        final byte[][] data = new byte[usedColumns.size()][];
+        }}.toArray(new Integer[usedColumns.length]);
+        final AimDataType[] types = new LinkedList<AimDataType>() {{
+            for(String colName: usedColumns) {
+                AimType t = schema.def(colName);
+                add(t.getDataType());
+            }
+        }}.toArray(new AimDataType[usedColumns.length]);
+        final byte[][] data = new byte[usedColumns.length][];
         final InputStream range = open(null, usedColumns);
         int length = 0;
         try {

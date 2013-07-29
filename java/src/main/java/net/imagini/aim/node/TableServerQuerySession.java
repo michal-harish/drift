@@ -2,7 +2,6 @@ package net.imagini.aim.node;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -20,7 +19,6 @@ import net.imagini.aim.AimFilterSet;
 import net.imagini.aim.AimQuery;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimType;
-import net.imagini.aim.AimUtils;
 import net.imagini.aim.pipes.Pipe;
 
 public class TableServerQuerySession extends Thread {
@@ -36,7 +34,7 @@ public class TableServerQuerySession extends Thread {
     @Override
     public void run() {
         try {
-            AimSchema schema = table.schema.subset("user_uid","user_quizzed","api_key","timestamp","post_code","url");
+            AimSchema schema = table.schema.subset("user_uid","user_quizzed","api_key","timestamp","post_code");//,"url"
             AimQuery query = new AimQuery(table);
             Integer range = null;
             AimFilter filter = null;
@@ -95,10 +93,8 @@ public class TableServerQuerySession extends Thread {
             while(true) {
                 for (AimType type : schema.def()) {
                     scanner.read(type.getDataType());
-                    //System.err.print(type.convert(val) + " "); 
                 }
                 count++;
-                //System.err.println();
             }
         } catch (EOFException e) {
             System.err.println("Segment scan records: "+count+", ms: " + (System.currentTimeMillis()-t));
@@ -115,10 +111,14 @@ public class TableServerQuerySession extends Thread {
         pipe.write("RESULT");
         pipe.write(schema.toString());
         try {
+            boolean written;
             while(true) {
-                AimRecord record = new AimRecord(schema, result, table.sortColumn);
-                pipe.write(true);
-                pipe.write(record.getBytes());
+                written = false;
+                for(AimType type: schema.def()) {
+                    byte[] val = result.read(type.getDataType());
+                    if (!written) pipe.write(written = true);
+                    pipe.write(type.getDataType(), val); 
+                }
             }
         } catch (EOFException e) {
             pipe.write(false);
