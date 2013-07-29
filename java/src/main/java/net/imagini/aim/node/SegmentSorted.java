@@ -12,6 +12,7 @@ import net.imagini.aim.Aim.SortOrder;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimType;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
+import net.imagini.aim.AimUtils;
 import net.imagini.aim.ByteArrayWrapper;
 import net.imagini.aim.pipes.Pipe;
 
@@ -58,7 +59,7 @@ public class SegmentSorted extends Segment {
                 while(true) {
                     int col= 0; for(AimType type: schema.def()) {
                         byte[] value = Pipe.read(reader, type.getDataType());
-                        Pipe.write(type.getDataType(), value, writers.get(col++));
+                        AimUtils.write(type.getDataType(), value, writers.get(col++));
                     }
                 }
             } catch (EOFException e) {}
@@ -78,9 +79,9 @@ public class SegmentSorted extends Segment {
             closeRecord();
         }
         if (column == sortColumn) {
-            sortValue = new ByteArrayWrapper(value);
+            sortValue = new ByteArrayWrapper(value,0);
         }
-        return Pipe.write(type, value, recordBuffer);
+        return AimUtils.write(type, value, recordBuffer);
     }
 
     private void closeRecord() throws IOException {

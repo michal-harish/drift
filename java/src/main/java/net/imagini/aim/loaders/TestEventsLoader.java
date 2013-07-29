@@ -27,7 +27,7 @@ public class TestEventsLoader extends Thread{
             final Pipe pipe = new PipeLZ4(socket.getOutputStream(), Pipe.Protocol.LOADER);
             AimSchema schema = new EventsSchema();
             pipe.write(schema.toString());
-            for (long i = 1; i <=3000000; i++) {
+            for (long i = 1; i <=3000; i++) {
                 try {
                     UUID userUid  = UUID.randomUUID();
                     pipe.write(i);

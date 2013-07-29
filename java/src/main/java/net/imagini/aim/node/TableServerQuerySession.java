@@ -2,7 +2,9 @@ package net.imagini.aim.node;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -17,6 +19,8 @@ import net.imagini.aim.AimFilter;
 import net.imagini.aim.AimFilterSet;
 import net.imagini.aim.AimQuery;
 import net.imagini.aim.AimSchema;
+import net.imagini.aim.AimType;
+import net.imagini.aim.AimUtils;
 import net.imagini.aim.pipes.Pipe;
 
 public class TableServerQuerySession extends Thread {
@@ -38,12 +42,12 @@ public class TableServerQuerySession extends Thread {
             AimFilter filter = null;
             while(true) {
                 String input = pipe.read();
-                System.err.println(input);
                 Queue<String> cmd = parse(input);
                 String command = cmd.poll().toUpperCase();
                 switch(command.toUpperCase()) {
 
                     case "STATS": handleStats(cmd); break;
+                    case "SCAN": handleScan(cmd); break;
 
                     case "ALL": range = null; filter = null; break;
                     case "LAST": range = table.getNumSegments()-1; filter = null; break;
@@ -76,6 +80,29 @@ public class TableServerQuerySession extends Thread {
                 System.out.println("Could not send error response to the clien: ");
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void handleScan(Queue<String> cmd) throws IOException {
+        AimSchema schema = table.schema.subset(Arrays.asList("timestamp","api_key","user_quizzed","user_uid"));
+        long t = System.currentTimeMillis();
+        int n = table.getNumSegments();
+        Pipe scanner = table.open(0, n-1, null, schema.names());
+        System.err.println("Open ms: " + (System.currentTimeMillis()-t));
+        t = System.currentTimeMillis();
+        long count = 0;
+        try {
+            while(true) {
+                for (AimType type : schema.def()) {
+                    scanner.read(type.getDataType());
+                    //System.err.print(type.convert(val) + " "); 
+                }
+                count++;
+                //System.err.println();
+            }
+        } catch (EOFException e) {
+            System.err.println("Segment scan records: "+count+", ms: " + (System.currentTimeMillis()-t));
+            t = System.currentTimeMillis();
         }
     }
 
@@ -118,9 +145,6 @@ public class TableServerQuerySession extends Thread {
 
     private AimFilter handleFilterQuery(Integer range, AimQuery query, Queue<String> cmd) throws IOException {
         query.range(range);
-        if (cmd.size() == 0) {
-            cmd = parse("user_quizzed=true AND timestamp > 20 AND api_key CONTAINS 'test' AND post_code NOT IN ('EC2 A1','EC2 A11','EC2 A21')");
-        }
 
         AimFilter rootFilter = query.filter();
 

@@ -2,17 +2,23 @@ package net.imagini.aim.node;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import net.imagini.aim.Aim;
 import net.imagini.aim.Aim.SortOrder;
 import net.imagini.aim.AimFilter;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimSegment;
 import net.imagini.aim.AimType;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
+import net.imagini.aim.AimUtils;
+import net.imagini.aim.ByteArrayWrapper;
 import net.imagini.aim.pipes.Pipe;
 
 /**
@@ -95,7 +101,10 @@ public class AimTable {
     }
 
     /**
-     * Open multiple segments - this is where streaming-merge-sort happens.
+     * ZeroCopy 
+     * Open multiple segments - this is where streaming-merge-sort happens
+     * Note: merge sort is combined with TreeMap O=log(n) indexing so
+     * that for large number of segments it still performs well.
      * 
      * @param startSegment
      * @param endSegment
@@ -104,72 +113,64 @@ public class AimTable {
      * @throws IOException
      */
     public Pipe open(
-        int startSegment, 
-        int endSegment,
-        AimFilter filter, 
-        final String... columnNames
-    ) throws IOException {
-        //TODO sortColumn columns must be present, so will be added if missing
-        final int[] seg = new int[endSegment-startSegment+1];
-        for(int i=startSegment; i<= endSegment; i++) seg[i-startSegment] = i;
-        final Pipe[] str = new Pipe[segments.size()];
-        final AimSchema subSchema = schema.subset(columnNames);
-        for(int s = 0; s <seg.length; s++) {
-            str[s] = segments.get(seg[s]).open(filter, Arrays.asList(columnNames));
-        }
+            int startSegment, 
+            int endSegment,
+            final AimFilter filter, 
+            final String... columnNames
+        ) throws IOException {
+            //TODO sortColumn columns must be present, so will be added if missing
+            final int[] seg = new int[endSegment-startSegment+1];
+            for(int i=startSegment; i<= endSegment; i++) seg[i-startSegment] = i;
+            final InputStream[] str = new InputStream[segments.size()];
+            final AimSchema subSchema = schema.subset(columnNames);
+            for(int s = 0; s <seg.length; s++) {
+                str[s] = segments.get(seg[s]).open(filter, Arrays.asList(columnNames));
+            }
 
-        final int sortSubColumn = subSchema.get(schema.name( sortColumn));
-        return new Pipe() {
-            private int colIndex = columnNames.length-1;
-            private AimRecord record;
-            private AimRecord[] records = null;
-            @Override public byte[] read(AimDataType type) throws IOException {
-                if (++colIndex == columnNames.length) {
-                    colIndex = 0;
-                    record = getNextRecord();
+            final int sortSubColumn = subSchema.get(schema.name( sortColumn));
+            return new Pipe() {
+                private int currentSegment = -1;
+                private int currentColumn = columnNames.length-1;
+                private TreeMap<ByteArrayWrapper,Integer> sortIndex = new TreeMap<>();
+                final private Boolean[] hasData = new Boolean[segments.size()];
+                final private byte[][][] buffer = new byte[segments.size()][schema.size()][Aim.COLUMN_BUFFER_SIZE];
+                @Override public byte[] read(AimDataType type) throws IOException {
+                    if (++currentColumn == columnNames.length) {
+                        currentColumn = 0;
+                        readNextRecord();
+                    }
+                    return buffer[currentSegment][currentColumn];
                 }
-                if (record == null) {
-                    throw new EOFException();
+                private void readNextRecord() throws IOException {
+                    if (currentSegment ==-1 ) {
+                        for(int s = 0; s <seg.length; s++) {
+                            loadRecordFromSegment(s);
+                        }
+                    }
+                    if (currentSegment >=0) {
+                        if (hasData[currentSegment]) loadRecordFromSegment(currentSegment);
+                    }
+                    if (sortIndex.size() == 0) {
+                        throw new EOFException();
+                    }
+                    Entry<ByteArrayWrapper,Integer> next = sortIndex.pollFirstEntry();
+                    currentSegment = next.getValue();
                 }
-                return record.data[colIndex];
-            }
-            private AimRecord getNextRecord() throws IOException {
-                if (records == null) {
-                    records = new AimRecord[seg.length];
-                    for(int s = 0; s <seg.length; s++) preloadRecord(s);
-                }
-                //cross-section compare the records, extract winer and remember which segment it came from
-                AimRecord winner = null;
-                Integer s = null;
-                for(int i=0; i<seg.length; i++) if (records[i] !=null) {
-                    if (winner == null || (winner.compareTo(records[i]) == sortOrder.getComparator())) {
-                        winner = records[i];
-                        s = i;
+                private void loadRecordFromSegment(int s) throws IOException {
+                    try {
+                        for(String colName: columnNames) {
+                            int c = subSchema.get(colName);
+                            AimType type = subSchema.get(c);
+                            AimUtils.read(str[s],type.getDataType(), buffer[s][c]);
+                        }
+                        sortIndex.put(new ByteArrayWrapper(buffer[s][sortSubColumn],s), s);
+                        hasData[s] = true;
+                    } catch (EOFException e) {
+                        hasData[s] = false;
                     }
                 }
-                if (winner == null) {
-                    throw new EOFException();
-                } else {
-                    //..and replace it from another in the same segment 
-                    preloadRecord(s);
-                    return winner;
-                }
-            }
-            private void preloadRecord(int s) throws IOException {
-                byte[][] data = new byte[columnNames.length][];
-                try {
-                    for(String colName: columnNames) {
-                        int c = subSchema.get(colName);
-                        AimType type = subSchema.get(c);
-                        data[c] = str[s].read(type.getDataType());
-                    }
-                    records[s] = new AimRecord(subSchema, data, sortSubColumn);
-                } catch (EOFException e) {
-                    records[s] = null;
-                }
-            }
-        };
-    }
+            };
+        }
 
 /* 
     public InputStream[] open(int startSegment, int endSegment, String... columnNames) throws IOException {

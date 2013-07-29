@@ -13,11 +13,13 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
+import net.imagini.aim.Aim;
 import net.imagini.aim.AimFilter;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimSegment;
 import net.imagini.aim.AimType;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
+import net.imagini.aim.AimUtils;
 import net.imagini.aim.pipes.Pipe;
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
@@ -69,6 +71,8 @@ public class Segment implements AimSegment {
         for(int col=0; col < schema.size(); col++) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream(65535);
             buffers.put(col, buffer);
+            
+            //writers.put(col, buffer);
             //writers.put(col, new GZIPOutputStream(buffer,true));
             /**/ // TODO store segment with compression flag to allow choosing between gzip & lz4
             writers.put(col, new LZ4BlockOutputStream(
@@ -104,7 +108,7 @@ public class Segment implements AimSegment {
     }
 
     protected int write(int column, AimDataType type, byte[] value) throws IOException {
-        return Pipe.write(type, value, writers.get(column));
+        return AimUtils.write(type, value, writers.get(column));
     }
 
 
@@ -134,7 +138,10 @@ public class Segment implements AimSegment {
         return originalSize.get();
     }
 
-    @Override public Pipe open(final AimFilter filter, final List<String> columns) throws IOException {
+    /**
+     * ZeroCopy, Not Thread-safe
+     */
+    @Override public InputStream open(final AimFilter filter, final List<String> columns) throws IOException {
         try {
             checkWritable(false);
         } catch (IllegalAccessException e) {
@@ -148,31 +155,45 @@ public class Segment implements AimSegment {
         final InputStream[] streams = new InputStream[columns.size()];
         int i = 0; for(String colName: columns) {
             InputStream buffer = new ByteArrayInputStream(columnar.get(schema.get(colName)));
-            streams[i++] = new LZ4BlockInputStream(buffer); //return new GZIPInputStream(buffer);
+
+            //streams[i++] = buffer;
+            streams[i++] = new LZ4BlockInputStream(buffer); 
+            //streams[i++] = new GZIPInputStream(buffer);
         }
-        return new Pipe() {
-            private int colIndex = columns.size()-1;
-            private AimRecord record;
-            @Override public byte[] read(AimDataType type) throws IOException {
-                if (++colIndex == columns.size()) {
-                    colIndex = 0;
-                    while(true) {
-                        record = getNextRecord();
-                        if (filter == null || filter.match(record.data)) {
-                            break;
+        return new InputStream() {
+            private int colIndex = -1;
+            private int read = 0;
+            final int[] sizes = new int[columns.size()];
+            final byte[][] buffer = new byte[columns.size()][Aim.COLUMN_BUFFER_SIZE];
+            @Override public int read() throws IOException {
+                if (colIndex == -1 || read == sizes[colIndex]) {
+                    read = 0;
+                    if (colIndex == -1 || ++colIndex == columns.size()) {
+                        colIndex = 0;
+                        while(true) {
+                            if (!readNextRecord()) {
+                                return -1;
+                            }
+                            if (filter == null || filter.match(buffer)) {
+                                break;
+                            }
                         }
                     }
                 }
-                return record.data[colIndex];
+                return buffer[colIndex][read++] & 0xff;
             }
-            private AimRecord getNextRecord() throws IOException {
-                byte[][] data = new byte[columns.size()][];
-                for(String colName: columns) {
-                    int c = columns.indexOf(colName);
-                    AimType type = subSchema.get(c);
-                    data[subSchema.get(colName)] = Pipe.read(streams[c],type.getDataType());
+            private boolean readNextRecord() throws IOException {
+                try {
+                    for(String colName: columns) {
+                        int c = columns.indexOf(colName);
+                        AimType type = subSchema.get(c);
+                        byte[] b = buffer[subSchema.get(colName)];
+                        sizes[c] = AimUtils.read(streams[c],type.getDataType(), b);
+                    }
+                    return true;
+                } catch (EOFException e) {
+                    return false;
                 }
-                return new AimRecord(subSchema, data, null);
             }
         };
     }
@@ -192,12 +213,12 @@ public class Segment implements AimSegment {
             for(String colName: usedColumns) add(schema.def(colName));
         }}.toArray(new AimDataType[usedColumns.size()]);
         final byte[][] data = new byte[usedColumns.size()][];
-        final Pipe range = open(null, usedColumns);
+        final InputStream range = open(null, usedColumns);
         int length = 0;
         try {
             while (true) {
                 for(int i=0;i<cols.length;i++) {
-                    data[i] = range.read(types[i]);
+                    data[i] = Pipe.read(range,types[i]);
                 }
                 if (filter.match(data)) {
                     out.set(length);

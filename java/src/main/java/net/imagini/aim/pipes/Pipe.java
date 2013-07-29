@@ -1,15 +1,16 @@
 package net.imagini.aim.pipes;
 
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import net.imagini.aim.Aim;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
+import net.imagini.aim.AimUtils;
 
 import org.apache.commons.io.EndianUtils;
 
@@ -67,14 +68,19 @@ public class Pipe {
         return pipe;
     }
     static public Pipe open(InputStream in) throws IOException {
-        if (!Arrays.equals("AIM".getBytes(),readByteArray(in, 3))) {
+        byte[] sig = new byte[3];
+        AimUtils.read(in, sig, 0, 3);
+        if (!Arrays.equals("AIM".getBytes(),sig)) {
             throw new IOException("Invalid pipe header signature");
         }
-        byte pipe_type = readByteArray(in, 1)[0];
-        int pipe_protocol = readInteger(readByteArray(in,4));
+        byte[] pipe_type = new byte[1];
+        AimUtils.read(in, pipe_type, 0, 1);
+        byte[] proto = new byte[4];
+        AimUtils.read(in, proto, 0, 4);
+        int pipe_protocol = AimUtils.getIntegerValue(proto);
         Protocol protocol = Protocol.get(pipe_protocol);
         if (protocol == null) throw new IOException("Unknown protocol id " + pipe_protocol);
-        switch(pipe_type) {
+        switch(pipe_type[0]) {
             case 0: return new Pipe(in,protocol);
             case 1: return new PipeLZ4(in,protocol);
             case 2: return new PipeGZIP(in,protocol);
@@ -128,11 +134,11 @@ public class Pipe {
         return this;
     }
     public int write(AimDataType type, byte[] value) throws IOException {
-        return Pipe.write(type, value, outputPipe);
+        return AimUtils.write(type, value, outputPipe);
     }
 
     public String read() throws IOException {
-        return new String(read(Aim.STRING));
+        return Aim.STRING.convert(read(Aim.STRING));
     }
     public boolean readBool() throws IOException {
         return inputPipe.read() == 0 ? false : true;
@@ -141,10 +147,10 @@ public class Pipe {
         return (byte)inputPipe.read();
     }
     public Integer readInt() throws IOException {
-        return Pipe.readInteger(read(Aim.INT));
+        return AimUtils.getIntegerValue(read(Aim.INT));
     }
     public Long readLong() throws IOException {
-        return Pipe.readLong(read(Aim.LONG),0);
+        return AimUtils.getLongValue(read(Aim.LONG),0);
     }
 
     public byte[] read(AimDataType type) throws IOException {
@@ -157,7 +163,18 @@ public class Pipe {
 
     static public byte[] read(InputStream in, AimDataType type) throws IOException {
         int size = readSize(in, type);
-        return readByteArray(in, size);
+        byte[] result;
+        if (type.equals(Aim.STRING)) {
+            result = new byte[size + 4];
+            ByteBuffer bb = ByteBuffer.wrap(result);
+            bb.order(Aim.endian);
+            bb.putInt(size);
+            AimUtils.read( in, result, 4 , size);
+        } else {
+            result = new byte[size];
+            AimUtils.read( in, result, 0 , size);
+        }
+        return result;
     }
     static public void write(OutputStream out, int v) throws IOException {
         if (Aim.endian.equals(ByteOrder.LITTLE_ENDIAN)) {
@@ -187,51 +204,14 @@ public class Pipe {
 
     static private int readSize(InputStream in, AimDataType type) throws IOException {
         if (type.equals(Aim.STRING)) {
-            return readInteger(readByteArray(in, 4));
-        } else if (type instanceof Aim.STRING) {
-            return ((Aim.STRING)type).size;
+            byte[] b = new byte[4];
+            AimUtils.read(in,b,0,4);
+            return AimUtils.getIntegerValue(b);
+        } else if (type instanceof Aim.BYTEARRAY) {
+            return ((Aim.BYTEARRAY)type).size;
         } else {
             return type.getSize();
         }
-    }
-
-    static public int readInteger(byte[] value) {
-        if (Aim.endian.equals(ByteOrder.LITTLE_ENDIAN)) {
-            return EndianUtils.readSwappedInteger(value,0);
-        } else {
-            return (
-                (((int)value[0]) << 24) + 
-                (((int)value[1] & 0xff) << 16) + 
-                (((int)value[2] & 0xff) << 8) + 
-                (((int)value[3] & 0xff) << 0)
-            );
-        }
-    }
-
-    static public long readLong(byte[] value, int o) {
-        if (Aim.endian.equals(ByteOrder.LITTLE_ENDIAN)) {
-            return EndianUtils.readSwappedLong(value, o);
-        } else {
-            return (((long)value[o+0] << 56) +
-                    (((long)value[o+1] & 0xff) << 48) +
-                    (((long)value[o+2] & 0xff) << 40) +
-                    (((long)value[o+3] & 0xff) << 32) +
-                    (((long)value[o+4] & 0xff) << 24) +
-                    (((long)value[o+5] & 0xff) << 16) +
-                    (((long)value[o+6] & 0xff) <<  8) +
-                    (((long)value[o+7] & 0xff) <<  0));
-        }
-    }
-
-    static public byte[] readByteArray(InputStream in, int fixedLen) throws IOException {
-        byte[] data = new byte[fixedLen];
-        int totalRead = 0;
-        while (totalRead < fixedLen) {
-            int read = in.read(data,totalRead,fixedLen-totalRead);
-            if (read < 0 ) throw new EOFException();
-            else totalRead += read;
-        }
-        return data;
     }
 
     static public void skip(InputStream in, AimDataType type) throws IOException {
@@ -241,15 +221,5 @@ public class Pipe {
             long skipped = in.skip(skipLen-totalSkipped);
             totalSkipped += skipped;
         }
-    }
-    public static int write(AimDataType type, byte[] value, OutputStream out) throws IOException {
-        int written = 0;
-        if (type.equals(Aim.STRING)) {
-            write(out,value.length);
-            written += 4;
-        }
-        out.write(value);
-        written += value.length;
-        return written;
     }
 }

@@ -43,7 +43,7 @@ public class AimFilterSet extends ConcurrentHashMap<Integer,BitSet> {
             int segmentId = in.readInt();
             long length = in.readLong();
             int byteSize = in.readInt();
-            BitSet set = BitSet.valueOf(in.read(Aim.STRING(byteSize)));
+            BitSet set = BitSet.valueOf(in.read(Aim.BYTEARRAY(byteSize)));
             put(segmentId, set);
             lengths.put(segmentId, length);
         }
@@ -54,7 +54,7 @@ public class AimFilterSet extends ConcurrentHashMap<Integer,BitSet> {
             out.write(segment);                     // INT segment_id
             out.write(lengths.get(segment));        // LONG bitset absolute bit length
             byte[] x = this.get(segment).toByteArray();
-            out.write(x.length);                    // INT biteset serialized byte-length 
+            out.write(x.length);                    // INT biteset serialized byte-length
             out.write(x);
         }
     }

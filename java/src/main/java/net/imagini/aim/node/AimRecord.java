@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimType;
+import net.imagini.aim.AimUtils;
 import net.imagini.aim.pipes.Pipe;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -30,6 +31,7 @@ public class AimRecord implements Comparable<AimRecord> {
         this.data = data;
         if (sortColumn!= null) sortValue = data[sortColumn];
     }
+
 
     @Override
     public int compareTo(AimRecord o) {
@@ -58,7 +60,7 @@ public class AimRecord implements Comparable<AimRecord> {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         int i = 0 ; 
         for(AimType type: schema.def()) {
-            Pipe.write(type.getDataType(), data[i++], os);
+            AimUtils.write(type.getDataType(), data[i++], os);
         }
         return os.toByteArray();
     }

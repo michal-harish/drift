@@ -4,11 +4,13 @@ import java.util.Arrays;
 
 public class ByteArrayWrapper implements Comparable<ByteArrayWrapper> {
     public final byte[] bytes;
+    private int extra;
 
-    public ByteArrayWrapper(byte[] data) {
+    public ByteArrayWrapper(byte[] data, int extra) {
         if (data == null) {
             throw new NullPointerException();
         }
+        this.extra = extra;
         this.bytes = data;
     }
 
@@ -25,7 +27,6 @@ public class ByteArrayWrapper implements Comparable<ByteArrayWrapper> {
 
     @Override
     public int compareTo(ByteArrayWrapper val) {
-        int result = 0;
         int i = 0;
         while (i<bytes.length) {
             if (bytes.length < val.bytes.length) {
@@ -39,7 +40,7 @@ public class ByteArrayWrapper implements Comparable<ByteArrayWrapper> {
             }
             i++;
         }
-        return result;
+        return extra == val.extra ? 0 : (extra > val.extra ? 1 : -1);
     }
 
 }

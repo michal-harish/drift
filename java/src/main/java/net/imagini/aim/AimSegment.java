@@ -1,6 +1,7 @@
 package net.imagini.aim;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.BitSet;
 import java.util.List;
 
@@ -18,7 +19,7 @@ public interface AimSegment {
 
     long getOriginalSize();
 
-    Pipe open(AimFilter filter, List<String> columnNames) throws IOException;
+    InputStream open(AimFilter filter, List<String> columnNames) throws IOException;
 
     Integer filter(AimFilter filter, BitSet segmentResult)  throws IOException; 
 

@@ -15,12 +15,12 @@ public class EventsSchema extends AimSchema {
                 put("client_ip", Aim.IPV4(Aim.INT));
                 put("event_type", Aim.STRING);
                 put("user_agent", Aim.STRING);
-                put("country_code", Aim.STRING(2));
-                put("region_code", Aim.STRING(3));
+                put("country_code", Aim.BYTEARRAY(2));
+                put("region_code", Aim.BYTEARRAY(3));
                 put("post_code", Aim.STRING);
                 put("api_key", Aim.STRING);
                 put("url", Aim.STRING);
-                put("user_uid", Aim.UUID(Aim.STRING(16)));
+                put("user_uid", Aim.UUID(Aim.BYTEARRAY(16)));
                 put("user_quizzed", Aim.BOOL);
             }}
         );

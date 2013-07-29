@@ -4,11 +4,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.UUID;
 
 import net.imagini.aim.AimTypeAbstract.AimDataType;
-import net.imagini.aim.pipes.Pipe;
-import scala.actors.threadpool.Arrays;
 
 
 public enum Aim implements AimDataType {
@@ -17,7 +16,7 @@ public enum Aim implements AimDataType {
     INT(4),
     LONG(8),
     STRING(4);
-    public static AimDataType STRING(int size) {  return new STRING(size); }
+    public static AimDataType BYTEARRAY(int size) {  return new BYTEARRAY(size); }
     public static AimType IPV4(AimDataType dataType) { return new AimTypeIPv4(dataType); }
     public static AimType UUID(AimDataType dataType) { return new AimTypeUUID(dataType); }
     //TODO AimType UTF8(4) extends AimTypeAbstract implements AimDataType
@@ -35,6 +34,11 @@ public enum Aim implements AimDataType {
      * to our usecase, e.g. lot of streaming filtering.
      */
     final public static ByteOrder endian = ByteOrder.BIG_ENDIAN;
+
+    /**
+     * This is for ZeroCopy routines when they allocate mulit-dimensional buffers
+     */
+    final public static Integer COLUMN_BUFFER_SIZE = 2048; //FIXME 2048
 
     final public int size;
 
@@ -73,7 +77,9 @@ public enum Aim implements AimDataType {
             bb.putLong(Long.valueOf(value));
         } else if (this.equals(Aim.STRING)) {
             byte[] val = value.getBytes();
-            bb = ByteBuffer.allocate(val.length);
+            bb = ByteBuffer.allocate(val.length + 4);
+            bb.order(endian);
+            bb.putInt(value.length());
             bb.put(val);
         } else {
             throw new IllegalArgumentException("Unknown data type " + this.getClass().getSimpleName());
@@ -88,26 +94,27 @@ public enum Aim implements AimDataType {
         } else if (this.equals(Aim.BYTE)) {
             return String.valueOf(value[0]);
         } else if (this.equals(Aim.INT)) {
-            return String.valueOf(Pipe.readInteger(value));
+            return String.valueOf(AimUtils.getIntegerValue(value));
         } else if (this.equals(Aim.LONG)) {
-            return String.valueOf(Pipe.readLong(value,0));
+            return String.valueOf(AimUtils.getLongValue(value,0));
         } else if (this.equals(Aim.STRING)) {
-            return new String(value);
+            int size = AimUtils.getIntegerValue(value);
+            return new String(value, 4, size);
         } else {
             throw new IllegalArgumentException("Unknown type " + this);
         }
 
     }
 
-    public static class STRING extends AimTypeAbstract implements AimDataType {
+    public static class BYTEARRAY extends AimTypeAbstract implements AimDataType {
         final public int size;
-        private STRING(int size) {  this.size = size; }
+        private BYTEARRAY(int size) {  this.size = size; }
         @Override public int getSize() { return size; }
-        @Override public String toString() { return "STRING["+size+"]"; }
+        @Override public String toString() { return "BYTEARRAY["+size+"]"; }
         @Override public String wrap(String value) { return "'" + value +"'"; }
 
         @Override public boolean equals(Object object) {
-            return object instanceof STRING && this.size == ((STRING)object).getSize();
+            return object instanceof BYTEARRAY && this.size == ((BYTEARRAY)object).getSize();
         }
         @Override public byte[] convert(String value) {
             byte[] bytes = new byte[size];
@@ -119,7 +126,7 @@ public enum Aim implements AimDataType {
         }
 
         @Override public String convert(byte[] value) {
-            return new String(value); // TODO remove trailing zeros;
+            return new String(value,0,size);//TODO clean 0 bytes
         }
 
         @Override final public AimDataType getDataType() {
@@ -131,7 +138,7 @@ public enum Aim implements AimDataType {
 
         private AimDataType dataType;
         public AimTypeUUID(AimDataType dataType) {
-            if (!dataType.equals(Aim.STRING(16))) {
+            if (!dataType.equals(Aim.BYTEARRAY(16))) {
                 throw new IllegalArgumentException("Unsupported data type `"+dataType+"` for type AimTypeUUID");
             }
             this.dataType = dataType;
@@ -156,7 +163,7 @@ public enum Aim implements AimDataType {
         }
 
         @Override public String convert(byte[] value) {
-            return new UUID(Pipe.readLong(value,0) , Pipe.readLong(value,8)).toString();
+            return new UUID(AimUtils.getLongValue(value,0) , AimUtils.getLongValue(value,8)).toString();
         }
 
     }
@@ -197,6 +204,5 @@ public enum Aim implements AimDataType {
             }
         }
     }
-
 
 }

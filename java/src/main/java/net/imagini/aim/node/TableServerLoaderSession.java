@@ -3,7 +3,6 @@ package net.imagini.aim.node;
 import java.io.EOFException;
 import java.io.IOException;
 
-import net.imagini.aim.Aim;
 import net.imagini.aim.AimSegment;
 import net.imagini.aim.pipes.Pipe;
 
@@ -18,7 +17,7 @@ public class TableServerLoaderSession extends Thread  {
         this.pipe = pipe;
         this.table = table;
         String expectSchema = table.schema.toString();
-        String actualSchema = new String(pipe.read(Aim.STRING));
+        String actualSchema = pipe.read();
         if (!actualSchema.equals(expectSchema)) {
             throw new IOException("Invalid loader schema for table '"+ table.name +"', \nexpecting: " + expectSchema +"\nreceived:  " + actualSchema);
         }

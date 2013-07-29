@@ -11,8 +11,8 @@ import net.imagini.aim.Aim.SortOrder;
 import net.imagini.aim.AimFilterSet;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimUtils;
+import net.imagini.aim.loaders.CSVLoader;
 import net.imagini.aim.loaders.EventsSchema;
-import net.imagini.aim.loaders.TestEventsLoader;
 import net.imagini.aim.node.AimTable;
 import net.imagini.aim.node.TableServer;
 import net.imagini.aim.pipes.Pipe;
@@ -24,17 +24,17 @@ public class Console extends Thread {
     final private Pipe pipe;
 
     public static void main(String[] args) throws IOException {
-        AimTable table = new AimTable("events", 100000, new EventsSchema(), "user_uid", SortOrder.DESC);
+        AimTable table = new AimTable("events", 10000, new EventsSchema(), "user_uid", SortOrder.DESC);
         new TableServer(table, 4000).start();
-        new TestEventsLoader().start();
-        /*
+        //new TestEventsLoader().start();
+        /**/
         new CSVLoader(new String[]{
                 "--gzip", 
-                "--limit","10000000",
-                "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(STRING[2]),region_code(STRING[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:STRING[16]),user_quizzed(BOOL)",
+                "--limit","1000000",
+                "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(BYTEARRAY[2]),region_code(BYTEARRAY[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:BYTEARRAY[16]),user_quizzed(BOOL)",
                 "/Users/mharis/events-2013-07-23.csv.gz"
         }).start();
-        */
+        /**/
         new Console("localhost", 4000).run();
     }
 
