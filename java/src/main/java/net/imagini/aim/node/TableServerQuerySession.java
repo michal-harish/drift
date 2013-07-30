@@ -40,7 +40,7 @@ public class TableServerQuerySession extends Thread {
             AimFilter filter = null;
             while(true) {
                 String input = pipe.read();
-                Queue<String> cmd = parse(input);
+                Queue<String> cmd = tokenize(input);
                 String command = cmd.poll().toUpperCase();
                 switch(command.toUpperCase()) {
 
@@ -114,18 +114,22 @@ public class TableServerQuerySession extends Thread {
         pipe.write(true);
         pipe.write("RESULT");
         pipe.write(schema.toString());
+        long count = 0; 
         try {
             boolean written;
             while(true) {
-                written = false;
+//                written = false;
                 for(AimType type: schema.def()) {
                     byte[] val = result.read(type.getDataType());
-                    if (!written) pipe.write(written = true);
-                    pipe.write(type.getDataType(), val); 
+//                    if (!written) pipe.write(written = true);
+//                    pipe.write(type.getDataType(), val); 
                 }
+                count++;
             }
         } catch (EOFException e) {
             pipe.write(false);
+            pipe.write((long)table.getCount());
+            pipe.write((long)count);
             pipe.flush();
         }
 
@@ -202,19 +206,19 @@ public class TableServerQuerySession extends Thread {
         WHITESPACE,KEYWORD,OPERATOR,NUMBER,STRING
     }
     @SuppressWarnings("serial")
-    static final Map<WordType,Pattern> parser = new HashMap<WordType,Pattern>() {{
+    static final Map<WordType,Pattern> matchers = new HashMap<WordType,Pattern>() {{
         put(WordType.WHITESPACE, Pattern.compile("^((\\s+))"));
         put(WordType.KEYWORD, Pattern.compile("^(([A-Za-z_]+))"));
         put(WordType.OPERATOR, Pattern.compile("^(([\\!@\\$%\\^&\\*;\\:|,<.>/\\?\\-=\\+\\(\\)\\[\\]\\{\\}`~]+))")); // TODO define separately () {} []
         put(WordType.NUMBER,  Pattern.compile("^(([0-9]+|[0-9]+\\.[0-9]+))"));
         put(WordType.STRING, Pattern.compile("^('(.*?)')")); // TODO fix escape sequence (?:\\"|.)*? OR /'(?:[^'\\]|\\.)*'/
     }};
-    private Queue<String> parse(String input) throws IOException {
+    private Queue<String> tokenize(String input) throws IOException {
         Queue<String> result = new LinkedList<String>();
         int i = 0;
         main: while(i<input.length()) {
             String s = input.substring(i);
-            for(Entry<WordType,Pattern> p: parser.entrySet()) {
+            for(Entry<WordType,Pattern> p: matchers.entrySet()) {
                 Matcher m = p.getValue().matcher(s);
                 if (m.find()) {
                     i += m.group(1).length();

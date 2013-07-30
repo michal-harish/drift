@@ -113,12 +113,14 @@ public class Console extends Thread {
                     break;
                 case "RESULT":
                     AimSchema schema = AimUtils.parseSchema(pipe.read());
-                    long count = 0;
+                    //long count = 0;
                     while (pipe.readBool()) {
                         print(Strings.join(AimUtils.collect(schema, pipe), ", "));
-                        count++;
+                        //count++;
                     }
-                    print("Num.records: " + count);
+                    long count = pipe.readLong();
+                    long filteredCount = pipe.readLong();
+                    print("Num.records: " + filteredCount + "/" + count);
                     break;
                 case "ERROR":
                    print("Error: " + pipe.read());

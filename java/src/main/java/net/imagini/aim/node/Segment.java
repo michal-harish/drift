@@ -1,6 +1,5 @@
 package net.imagini.aim.node;
 
-import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,11 +17,8 @@ import net.imagini.aim.AimSegment;
 import net.imagini.aim.AimType;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.AimUtils;
+import net.imagini.aim.LZ4Buffer;
 import net.imagini.aim.pipes.Pipe;
-import net.jpountz.lz4.LZ4BlockInputStream;
-import net.jpountz.lz4.LZ4BlockOutputStream;
-import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.xxhash.XXHashFactory;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 
@@ -34,9 +30,8 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 public class Segment implements AimSegment {
 
     final protected AimSchema schema;
-    final protected LinkedHashMap<Integer,byte[]> columnar = new LinkedHashMap<>();
-    protected LinkedHashMap<Integer,OutputStream> writers = null;
-    private LinkedHashMap<Integer,ByteArrayOutputStream> buffers = null;
+    final protected LinkedHashMap<Integer,LZ4Buffer> columnar = new LinkedHashMap<>();
+    protected LinkedHashMap<Integer,ByteArrayOutputStream> writers = null;
     private boolean writable;
     private AtomicLong count = new AtomicLong(0);
     private AtomicLong originalSize = new AtomicLong(0);
@@ -49,11 +44,13 @@ public class Segment implements AimSegment {
      * Read-only Segment
      * @param data
      */
-    public Segment(AimSchema schema,LinkedList<ByteArrayOutputStream> data) {
+    public Segment(AimSchema schema, LinkedList<ByteArrayOutputStream> data) {
         this.schema = schema;
         this.writable = false;
         int i = 0; for(ByteArrayOutputStream b: data) {
-            columnar.put(i++, b.toByteArray());
+            LZ4Buffer buffer = new LZ4Buffer();
+            buffer.addBlock(b.toByteArray());
+            columnar.put(i++, buffer);
         }
     }
 
@@ -65,17 +62,9 @@ public class Segment implements AimSegment {
         this.schema = schema;
         this.writable = true;
         writers = new LinkedHashMap<>();
-        buffers = new LinkedHashMap<>();
         for(int col=0; col < schema.size(); col++) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream(65535);
-            buffers.put(col, buffer);
-            writers.put(col, new LZ4BlockOutputStream(
-                buffer, 
-                65535,
-                LZ4Factory.fastestInstance().highCompressor(),
-                XXHashFactory.fastestInstance().newStreamingHash32(0x9747b28c).asChecksum(), 
-                true
-            ));
+            writers.put(col, buffer);
         }
     }
 
@@ -109,14 +98,14 @@ public class Segment implements AimSegment {
     @Override public void close() throws IOException, IllegalAccessException {
         checkWritable(true);
         this.writable = false;
-        for(Entry<Integer,ByteArrayOutputStream> c: buffers.entrySet()) {
+        for(Entry<Integer,ByteArrayOutputStream> c: writers.entrySet()) {
             OutputStream writer = writers.get(c.getKey());
             writer.close();
-            byte[] buffer = c.getValue().toByteArray();
-            columnar.put(c.getKey(), buffer);
-            size.addAndGet(buffer.length);
+            LZ4Buffer lz4buf = new LZ4Buffer();
+            lz4buf.addBlock(c.getValue().toByteArray());
+            columnar.put(c.getKey(), lz4buf);
+            size.addAndGet(lz4buf.size());
         }
-        buffers = null;
         writers = null;
     }
 
@@ -146,10 +135,11 @@ public class Segment implements AimSegment {
  
         if (filter != null) filter.updateFormula(subSchema.names());
 
-        final InputStream[] streams = new InputStream[subSchema.size()];
+        final LZ4Buffer[] streams = new LZ4Buffer[subSchema.size()];
         int i = 0; for(String colName: subSchema.names()) {
-            InputStream stream = new ByteArrayInputStream(columnar.get(schema.get(colName)));
-            streams[i++] = new LZ4BlockInputStream(stream); 
+            LZ4Buffer buffer = columnar.get(schema.get(colName));
+            buffer.rewind(); // FIXME must be done on thread-safe instance not on the shared buffer
+            streams[i++] = buffer;
         }
         return new InputStream() {
             private int colIndex = -1;
@@ -179,7 +169,7 @@ public class Segment implements AimSegment {
                         int c = subSchema.get(colName);
                         AimType type = subSchema.get(c);
                         byte[] b = buffer[subSchema.get(colName)];
-                        sizes[c] = AimUtils.read(streams[c],type.getDataType(), b);
+                        sizes[c] = streams[c].read(type.getDataType(), b);
                     }
                     return true;
                 } catch (EOFException e) {

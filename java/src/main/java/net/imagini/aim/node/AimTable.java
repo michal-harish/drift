@@ -124,11 +124,9 @@ public class AimTable {
             final int[] seg = new int[endSegment-startSegment+1];
             for(int i=startSegment; i<= endSegment; i++) seg[i-startSegment] = i;
             final InputStream[] str = new InputStream[segments.size()];
-//            final ByteArrayWrapper[][] str = new ByteArrayWrapper[segments.size()][];
             final AimSchema subSchema = schema.subset(columnNames);
             for(int s = 0; s <seg.length; s++) {
                 str[s] = segments.get(seg[s]).open(filter, columnNames);
-//                str[s] = segments.get(seg[s]).bytes(filter, columnNames);
             }
 
             final int sortSubColumn = subSchema.get(schema.name(sortColumn));
