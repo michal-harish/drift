@@ -20,6 +20,8 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 
 /**
  * @author mharis
+ * 
+ * TODO replace ByteArrayWrapper with ByteBuffer
  */
 public class SegmentSorted extends Segment {
 

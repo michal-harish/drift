@@ -95,7 +95,6 @@ public class AimFilter {
         return next = new AimFilter(root,type) {
             @Override public String toString() { return "= " + type.wrap(value) + super.toString(); }
             @Override protected boolean match(LZ4Buffer value, LZ4Buffer[] record) {
-                //FIXME with buffers the arrays have to be compared not checked for equality, probably use ByteArrayWrappers 
                 return super.match(value.compare(val,type.getDataType())==0, record);
             }
         };

@@ -134,6 +134,7 @@ public class AimTable {
             return new Pipe() {
                 private int currentSegment = -1;
                 private int currentColumn = columnNames.length-1;
+                //TODO get rid of ByteArrayWrapper and use just ByteBuffer
                 private TreeMap<ByteArrayWrapper,Integer> sortIndex = new TreeMap<>();
                 final private Boolean[] hasData = new Boolean[segments.size()];
                 final private byte[][][] buffer = new byte[segments.size()][schema.size()][Aim.COLUMN_BUFFER_SIZE];

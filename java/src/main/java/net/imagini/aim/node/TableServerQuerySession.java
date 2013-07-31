@@ -136,7 +136,7 @@ public class TableServerQuerySession extends Thread {
             }
         }
 
-        return filter;
+        return rootFilter;
 
     }
 
@@ -185,6 +185,7 @@ public class TableServerQuerySession extends Thread {
         pipe.write(true);
         pipe.write("RESULT");
         pipe.write(schema.toString());
+        pipe.write(filter.toString());
         long count = 0; 
         try {
             boolean written;

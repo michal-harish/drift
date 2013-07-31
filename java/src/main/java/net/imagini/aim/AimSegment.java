@@ -19,6 +19,4 @@ public interface AimSegment {
 
     InputStream open(AimFilter filter, String[] columnNames) throws IOException;
 
-    //Integer filter(AimFilter filter, BitSet segmentResult)  throws IOException; 
-
 }

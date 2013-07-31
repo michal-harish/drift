@@ -29,7 +29,7 @@ public class Console extends Thread {
         /**/
         new CSVLoader(new String[]{
                 "--gzip", 
-                "--limit","2000000",
+                "--limit","20000000",
                 "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(BYTEARRAY[2]),region_code(BYTEARRAY[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:BYTEARRAY[16]),user_quizzed(BOOL)",
                 "/Users/mharis/events-2013-07-23.csv.gz"
         }).start();
@@ -105,6 +105,7 @@ public class Console extends Thread {
                     break;
                 case "RESULT":
                     AimSchema schema = AimUtils.parseSchema(pipe.read());
+                    String filter = pipe.read();
                     //long count = 0;
                     while (pipe.readBool()) {
                         print(Strings.join(AimUtils.collect(schema, pipe), ", "));
@@ -113,6 +114,8 @@ public class Console extends Thread {
                     long filteredCount = pipe.readLong();
                     long count = pipe.readLong();
                     String error = pipe.read();
+                    print("Schema: " + schema);
+                    print("Filter: " + filter);
                     print((Strings.isNullOrEmpty(error) ? "OK" : "ERROR " + error) +" Num.records: " + filteredCount + "/" + count);
                     break;
                 case "ERROR":
