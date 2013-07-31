@@ -1,10 +1,8 @@
 package net.imagini.aim.node;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map.Entry;
@@ -122,7 +120,9 @@ public class Segment implements AimSegment {
     }
 
     /**
-     * ZeroCopy, Not Thread-safe
+     * ZeroCopy
+     * Not Thread-safe 
+     * Filtered, Aggregate Input stream for all the selected columns in this segment.
      */
     @Override public InputStream open(final AimFilter filter, final String[] colums) throws IOException {
         try {
@@ -142,77 +142,76 @@ public class Segment implements AimSegment {
             streams[i++] = buffer;
         }
         return new InputStream() {
-            private int colIndex = -1;
-            private int read = 0;
-            final int[] sizes = new int[subSchema.size()];
-            final byte[][] buffer = new byte[subSchema.size()][Aim.COLUMN_BUFFER_SIZE];
+
+            @Override
+            public long skip(long n) throws IOException {
+                long skipped = 0;
+                while(checkNextByte() && skipped < n) {
+                    skipped += currentBuffer.skip(1);
+                }
+                return skipped;
+            }
+
             @Override public int read() throws IOException {
-                if (colIndex == -1 || read == sizes[colIndex]) {
-                    read = 0;
-                    if (colIndex == -1 || ++colIndex == subSchema.size()) {
-                        colIndex = 0;
-                        while(true) {
-                            if (!readNextRecord()) {
-                                return -1;
-                            }
-                            if (filter == null || filter.match(buffer)) {
-                                break;
-                            }
-                        }
+                read++; 
+                return checkNextByte() ? currentBuffer.read() & 0xff : -1;
+            }
+
+            private int currentColumn = -1;
+            private LZ4Buffer currentBuffer = null;
+            private int currentReadLength = 0;
+            private int read = -1;
+            private boolean checkNextByte() throws IOException {
+                if (currentColumn == -1) {
+                    for(int c=0;c<subSchema.size();c++) {
+                        if (streams[c].eof()) return false;
+                    }
+                } else if (read == currentReadLength) {
+                    read = -1;
+                    currentColumn++;
+                    currentBuffer = (currentColumn < subSchema.size()) ? streams[currentColumn] : null;
+                    if (currentBuffer != null && currentBuffer.eof()) {
+                        return false;
                     }
                 }
-                return buffer[colIndex][read++] & 0xff;
-            }
-            private boolean readNextRecord() throws IOException {
-                try {
-                    for(String colName: subSchema.names()) {
-                        int c = subSchema.get(colName);
-                        AimType type = subSchema.get(c);
-                        byte[] b = buffer[subSchema.get(colName)];
-                        sizes[c] = streams[c].read(type.getDataType(), b);
+
+                if (currentBuffer == null) {
+                    read = -1;
+                    currentColumn = 0;
+                    currentBuffer = streams[currentColumn];
+                    while(true) {
+                        if (currentBuffer.eof()) {
+                            return false;
+                        } else if (filter == null || filter.match(streams)) {
+                            break;
+                        }
+                        skipNextRecord();
                     }
-                    return true;
-                } catch (EOFException e) {
-                    return false;
+                } 
+                if (read == -1) {
+                    read = 0;
+                    AimType type = subSchema.get(currentColumn);
+                    if (type.equals(Aim.STRING)) {
+                        currentReadLength = 4 + currentBuffer.asIntValue();
+                    } else {
+                        currentReadLength = type.getDataType().getSize();
+                    }
+                }
+                return true;
+            }
+            private void skipNextRecord() throws IOException {
+                for(String colName: subSchema.names()) {
+                    int c = subSchema.get(colName);
+                    AimType type = subSchema.get(c);
+                    int skipLength;
+                    if (type.equals(Aim.STRING)) {
+                        skipLength = 4 + streams[c].asIntValue();
+                    } else {
+                        skipLength  = type.getDataType().getSize();
+                    }
+                    streams[c].skip(skipLength);
                 }
             }
         };
     }
-
-    @SuppressWarnings("serial")
-    @Override final public Integer filter(AimFilter filter, BitSet out) throws IOException {
-
-        //TODO dig colNames
-        final String[] usedColumns  = new String[]{"timestamp","user_quizzed","post_code","api_key","user_uid"};
-        filter.updateFormula(usedColumns);
-
-        final Integer[] cols = new LinkedList<Integer>() {{
-            for(String colName: usedColumns) add(schema.get(colName));
-        }}.toArray(new Integer[usedColumns.length]);
-        final AimDataType[] types = new LinkedList<AimDataType>() {{
-            for(String colName: usedColumns) {
-                AimType t = schema.def(colName);
-                add(t.getDataType());
-            }
-        }}.toArray(new AimDataType[usedColumns.length]);
-        final byte[][] data = new byte[usedColumns.length][];
-        final InputStream range = open(null, usedColumns);
-        int length = 0;
-        try {
-            while (true) {
-                for(int i=0;i<cols.length;i++) {
-                    data[i] = Pipe.read(range,types[i]);
-                }
-                if (filter.match(data)) {
-                    out.set(length);
-                }
-                length++;
-                if (Thread.interrupted()) break;
-            }
-        } catch (EOFException e) {
-            return length;
-        } 
-        throw new IOException("Filter did not process until the end of the segment");
-    }
-
 }

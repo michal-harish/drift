@@ -1,49 +1,57 @@
 package net.imagini.aim;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.nio.ByteBuffer;
 
 import joptsimple.internal.Strings;
 import net.imagini.aim.node.AimTable;
 import net.imagini.aim.pipes.Pipe;
 
 /**
+ * AimFilter objects can be chained into a filter chain that is evaulated from left to right.
+ * 
+ * Example:
+ * 
+ *  AimTable table = ...
+ *  AimFilter filter = new AimFilter(table);
+ *      .where("timestamp").greaterThan("1374467639")
+ *      .and("timestamp").lessThan("12746999");
+ * 
+ * The filter object can then be used as an argument to the table.open(..) method which
+ * will return a virtual filtered InputStream for all the selected columns and all
+ * records that match the filter criteria:
+ * 
+ *  table.open(..,filter,"timestamp","user_uid","api_key,"url");
+ * 
+ * 
  * @author mharis
  */
 public class AimFilter {
 
-    public static AimFilter proxy(AimTable table, Integer startSegment, Integer  endSegment) {
-        AimFilter result = new AimFilter(null, null);
-        result.table = table;
-        result.startSegment = startSegment;
-        result.endSegment = endSegment;
-        result.root = result;
-        return result;
-    }
     protected static AimFilter proxy(AimFilter root, AimTable table, String expression) {
         AimFilter result = new AimFilterSimple(root, table, expression);
         result.root = root;
         return result;
     }
 
+    public AimFilter(AimTable table) {
+        this(null, null);
+        this.root = this;
+        this.table = table;
+    }
+
     private AimTable table; //TODO remove table and use schema only
-    private Integer startSegment;
-    private Integer endSegment;
+//    private Integer startSegment;
+//    private Integer endSegment;
     protected AimFilter root;
     protected AimType type;
     protected AimFilter next;
 
-    public AimFilter(AimFilter root, AimType type) {
+    protected AimFilter(AimFilter root, AimType type) {
         this(root,type,null);
     }
 
-    public AimFilter(AimFilter root, AimType type, AimFilter next) {
+    protected AimFilter(AimFilter root, AimType type, AimFilter next) {
         this.type = type;
         this.root = root;
         this.next = next;
@@ -56,7 +64,7 @@ public class AimFilter {
     final public void write(Pipe pipe) throws IOException {
         pipe.write(root.toString());
     }
-    
+
     @Override public String toString() {
         return (next != null) ? " " + next.toString() : "";
     }
@@ -65,20 +73,32 @@ public class AimFilter {
         if (next != null) next.update(usedColumns);
     }
 
-    public boolean match(byte[][] data) {
-        return root.match(true, data);
+    public boolean match(LZ4Buffer[] record) {
+        return root.match(true, record);
     }
 
-    protected boolean match(boolean soFar, byte[][] data) {
-        return next == null ? soFar : next.match(soFar, data);
+    protected boolean match(boolean soFar, LZ4Buffer[] record) {
+        return next == null ? soFar : next.match(soFar, record);
     }
 
-    protected boolean match( byte[] value, byte[][] data) {
+    protected boolean match( LZ4Buffer value, LZ4Buffer[] record) {
         throw new IllegalAccessError(this.getClass().getSimpleName() + " cannot be matched against a value");
     }
 
     public AimFilter where(String expression) {
-        return next = new AimFilterSimple(root,root.table,expression);
+        return next = AimFilter.proxy(root, root.table,expression);
+    }
+
+    public AimFilter equals(final String value) {
+        if (type == null) return next.equals(value);
+        final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
+        return next = new AimFilter(root,type) {
+            @Override public String toString() { return "= " + type.wrap(value) + super.toString(); }
+            @Override protected boolean match(LZ4Buffer value, LZ4Buffer[] record) {
+                //FIXME with buffers the arrays have to be compared not checked for equality, probably use ByteArrayWrappers 
+                return super.match(value.compare(val,type.getDataType())==0, record);
+            }
+        };
     }
 
     public AimFilter and(String expression) {
@@ -102,41 +122,19 @@ public class AimFilter {
     public AimFilter not() {
         return next = new AimFilter(root, type, next) {
             @Override public String toString() { return "NOT" + super.toString(); }
-            @Override protected boolean match(boolean soFar, byte[][] data) {
-                return !next.match(soFar, data);
+            @Override protected boolean match(boolean soFar, LZ4Buffer[] record) {
+                return !next.match(soFar, record);
             }
         };
     }
 
-    public AimFilter equals(final String value) {
-        if (type == null) return next.equals(value);
-        final byte[] val = type.convert(value);
-        return next = new AimFilter(root,type) {
-            @Override public String toString() { return "= " + type.wrap(value) + super.toString(); }
-            @Override protected boolean match(byte[] value, byte[][] data) {
-                //FIXME with buffers the arrays have to be compared not checked for equality, probably use ByteArrayWrappers 
-                return super.match(Arrays.equals(value, val), data);
-            }
-        };
-    }
-    
-    //FIXME contains is now broken because we're adding string size to the converted bytes
     public AimFilter contains(final String value) {
         if (type == null) return next.contains(value);
-        final byte[] val = type.convert(value);
+        final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
         return next = new AimFilter(root,type) {
             @Override public String toString() { return "CONTAINS " + type.wrap(value) + super.toString(); }
-            @Override protected boolean match(byte[] value, byte[][] data) {
-                int v = 0;for(byte b: value) {
-                    if (v == val.length) {
-                        break;
-                    } else if (val[v]!=b) {
-                        v = 0;
-                    } else if (++v==val.length) {
-                        return super.match(true, data);
-                    }
-                }
-                return super.match(false, data);
+            @Override protected boolean match(LZ4Buffer value,  LZ4Buffer[] record) {
+                return super.match(value.contains(val,type.getDataType()), record);
             }
         };
     }
@@ -144,42 +142,38 @@ public class AimFilter {
 
     public AimFilter greaterThan(final String value) {
         if (type == null) return next.greaterThan(value);
-        final byte[][] vals = new byte[1][];
-        vals[0] = type.convert(value);
+        final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
         return next = new AimFilter(root,type) {
             @Override public String toString() { return "> " + type.wrap(value) + super.toString(); }
-            @Override protected boolean match(byte[] value, byte[][] data) {
-                int[] cmp = AimFilter.compare(value, vals);
-                return super.match(cmp[0] == 1, data);
+            @Override protected boolean match(LZ4Buffer value, LZ4Buffer[] data) {
+                return super.match(value.compare(val,type.getDataType()) > 0, data);
             }
         };
     }
 
     public AimFilter lessThan(final String value) {
         if (type == null) return next.lessThan(value);
-        final byte[][] vals = new byte[1][];
-        vals[0] = type.convert(value);
+        final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
         return next = new AimFilter(root,type) {
             @Override public String toString() { return "< " + type.wrap(value) +super.toString(); }
-            @Override protected boolean match(byte[] value, byte[][] data) {
-                int[] cmp = AimFilter.compare(value, vals);
-                return super.match(cmp[0] == -1, data);
+            @Override protected boolean match(LZ4Buffer value, LZ4Buffer[] data) {
+                return super.match(value.compare(val,type.getDataType()) < 0, data);
             }
         };
     }
 
     public AimFilter in(final String... values) {
         if (type == null) return next.in(values);
-        final byte[][] vals = new byte[values.length][]; 
+        final ByteBuffer[] vals = new ByteBuffer[values.length]; 
         int i = 0; for(String value:values) {
-            vals[i++] = type.convert(value);
+            vals[i++] = ByteBuffer.wrap(type.convert(value));
         }
         return next = new AimFilter(root,type) {
             @Override public String toString() { return "IN (" + Strings.join(values, ",") +")" + super.toString(); }
-            @Override protected boolean match(byte[] value, byte[][] data) {
+            @Override protected boolean match(LZ4Buffer value, LZ4Buffer[] data) {
                 boolean localResult = false;
-                for(byte[] val: vals) {
-                    if (Arrays.equals(value, val)) {
+                for(ByteBuffer val: vals) {
+                    if (value.compare(val,type.getDataType())==0) {
                         localResult = true;
                         break;
                     }
@@ -189,10 +183,50 @@ public class AimFilter {
         };
     }
 
+    public static class AimFilterSimple extends AimFilter {
+        private int colIndex;
+        private String colName;
+        public AimFilterSimple(AimFilter root, AimTable table, String field) {
+            super(root, table.def(field));
+            this.colName = field;
+        }
+        @Override public void update(String[] usedColumns) {
+            super.update(usedColumns);
+            for(colIndex=0;colIndex<usedColumns.length;colIndex++) {
+                if (usedColumns[colIndex].equals(colName)) break;
+            }
+            if (colIndex == -1) {
+                throw new IllegalArgumentException("Unknwon filter column " + colName);
+            }
+        }
+        @Override protected boolean match(boolean soFar, LZ4Buffer[] data) {
+            return next.match(data[colIndex], data);
+        }
+        @Override public String toString() {
+            return colName + super.toString();
+        }
+
+    }
+
+    abstract static public class AimFilterOp extends AimFilter {
+        public AimFilterOp(AimFilter root, String expression) {
+            super(root, null);
+            next = AimFilter.proxy(root, root.table,expression);
+        }
+        @Override
+        protected boolean match(boolean soFar, LZ4Buffer[] data) {
+            return compare(soFar, next.match(true, data));
+        }
+        abstract protected boolean compare(boolean a, boolean b);
+
+    }
+
     /**
+     * Experimental multi-threaded filter executor.
+     * 
      * filters run for each segment in parallel thread and should be sending 
      * the serialized filter over the pipe "to" the segment.
-     */
+     
     final public AimFilterSet go() throws IOException {
         final AimFilterSet result = new AimFilterSet();
         final List<Integer> segments = new LinkedList<Integer>();
@@ -228,65 +262,6 @@ public class AimFilter {
 
         return result;
     }
-
-    public static class AimFilterSimple extends AimFilter {
-        private int colIndex;
-        private String colName;
-        public AimFilterSimple(AimFilter root, AimTable table, String field) {
-            super(root, table.def(field));
-            this.colName = field;
-        }
-        @Override public void update(String[] usedColumns) {
-            super.update(usedColumns);
-            for(colIndex=0;colIndex<usedColumns.length;colIndex++) {
-                if (usedColumns[colIndex].equals(colName)) break;
-            }
-            if (colIndex == -1) {
-                throw new IllegalArgumentException("Unknwon filter column " + colName);
-            }
-        }
-        @Override protected boolean match(boolean soFar, byte[][] data) {
-            return next.match(data[colIndex], data);
-        }
-        @Override public String toString() {
-            return colName + super.toString();
-        }
-
-    }
-
-    abstract static public class AimFilterOp extends AimFilter {
-        public AimFilterOp(AimFilter root, String expression) {
-            super(root, null);
-            next = AimFilter.proxy(root, root.table,expression);
-        }
-        @Override
-        protected boolean match(boolean soFar, byte[][] data) {
-            return compare(soFar, next.match(true, data));
-        }
-        abstract protected boolean compare(boolean a, boolean b);
-
-    }
-
-    static public int[] compare(byte[] data, byte[][] vals) {
-        int[] result = new int[vals.length];
-        Arrays.fill(result, 0);
-        int i = 0;
-        while (i<data.length) {
-            int r = -1;
-            for(byte[] val: vals) if (result[++r] == 0) {
-                if (data.length < val.length) {
-                    result[r] = -1;
-                } else if (data.length > val.length) {
-                    result[r] = 1;
-                } else if ((data[i] & 0xFF) < (val[i] & 0xFF)) {
-                    result[r] = -1;
-                } else if ((data[i] & 0xFF) > (val[i] & 0xFF) ) {
-                    result[r] = 1;
-                }
-            }
-            i++;
-        }
-        return result;
-    }
+*/
 
 }

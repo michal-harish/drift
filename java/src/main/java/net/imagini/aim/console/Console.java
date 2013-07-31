@@ -8,7 +8,6 @@ import java.net.Socket;
 
 import joptsimple.internal.Strings;
 import net.imagini.aim.Aim.SortOrder;
-import net.imagini.aim.AimFilterSet;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimUtils;
 import net.imagini.aim.loaders.CSVLoader;
@@ -30,7 +29,7 @@ public class Console extends Thread {
         /**/
         new CSVLoader(new String[]{
                 "--gzip", 
-                "--limit","1000000",
+                "--limit","2000000",
                 "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(BYTEARRAY[2]),region_code(BYTEARRAY[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:BYTEARRAY[16]),user_quizzed(BOOL)",
                 "/Users/mharis/events-2013-07-23.csv.gz"
         }).start();
@@ -104,13 +103,6 @@ public class Console extends Thread {
                     if (originalSize>0) System.out.print(" Mb = " + ( size * 100 / originalSize ) + "%");
                     System.out.println();
                     break;
-                case "FILTER_SET":
-                    System.out.println("Filter: " + pipe.read());
-                    AimFilterSet set = new AimFilterSet(pipe);
-                    //TODO Filter segments:
-                    System.out.println("Filter cardinality/bits/lz4size: " + set.cardinality() + "/" + set.length() );
-                    System.out.println();
-                    break;
                 case "RESULT":
                     AimSchema schema = AimUtils.parseSchema(pipe.read());
                     //long count = 0;
@@ -118,9 +110,10 @@ public class Console extends Thread {
                         print(Strings.join(AimUtils.collect(schema, pipe), ", "));
                         //count++;
                     }
-                    long count = pipe.readLong();
                     long filteredCount = pipe.readLong();
-                    print("Num.records: " + filteredCount + "/" + count);
+                    long count = pipe.readLong();
+                    String error = pipe.read();
+                    print((Strings.isNullOrEmpty(error) ? "OK" : "ERROR " + error) +" Num.records: " + filteredCount + "/" + count);
                     break;
                 case "ERROR":
                    print("Error: " + pipe.read());

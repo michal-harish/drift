@@ -1,6 +1,5 @@
 package net.imagini.aim;
 
-import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.LinkedList;
@@ -10,7 +9,17 @@ import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Decompressor;
 import net.jpountz.lz4.LZ4Factory;
 
-//TODO investigate possibility of LZ4Buffer<AimDataType>
+/**
+ * This is an lz4 buffer for ZeroCopy filtering and scanning.
+ * 
+ * Although we've used here direct buffer, it seems that it doesn't
+ * give that much performance - the zero copy approach itself has much larger effect -
+ * so given the headaches with memory leaks we could potentially switch to array-backed ByteBuffer
+ * 
+ * TODO investigate possibility of LZ4Buffer<AimDataType>
+ * 
+ * @author mharis
+ */
 public class LZ4Buffer {
 
     private Integer size = 0;
@@ -99,53 +108,83 @@ public class LZ4Buffer {
     }
 
     public void mark() {
-        if (!eof()) {
-            zoom.mark();
-        }
+        zoom.mark();
     }
 
     public void reset() {
-        if (!eof()) {
+        zoom.reset();
+    }
+
+    public int skip(int skipBytes) {
+        int skipped = Math.min(skipBytes,zoom.remaining());
+        zoom.position(zoom.position()+skipBytes);
+        return skipped;
+    }
+
+
+    public int compare(ByteBuffer value, AimDataType type){
+
+        int ni; int i = zoom.position();
+        int nj; int j = 0;
+        if (type.equals(Aim.STRING)) {
+            zoom.mark();
+            value.mark();
+            ni = zoom.getInt() + 4; ni += 4;
+            nj = value.getInt() + 4; nj += 4;
             zoom.reset();
-        }
-    }
-/*
-    public ByteBuffer getValue(AimType type) {
-        zoom.slice().
-    }
-
-    public int compareTo(AimDataType type, ByteBuffer value) throws EOFException {
-        if (eof()) {
-            throw new EOFException();
-        }
-
-        return zoom.compareTo(value);
-    }
-    */
-    
-    public int read(AimDataType dataType, byte[] b) throws EOFException {
-        if (!eof()) {
-            int typeSize = 0;
-            if (dataType.equals(Aim.STRING)) {
-                zoom.mark();
-                typeSize = zoom.getInt() + 4;
-                zoom.reset();
-            } else {
-                typeSize = dataType.getSize();
-            }
-            zoom.get(b, 0, typeSize);
-            return typeSize;
+            value.reset();
         } else {
-            throw new EOFException();
+            ni = nj = type.getSize();
         }
+        if (ni == nj) {
+            int n = Math.min(ni, nj);
+            for (; j < n; i++, j++) {
+                int cmp = Byte.compare(zoom.get(i), value.get(j));
+                if (cmp != 0)
+                    return cmp;
+            }
+        }
+        return ni - nj;
+    }
+
+    /**
+     * TODO this routine should be done a bit better 
+     */
+    public boolean contains(ByteBuffer value, AimDataType type) {
+        int ni; int i = zoom.position();
+        int nj; int j = 0;
+        if (type.equals(Aim.STRING)) {
+            zoom.mark();
+            value.mark();
+            ni = zoom.getInt() + 4; i += 4;
+            nj = value.getInt() + 4; j += 4;
+            zoom.reset();
+            value.reset();
+        } else {
+            ni = nj = type.getSize();
+        }
+        if (nj > ni) {
+            return false; 
+        } else {
+            ni += zoom.position();
+            int v = j; for (; i < ni; i++) {
+                byte b = zoom.get(i);
+                if (value.get(v)!=b) {
+                    v = j;
+                } else if (++v==value.limit()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    public int asIntValue() {
+        return zoom.asIntBuffer().get(0);
     }
 
     public byte read() {
-        if (!eof()){
-            return zoom.get();
-        } else {
-            return -1;
-        }
+        return zoom.get();
     }
 
     private boolean decompress(Integer block) {
@@ -159,7 +198,14 @@ public class LZ4Buffer {
         int length = lengths.get(block);
         byte[] r = new byte[length];
         decompressor.decompress(blocks.get(block), 4, r, 0, length);
-        zoom = ByteBuffer.wrap(r);
+
+        /**
+         * malloc() buffer ! instaed of zoom = ByteBuffer.wrap(r);
+         */
+        zoom = ByteBuffer.allocateDirect(r.length);
+        zoom.put(r);
+        zoom.flip();
+
         zoom.order(Aim.endian);
         zoom.rewind();
         return true;

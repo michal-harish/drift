@@ -15,10 +15,10 @@ import java.util.regex.Pattern;
 
 import joptsimple.internal.Strings;
 import net.imagini.aim.AimFilter;
-import net.imagini.aim.AimFilterSet;
 import net.imagini.aim.AimQuery;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimType;
+import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.pipes.Pipe;
 
 public class TableServerQuerySession extends Thread {
@@ -37,7 +37,7 @@ public class TableServerQuerySession extends Thread {
             AimSchema schema = table.schema.subset("user_uid","user_quizzed","api_key","timestamp","post_code");//,"url"
             AimQuery query = new AimQuery(table);
             Integer range = null;
-            AimFilter filter = null;
+            AimFilter filter = query.filter().where("user_quizzed").equals("true");
             while(true) {
                 String input = pipe.read();
                 Queue<String> cmd = tokenize(input);
@@ -52,10 +52,17 @@ public class TableServerQuerySession extends Thread {
                     case "RANGE": handleRangeQuery(cmd,query); filter = null; break;
 
                     case "FILTER": 
-                        filter = handleFilterQuery(range, query, cmd); break;
+                        if (cmd.size()>0) {
+                            filter = handleFilterQuery(range, query, schema, cmd); 
+                        }
+                        executeQuery(range, query, schema, filter, false);
+                        break;
 
                     case "SELECT": 
-                        handleSelect(range, query, schema, filter, cmd); 
+                        if (cmd.size()>0) {
+                            schema = table.schema.subset(new ArrayList<String>(cmd));
+                        }
+                        executeQuery(range, query, schema, filter, true); 
                         break;
 
                     default: 
@@ -80,66 +87,6 @@ public class TableServerQuerySession extends Thread {
             }
         }
     }
-
-    private void handleScan(Queue<String> cmd) throws IOException {
-        AimSchema schema = table.schema.subset(Arrays.asList("timestamp","api_key","user_quizzed","user_uid"));
-        long t = System.currentTimeMillis();
-        int n = table.getNumSegments();
-        Pipe scanner = table.open(0, n-1, null, schema.names());
-        System.err.println("Open ms: " + (System.currentTimeMillis()-t));
-        long count = 0;
-        table.loadRecordsMs = 0;
-        table.readMs = 0;
-        table.mergeSortMs = 0;
-        try {
-            while(true) {
-                for (AimType type : schema.def()) {
-                    scanner.read(type.getDataType());
-                }
-                count++;
-            }
-        } catch (EOFException e) {
-            System.err.println("Segment scanned records: "+count);
-            System.err.println("-nextRecord ms: " + table.loadRecordsMs);
-            System.err.println("--table.mergeSortMs ms: " + table.mergeSortMs);
-            System.err.println("--table.readMs ms: " + table.readMs);
-        }
-    }
-
-    private void handleSelect(Integer range, AimQuery query, AimSchema schema, AimFilter filter, Queue<String> cmd) throws IOException {
-        long t = System.currentTimeMillis();
-        t = (System.currentTimeMillis()-t);
-        query.range(range);
-        Pipe result = query.select(filter, schema.names());
-        pipe.write(true);
-        pipe.write("RESULT");
-        pipe.write(schema.toString());
-        long count = 0; 
-        try {
-            boolean written;
-            while(true) {
-//                written = false;
-                for(AimType type: schema.def()) {
-                    byte[] val = result.read(type.getDataType());
-//                    if (!written) pipe.write(written = true);
-//                    pipe.write(type.getDataType(), val); 
-                }
-                count++;
-            }
-        } catch (EOFException e) {
-            pipe.write(false);
-            pipe.write((long)table.getCount());
-            pipe.write((long)count);
-            pipe.flush();
-        }
-
-    }
-
-    private AimQuery handleRangeQuery(Queue<String> cmd, AimQuery query) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
     private void handleStats(Queue<String> cmd) throws IOException {
         pipe.write(true);
         pipe.write("STATS");
@@ -151,7 +98,7 @@ public class TableServerQuerySession extends Thread {
         pipe.write(table.getOriginalSize());
     }
 
-    private AimFilter handleFilterQuery(Integer range, AimQuery query, Queue<String> cmd) throws IOException {
+    private AimFilter handleFilterQuery(Integer range, AimQuery query, AimSchema schema, Queue<String> cmd) throws IOException {
         query.range(range);
 
         AimFilter rootFilter = query.filter();
@@ -189,41 +136,105 @@ public class TableServerQuerySession extends Thread {
             }
         }
 
-        long t = System.currentTimeMillis();
-        AimFilterSet set = filter.go();
-        t = (System.currentTimeMillis()-t);
-
-        pipe.write(true);
-        pipe.write("FILTER_SET");
-        filter.write(pipe);
-        set.write(pipe);
-
-        return rootFilter;
+        return filter;
 
     }
 
-    static enum WordType { 
+
+    private AimQuery handleRangeQuery(Queue<String> cmd, AimQuery query) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    private void handleScan(Queue<String> cmd) throws IOException {
+        AimSchema schema = table.schema.subset(Arrays.asList("timestamp","api_key","user_quizzed","user_uid"));
+        long t = System.currentTimeMillis();
+        int n = table.getNumSegments();
+        Pipe scanner = table.open(0, n-1, null, schema.names());
+        System.err.println("Open ms: " + (System.currentTimeMillis()-t));
+        long count = 0;
+        table.loadRecordsMs = 0;
+        table.readMs = 0;
+        table.mergeSortMs = 0;
+        try {
+            while(true) {
+                for (AimType type : schema.def()) {
+                    scanner.read(type.getDataType());
+                }
+                count++;
+            }
+        } catch (EOFException e) {
+            System.err.println("Segment scanned records: "+count);
+            System.err.println("-nextRecord ms: " + table.loadRecordsMs);
+            System.err.println("--table.mergeSortMs ms: " + table.mergeSortMs);
+            System.err.println("--table.readMs ms: " + table.readMs);
+        }
+    }
+
+    private void executeQuery(
+        Integer range, 
+        AimQuery query, 
+        AimSchema schema, 
+        AimFilter filter,
+        boolean fetch
+    ) throws IOException {
+        long t = System.currentTimeMillis();
+        t = (System.currentTimeMillis()-t);
+        query.range(range);
+        Pipe result = query.select(filter, schema.names());
+        pipe.write(true);
+        pipe.write("RESULT");
+        pipe.write(schema.toString());
+        long count = 0; 
+        try {
+            boolean written;
+            while(true) {
+                written = false;
+                for(AimType type: schema.def()) {
+                    AimDataType dataType = type.getDataType();
+                    if (!fetch) {
+                        result.skip(dataType);
+                    } else {
+                        byte[] val = result.read(dataType);
+                        if (!written) pipe.write(written = true);
+                        pipe.write(dataType.getDataType(), val);
+                    }
+                }
+                count++;
+            }
+        } catch (Exception e) {
+            pipe.write(false);
+            pipe.write((long)count);
+            pipe.write((long)table.getCount());
+            pipe.write((e instanceof EOFException ? "" : e.getMessage() + ": "+ e.getStackTrace()[0].toString())); //success flag
+            pipe.flush();
+        }
+
+    }
+
+
+    static enum Token { 
         WHITESPACE,KEYWORD,OPERATOR,NUMBER,STRING
     }
     @SuppressWarnings("serial")
-    static final Map<WordType,Pattern> matchers = new HashMap<WordType,Pattern>() {{
-        put(WordType.WHITESPACE, Pattern.compile("^((\\s+))"));
-        put(WordType.KEYWORD, Pattern.compile("^(([A-Za-z_]+))"));
-        put(WordType.OPERATOR, Pattern.compile("^(([\\!@\\$%\\^&\\*;\\:|,<.>/\\?\\-=\\+\\(\\)\\[\\]\\{\\}`~]+))")); // TODO define separately () {} []
-        put(WordType.NUMBER,  Pattern.compile("^(([0-9]+|[0-9]+\\.[0-9]+))"));
-        put(WordType.STRING, Pattern.compile("^('(.*?)')")); // TODO fix escape sequence (?:\\"|.)*? OR /'(?:[^'\\]|\\.)*'/
+    static final Map<Token,Pattern> matchers = new HashMap<Token,Pattern>() {{
+        put(Token.WHITESPACE, Pattern.compile("^((\\s+))"));
+        put(Token.KEYWORD, Pattern.compile("^(([A-Za-z_]+))"));
+        put(Token.OPERATOR, Pattern.compile("^(([\\!@\\$%\\^&\\*;\\:|,<.>/\\?\\-=\\+\\(\\)\\[\\]\\{\\}`~]+))")); // TODO define separately () {} []
+        put(Token.NUMBER,  Pattern.compile("^(([0-9]+|[0-9]+\\.[0-9]+))"));
+        put(Token.STRING, Pattern.compile("^('(.*?)')")); // TODO fix escape sequence (?:\\"|.)*? OR /'(?:[^'\\]|\\.)*'/
     }};
     private Queue<String> tokenize(String input) throws IOException {
         Queue<String> result = new LinkedList<String>();
         int i = 0;
         main: while(i<input.length()) {
             String s = input.substring(i);
-            for(Entry<WordType,Pattern> p: matchers.entrySet()) {
+            for(Entry<Token,Pattern> p: matchers.entrySet()) {
                 Matcher m = p.getValue().matcher(s);
                 if (m.find()) {
                     i += m.group(1).length();
                     String word = m.group(2);
-                    if (!p.getKey().equals(WordType.WHITESPACE)) {
+                    if (!p.getKey().equals(Token.WHITESPACE)) {
                         result.add(word);
                     }
                     continue main;

@@ -34,7 +34,7 @@ public class AimQuery {
     }
 
     public AimFilter filter() {
-        return AimFilter.proxy(table, startSegment, endSegment);
+        return new AimFilter(table);
     }
 
     public Pipe select(final String... colNames) throws IOException {
@@ -49,37 +49,7 @@ public class AimQuery {
     }
 
     public Pipe select(AimFilter filter, final String... colNames) throws IOException {
-        final Pipe range = table.open(startSegment, endSegment, filter, colNames);
-        return new Pipe() {
-            private int fieldIndex = -1;
-            @Override public byte[] read(AimDataType type) throws IOException {
-                if (++fieldIndex == colNames.length) fieldIndex = 0;
-                return range.read(type);
-            }
-        };
+        return table.open(startSegment, endSegment, filter, colNames);
     }
-
-/*
-    public Pipe select(final AimFilterSet filter, final String... colNames) throws IOException {
-        final Pipe range = table.open(startSegment, endSegment, colNames);
-        return new Pipe() {
-            private int fieldIndex = colNames.length;
-            private AtomicLong index = new AtomicLong(0);
-            private AtomicLong remaining = new AtomicLong(filter.cardinality()); 
-            @Override public byte[] read(AimDataType type) throws IOException {
-                if (++fieldIndex >= colNames.length) {
-                    fieldIndex = 0;
-                    if (remaining.decrementAndGet() < 0)  throw new EOFException();
-                    while (!filter.get(index.getAndIncrement())) {
-                        for(int i=0; i<colNames.length; i++) {
-                            range.skip(type);
-                        }
-                    }
-                }
-                return range.read(type);
-            }
-        };
-    }
-*/
 
 }
