@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -17,6 +16,7 @@ import net.imagini.aim.AimType;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.AimUtils;
 import net.imagini.aim.LZ4Buffer;
+import net.imagini.aim.LZ4Buffer.LZ4Scanner;
 import net.imagini.aim.pipes.Pipe;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -36,13 +36,9 @@ public class Segment implements AimSegment {
     private AtomicLong originalSize = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
 
-
-    //TODO public AimSegment(..mmap file)
-
     /**
-     * Read-only Segment
+     * TODO Open segment from mmap file
      * @param data
-     */
     public Segment(AimSchema schema, LinkedList<ByteArrayOutputStream> data) {
         this.schema = schema;
         this.writable = false;
@@ -51,7 +47,7 @@ public class Segment implements AimSegment {
             buffer.addBlock(b.toByteArray());
             columnar.put(i++, buffer);
         }
-    }
+    }*/
 
     /**
      * Append-only segment
@@ -62,8 +58,7 @@ public class Segment implements AimSegment {
         this.writable = true;
         writers = new LinkedHashMap<>();
         for(int col=0; col < schema.size(); col++) {
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream(65535);
-            writers.put(col, buffer);
+            writers.put(col, new ByteArrayOutputStream(65535));
         }
     }
 
@@ -73,15 +68,18 @@ public class Segment implements AimSegment {
         }
     }
 
-    @Override final public void append(Pipe pipe) throws IOException {
+    @Override final public void append(Pipe in) throws IOException {
         try {
             checkWritable(true);
             //System.out.println("--------");
+            byte[][] record = new byte[schema.size()][Aim.COLUMN_BUFFER_SIZE];
+            for(int col = 0; col < schema.size() ; col++) {
+                AimDataType type = schema.dataType(col);
+                record[col] = in.read(type);
+            }
             for(int col = 0; col < schema.size() ; col++) {
                 AimDataType type = schema.dataType(col); 
-                byte[] value = pipe.read(type);
-                originalSize.addAndGet(write(col, type,value));
-                //System.out.println(col + " " + type + " "+ type.convert(value));
+                originalSize.addAndGet(write(col, type, record[col]));
             }
             count.incrementAndGet();
         } catch (IllegalAccessException e1) {
@@ -122,31 +120,29 @@ public class Segment implements AimSegment {
 
     @Override public Long count(AimFilter filter) throws IOException {
         //TODO extract schema from the filter
-        final AimSchema subSchema = schema.subset("user_quizzed");
+        final AimSchema subSchema = schema.subset("user_quizzed","api_key");
         if (filter != null) filter.updateFormula(subSchema.names());
 
-        final LZ4Buffer[] streams = new LZ4Buffer[subSchema.size()];
+        final LZ4Scanner[] scanners = new LZ4Scanner[subSchema.size()];
         int i = 0; for(String colName: subSchema.names()) {
-            LZ4Buffer buffer = columnar.get(schema.get(colName));
-            buffer.rewind(); // FIXME must be done on thread-safe instance not on the shared buffer
-            streams[i++] = buffer;
+            scanners[i++] = new LZ4Scanner(columnar.get(schema.get(colName)));
         }
 
         long count = 0;
         try {
             for(int c=0; c < subSchema.size(); c++) {
-                LZ4Buffer stream = streams[c];
-                if (stream.eof()) {
+                LZ4Scanner scanner = scanners[c];
+                if (scanner.eof()) {
                     throw new EOFException();
                 }
             }
             while(true) {
-                if (filter == null || filter.match(streams)) {
+                if (filter == null || filter.match(scanners)) {
                     count++;
                 }
                 for(int c=0; c< subSchema.size(); c++) {
                     AimType type = subSchema.get(c);
-                    LZ4Buffer stream = streams[c];
+                    LZ4Scanner stream = scanners[c];
                     int skipLength;
                     if (type.equals(Aim.STRING)) {
                         skipLength = 4 + stream.asIntValue();
@@ -161,6 +157,9 @@ public class Segment implements AimSegment {
             }
         } catch (EOFException e) {
             return count;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw ex;
         }
     }
 
@@ -180,18 +179,16 @@ public class Segment implements AimSegment {
  
         if (filter != null) filter.updateFormula(subSchema.names());
 
-        final LZ4Buffer[] streams = new LZ4Buffer[subSchema.size()];
+        final LZ4Scanner[] scanners = new LZ4Scanner[subSchema.size()];
         int i = 0; for(String colName: subSchema.names()) {
-            LZ4Buffer buffer = columnar.get(schema.get(colName));
-            buffer.rewind(); // FIXME must be done on thread-safe instance not on the shared buffer
-            streams[i++] = buffer;
+            scanners[i++] = new LZ4Scanner(columnar.get(schema.get(colName)));
         }
         return new InputStream() {
 
             @Override
             public long skip(long n) throws IOException {
                 if(checkNextByte()) {
-                    long skipped = currentBuffer.skip(n);
+                    long skipped = currentScanner.skip(n);
                     //TODO break n into max column lenghts
                     read+=skipped;
                     return skipped;
@@ -202,35 +199,35 @@ public class Segment implements AimSegment {
 
             @Override public int read() throws IOException {
                 read++; 
-                return checkNextByte() ? currentBuffer.read() & 0xff : -1;
+                return checkNextByte() ? currentScanner.read() & 0xff : -1;
             }
 
             private int currentColumn = -1;
-            private LZ4Buffer currentBuffer = null;
+            private LZ4Scanner currentScanner = null;
             private int currentReadLength = 0;
             private int read = -1;
             private boolean checkNextByte() throws IOException {
                 if (currentColumn == -1) {
                     for(int c=0;c<subSchema.size();c++) {
-                        if (streams[c].eof()) return false;
+                        if (scanners[c].eof()) return false;
                     }
                 } else if (read == currentReadLength) {
                     read = -1;
                     currentColumn++;
-                    currentBuffer = (currentColumn < subSchema.size()) ? streams[currentColumn] : null;
-                    if (currentBuffer != null && currentBuffer.eof()) {
+                    currentScanner = (currentColumn < subSchema.size()) ? scanners[currentColumn] : null;
+                    if (currentScanner != null && currentScanner.eof()) {
                         return false;
                     }
                 }
 
-                if (currentBuffer == null) {
+                if (currentScanner == null) {
                     read = -1;
                     currentColumn = 0;
-                    currentBuffer = streams[currentColumn];
+                    currentScanner = scanners[currentColumn];
                     while(true) {
-                        if (currentBuffer.eof()) {
+                        if (currentScanner.eof()) {
                             return false;
-                        } else if (filter == null || filter.match(streams)) {
+                        } else if (filter == null || filter.match(scanners)) {
                             break;
                         }
                         skipNextRecord();
@@ -240,7 +237,7 @@ public class Segment implements AimSegment {
                     read = 0;
                     AimType type = subSchema.get(currentColumn);
                     if (type.equals(Aim.STRING)) {
-                        currentReadLength = 4 + currentBuffer.asIntValue();
+                        currentReadLength = 4 + currentScanner.asIntValue();
                     } else {
                         currentReadLength = type.getDataType().getSize();
                     }
@@ -253,13 +250,14 @@ public class Segment implements AimSegment {
                     AimType type = subSchema.get(c);
                     int skipLength;
                     if (type.equals(Aim.STRING)) {
-                        skipLength = 4 + streams[c].asIntValue();
+                        skipLength = 4 + scanners[c].asIntValue();
                     } else {
                         skipLength  = type.getDataType().getSize();
                     }
-                    streams[c].skip(skipLength);
+                    scanners[c].skip(skipLength);
                 }
             }
         };
     }
+   
 }

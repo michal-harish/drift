@@ -11,6 +11,7 @@ import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,6 +43,11 @@ public class AimTable {
     private AtomicLong count = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
 
+    //TODO configure executor per table server
+    //FIXME there's some thread-unsafe bahviour between LZ4Scanners so for now 1 thread only
+    //it manifests when using more than 1 thread by occasional zoom buffer getting IndexOutOfBounds
+    final ExecutorService executor = Executors.newFixedThreadPool(1);
+
     //TODO segmentSize in bytes rather than records
     public AimTable(String name, Integer segmentSize, AimSchema schema, String sortField, SortOrder order) throws IOException {
         this.name = name;
@@ -57,8 +63,10 @@ public class AimTable {
     }
 
     public void add(AimSegment segment) {
-        //TODO add is not thread-safe
-        segments.add(segment);
+
+        synchronized(segments) {
+            segments.add(segment);
+        }
 
         numSegments.incrementAndGet();
         count.addAndGet(segment.getCount());
@@ -102,7 +110,9 @@ public class AimTable {
      * @throws IOException
      */
     public AimSegment open(int segmentId) throws IOException {
-        return segmentId >=0 && segmentId < segments.size() ? segments.get(segmentId) : null;
+        synchronized(segments) {
+            return segmentId >=0 && segmentId < segments.size() ? segments.get(segmentId) : null;
+        }
     }
 
     /**
@@ -111,28 +121,39 @@ public class AimTable {
      * I/O becomes bottleneck.
      */
     public long count(
-        ExecutorService executor,
         int startSegment, 
         int endSegment, 
         final AimFilter filter
-    ) throws ExecutionException {
+    ) throws IOException {
         final int[] seg = new int[endSegment-startSegment+1];
         for(int i=startSegment; i<= endSegment; i++) seg[i-startSegment] = i;
         final List<Future<Long>> results = new ArrayList<Future<Long>>();
         for(final int s: seg) {
             results.add(executor.submit(new Callable<Long>() {
                 @Override public Long call() throws Exception {
-                    return segments.get(s).count(filter);
+                    AimSegment segment;
+                    synchronized(segments) {
+                        segment = segments.get(s);
+                    }
+                    return segment.count(filter);
                 }
             }));
         }
         long count = 0;
+        Exception error = null; 
         for(Future<Long> result: results) {
             try {
                 count += result.get();
+            } catch (ExecutionException e) {
+                error = e ;
+                break;
             } catch (InterruptedException e) {
-                throw new ExecutionException(e);
+                error = e;
+                break;
             }
+        }
+        if (error != null) {
+            throw new IOException(error);
         }
         return count;
     }
@@ -172,7 +193,7 @@ public class AimTable {
 
         return new Pipe() {
             //TODO Create internal executor thread pool that fetches next record in the background
-            //whenever the previous one is polled from the tree map.
+            //like in the count() .. whenever the previous one is polled from the tree map.
 
             private int currentSegment = -1;
             private int currentColumn = columnNames.length-1;

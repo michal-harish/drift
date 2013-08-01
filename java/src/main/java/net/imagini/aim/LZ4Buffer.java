@@ -1,7 +1,6 @@
 package net.imagini.aim;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.LinkedList;
 
 import net.imagini.aim.AimTypeAbstract.AimDataType;
@@ -12,24 +11,26 @@ import net.jpountz.lz4.LZ4Factory;
 /**
  * This is an lz4 buffer for ZeroCopy filtering and scanning.
  * 
- * Although we've used here direct buffer, it seems that it doesn't
- * give that much performance - the zero copy approach itself has much larger effect -
- * so given the headaches with memory leaks we could potentially switch to array-backed ByteBuffer
+ * It is not Thread-Safe as it is a shared storage.
+ * For Thread-Safe operations over an instance of LZ4Buffer use LZ4Scanner.
  * 
+ * Although we've tried to use direct buffers, it seems that it doesn't
+ * give that much performance - the zero copy approach itself has much larger effect -
+ * so given the headaches with memory leaks we user array-backed ByteBuffer.
+ * 
+ * TODO decompress_buffer needs to be verified for Thread-Safety in the LZ4 c library
  * TODO investigate possibility of LZ4Buffer<AimDataType>
  * 
  * @author mharis
  */
 public class LZ4Buffer {
 
-    private Integer size = 0;
-    LinkedList<byte[]> blocks = new LinkedList<byte[]>();
-    LinkedList<Integer> lengths = new LinkedList<Integer>();
-    Integer block = null;
-    ByteBuffer zoom;
+    protected Integer size = 0;
+    protected LinkedList<byte[]> compressedBlocks = new LinkedList<byte[]>();
+    protected LinkedList<Integer> lengths = new LinkedList<Integer>();
 
     static private LZ4Compressor compressor = LZ4Factory.fastestInstance().highCompressor();
-    static private LZ4Decompressor decompressor = LZ4Factory.fastestInstance().decompressor();
+    static protected LZ4Decompressor decompressor = LZ4Factory.fastestInstance().decompressor();
 
     static public void main(String[] args) {
 
@@ -56,30 +57,20 @@ public class LZ4Buffer {
             "\n"
         ).getBytes());
 
-        instance.rewind();
-
+        LZ4Scanner scanner = new LZ4Scanner(instance);
         byte[] b = new byte[1];
-        while (!instance.eof()) {
-            b[0] = instance.read();
+        while (!scanner.eof()) {
+            b[0] = scanner.read();
             System.out.print(new String(b));
         }
     }
 
-    public LZ4Buffer() {
-        block = null;
-        zoom = null;
-    }
 
     public void addBlock(byte[] block) {
         int blockLength = block.length;
-        byte[] in = new byte[compressor.maxCompressedLength(blockLength)]; 
-        int cLen = compressor.compress(block, 0, blockLength, in, 0);
-        ByteBuffer out = ByteBuffer.allocate(4 + cLen);
-        out.order(ByteOrder.LITTLE_ENDIAN);
-        out.putInt(blockLength);
-        out.put(in,0,cLen);
-        out.flip();
-        blocks.add(out.array());
+        byte[] compress_buffer = new byte[compressor.maxCompressedLength(blockLength)];
+        int cLen = compressor.compress(block, 0, blockLength, compress_buffer, 0);
+        compressedBlocks.add(compress_buffer);
         lengths.add(blockLength);
         size += cLen;
     }
@@ -88,127 +79,127 @@ public class LZ4Buffer {
         return size;
     }
 
-    public void rewind() {
-        block = null;
-        zoom = null;
-    }
-
-    public boolean eof() {
-        if (zoom == null) {
-            if (!decompress(0)) {
-                return true;
+    static public class LZ4Scanner {
+        private LZ4Buffer buffer;
+        private byte[] decompress_buffer;
+        private Integer block = null;
+        private ByteBuffer zoom;
+        private int maxBlock;
+        public LZ4Scanner(LZ4Buffer buffer) {
+            this.buffer = buffer;
+            this.maxBlock = buffer.compressedBlocks.size() -1;
+            rewind();
+        }
+        public void rewind() {
+            block = null;
+            zoom = null;
+        }
+        public boolean eof() {
+            if (zoom == null) {
+                if (!decompress(0)) {
+                    return true;
+                }
             }
-        }
-        if (zoom.position() == zoom.limit()) {
-            if (!decompress(block+1)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public void mark() {
-        zoom.mark();
-    }
-
-    public void reset() {
-        zoom.reset();
-    }
-
-    public int skip(int skipBytes) {
-        int skipped = Math.min(skipBytes,zoom.remaining());
-        zoom.position(zoom.position()+skipBytes);
-        return skipped;
-    }
-
-
-    public int compare(ByteBuffer value, AimDataType type){
-
-        int ni; int i = zoom.position();
-        int nj; int j = 0;
-        if (type.equals(Aim.STRING)) {
-            zoom.mark();
-            value.mark();
-            ni = zoom.getInt() + 4; ni += 4;
-            nj = value.getInt() + 4; nj += 4;
-            zoom.reset();
-            value.reset();
-        } else {
-            ni = nj = type.getSize();
-        }
-        if (ni == nj) {
-            int n = Math.min(ni, nj);
-            for (; j < n; i++, j++) {
-                int cmp = Byte.compare(zoom.get(i), value.get(j));
-                if (cmp != 0)
-                    return cmp;
-            }
-        }
-        return ni - nj;
-    }
-
-    /**
-     * TODO this routine should be done a bit better 
-     */
-    public boolean contains(ByteBuffer value, AimDataType type) {
-        int ni; int i = zoom.position();
-        int nj; int j = 0;
-        if (type.equals(Aim.STRING)) {
-            zoom.mark();
-            value.mark();
-            ni = zoom.getInt() + 4; i += 4;
-            nj = value.getInt() + 4; j += 4;
-            zoom.reset();
-            value.reset();
-        } else {
-            ni = nj = type.getSize();
-        }
-        if (nj > ni) {
-            return false; 
-        } else {
-            ni += zoom.position();
-            int v = j; for (; i < ni; i++) {
-                byte b = zoom.get(i);
-                if (value.get(v)!=b) {
-                    v = j;
-                } else if (++v==value.limit()) {
+            if (zoom.position() == zoom.limit()) {
+                if (!decompress(block+1)) {
                     return true;
                 }
             }
             return false;
         }
-    }
-
-    public int asIntValue() {
-        return zoom.asIntBuffer().get(0);
-    }
-
-    public byte read() {
-        return zoom.get();
-    }
-
-    private boolean decompress(Integer block) {
-        if (block != null && this.block == block) {
-            return true;
+        public long skip(long skipBytes) {
+            if (skipBytes > zoom.remaining()) {
+                skipBytes = zoom.remaining();
+            }
+            if (skipBytes > 0) {
+                zoom.position(zoom.position()+(int)skipBytes);
+            }
+            return skipBytes;
         }
-        if (block >= blocks.size()) {
-            return false;
+        public int asIntValue() {
+            return AimUtils.getIntegerValue(zoom);
         }
-        this.block = block;
-        int length = lengths.get(block);
-        byte[] r = new byte[length];
-        decompressor.decompress(blocks.get(block), 4, r, 0, length);
+
+        public byte read() {
+            return zoom.get();
+        }
+
+        public int compare(ByteBuffer value, AimDataType type){
+            int ni; int i = zoom.position();
+            int nj; int j = 0;
+            int n;
+            if (type.equals(Aim.STRING)) {
+                ni = AimUtils.getIntegerValue(zoom) + 4; i += 4;
+                nj = AimUtils.getIntegerValue(value) + 4; j += 4;
+                n = Math.min(ni, nj);
+            } else {
+                n = ni = nj = type.getSize();
+            }
+            if (ni == nj) {
+                for (; j < n; i++, j++) {
+                    int cmp = Byte.compare(zoom.get(i), value.get(j));
+                    if (cmp != 0) {
+                        return cmp;
+                    }
+                }
+            }
+            return ni - nj;
+        }
 
         /**
-         * malloc() buffer ! instaed of zoom = ByteBuffer.wrap(r);
+         * TODO this routine should be done a bit better 
          */
-        zoom = ByteBuffer.allocateDirect(r.length);
-        zoom.put(r);
-        zoom.flip();
+        public boolean contains(ByteBuffer value, AimDataType type) {
+            int ni; int i = zoom.position();
+            int nj; int j = 0;
+            if (type.equals(Aim.STRING)) {
+                ni = AimUtils.getIntegerValue(zoom) + 4; i += 4;
+                nj = AimUtils.getIntegerValue(value) + 4; j += 4;
+            } else {
+                ni = nj = type.getSize();
+            }
+            if (nj > ni) {
+                return false; 
+            } else {
+                ni += zoom.position();
+                int v = j; for (; i < ni; i++) {
+                    byte b = zoom.get(i);
+                    if (value.get(v)!=b) {
+                        v = j;
+                    } else if (++v==value.limit()) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+        private boolean decompress(Integer block) {
+            if (block == null || this.block != block) {
+                if (block > maxBlock) {
+                    return false;
+                }
+                this.block = block;
+                int length = buffer.lengths.get(block);
+                if (decompress_buffer == null || decompress_buffer.length<length) {
+                    decompress_buffer = new byte[length];
+                }
+                LZ4Buffer.decompressor.decompress(
+                    buffer.compressedBlocks.get(block), 
+                    0, decompress_buffer, 0, length
+                );
 
-        zoom.order(Aim.endian);
-        zoom.rewind();
-        return true;
+                zoom = ByteBuffer.wrap(decompress_buffer,0,length);
+                /**
+                 * Direct malloc() 
+                 *
+                zoom = ByteBuffer.allocateDirect(length);
+                zoom.put(decompress_buffer, 0, length);
+                zoom.flip();*/
+
+                zoom.order(Aim.endian);
+            }
+            zoom.rewind();
+            return true;
+        }
     }
-
 }

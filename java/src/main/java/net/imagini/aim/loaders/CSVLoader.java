@@ -40,7 +40,7 @@ public class CSVLoader extends Thread {
         try {
             loader.join();
         } catch (InterruptedException e ) {
-            
+
         }
     }
 
@@ -65,18 +65,18 @@ public class CSVLoader extends Thread {
                 printHelp();
                 System.exit(1);
             }
-    
+
             InputStream in;
             if (filename == null) {
                 in = System.in;
             } else {
                 in = new FileInputStream(filename); 
             }
-    
+
             InputStreamReader reader;
             if (gzip) reader = new InputStreamReader(new GZIPInputStream(in));
             else reader = new InputStreamReader(in);
-    
+
             Socket socket = new Socket(InetAddress.getByName("localhost"), 4000);
             final Pipe out = new PipeLZ4(socket.getOutputStream(),Pipe.Protocol.LOADER);
             out.write(schema.toString());
@@ -87,10 +87,22 @@ public class CSVLoader extends Thread {
                     String line = lineReader.readLine();
                     String[] values= line.split("\t");
                     try {
+                        byte[][] record = new byte[schema.size()][];
                         int i = 0; for(AimType type: schema.def()) {
-                            String value = values[i++];
-                            //System.out.println(type + " >> " + value);
-                            out.write(type.getDataType(), type.convert(value));
+                            String value = values[i];
+                            record[i] = type.convert(value);
+                            /*
+                            i++;
+                        }
+                        i = 0; for(AimType type: schema.def()) {
+                        */
+                            try {
+                                out.write(type.getDataType(), record[i]);
+                                i++;
+                            } catch (Exception e) {
+                                System.err.println(type + " " + value);
+                                throw e;
+                            }
                         }
                     } catch (SocketException e) {
                         e.printStackTrace();
@@ -107,14 +119,11 @@ public class CSVLoader extends Thread {
                 socket.close();
             }
             in.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        } catch (IOException e) {}
     }
 
     private static void printHelp() {
         // TODO Auto-generated method stub
-        
     }
 
 }

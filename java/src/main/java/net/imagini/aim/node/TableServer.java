@@ -25,7 +25,7 @@ public class TableServer extends Thread {
                             socket = controllerListener.accept();
                             if (interrupted()) break;
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            System.out.println("Table Server("+TableServer.this.table.name+"):" + e.getMessage());
                             break;
                         }
                         Pipe pipe;
@@ -56,7 +56,7 @@ public class TableServer extends Thread {
             controllerAcceptor.interrupt();
         } finally {
             close();
-            System.err.println("Table Server("+TableServer.this.table.name+") closed.");
+            System.out.println("Table Server("+TableServer.this.table.name+") shut down.");
         }
     }
 

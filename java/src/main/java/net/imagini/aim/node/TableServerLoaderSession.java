@@ -6,6 +6,11 @@ import java.io.IOException;
 import net.imagini.aim.AimSegment;
 import net.imagini.aim.pipes.Pipe;
 
+/**
+ * Non-Thread safe, the session is a single-threaded context
+ * @author mharis
+ *
+ */
 public class TableServerLoaderSession extends Thread  {
 
     private Pipe pipe;
@@ -42,15 +47,13 @@ public class TableServerLoaderSession extends Thread  {
         } finally {
             try {
                 commitCurrentSegment();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            } catch (IOException e) {}
             System.out.println("Loading into " + table.name + " finished");
             try { pipe.close(); } catch (IOException e) { }
         }
     }
 
-    private synchronized void append(Pipe pipe) throws IOException {
+    private void append(Pipe pipe) throws IOException {
         if (currentSegment == null || currentSegment.getCount() % table.segmentSize == 0) {
             //FIXME add sortColumn to schema and if set instantiate sorted
             //currentSegment = new Segment(table.schema);
@@ -68,7 +71,6 @@ public class TableServerLoaderSession extends Thread  {
     }
 
     private void commitCurrentSegment() throws IOException {
-        //TODO thread-safe swap
         if (currentSegment != null) {
             try {
                 currentSegment.close();

@@ -1,5 +1,12 @@
 AIM - analytics in memory or CASSPAR - a mixutre of Cassandra, Spark and Kafka
 
+Quick-Start
+===========
+cd java
+mvn clean package
+./test.sh
+
+
 Motivation
 ==========
 * Hadoop suffers from extensive I/O and although Map-Reduce is a good paradigm, data location must be exploited 
@@ -54,6 +61,13 @@ Architecture TODOs and NOTEs
     - shema-mapping functions is cleaner as it is only in the wolrd of loaders 
     - but then the filters still need to do the same so probably custom fields
 
+Benchmark
+======================
+1.000.000 real events loaded into 10 segments on a single box -> 240Mb compressed to 24Mb
+count(user_quizzed=true and api_key contains 'mirror')
+result = 347 out of 1000000
+1 CPU avg consistent query time: 113 ms -> 240Mb(lz4)/sec/box
+2 CPUs: avg consistent query time: 61 ms -> 480Mb(lz4)/sec/box
 
 Protocol Message Types
 ======================

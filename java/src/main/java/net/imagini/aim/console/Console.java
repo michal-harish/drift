@@ -21,20 +21,30 @@ import net.imagini.aim.pipes.PipeLZ4;
 public class Console extends Thread {
 
     final private Pipe pipe;
+    
+    static private TableServer server;
+    static private Thread loader;
 
     public static void main(String[] args) throws IOException {
+        System.out.println("\nAIM/CASSPAR Test Console\n");
+
         AimTable table = new AimTable("events", 100000, new EventsSchema(), "user_uid", SortOrder.DESC);
-        new TableServer(table, 4000).start();
-        //new TestEventsLoader().start();
+        server = new TableServer(table, 4000);
+        server.start();
+
+        //loader = new TestEventsLoader().start();
         /**/
-        new CSVLoader(new String[]{
+        loader = new CSVLoader(new String[]{
                 "--gzip", 
-                "--limit","10000000",
+                "--limit","7200000",
                 "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(BYTEARRAY[2]),region_code(BYTEARRAY[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:BYTEARRAY[16]),user_quizzed(BOOL)",
                 "/Users/mharis/events-2013-07-23.csv.gz"
-        }).start();
+        });
+        loader.start();
         /**/
+
         new Console("localhost", 4000).run();
+
     }
 
     private Socket socket;
@@ -42,6 +52,10 @@ public class Console extends Thread {
     public Console(String host, int port) throws IOException {
         socket = new Socket(InetAddress.getByName(host), port);
         pipe = new PipeLZ4(socket, Protocol.QUERY);
+        print("<Enter> for STATS about the table");
+        print("FILTER <field> (=|>|<|IN|CONTAINS) '<value>' [(and|or|not) ...) - to setup a filter and see cardinality of it");
+        print("SELECT [<field>[,<field>[,..]] - to select the records that match previously set filter");
+        print("EXIT to exit");
     }
 
     private void print(String data) {
@@ -74,16 +88,11 @@ public class Console extends Thread {
                     e.printStackTrace();
                 }
             }
-        } catch (IOException e1) {
-            e1.printStackTrace();
-            //TODO reconnect
-        } finally {
-            try {
-                pipe.close();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+        } catch (IOException e1) {} finally {
+            System.out.println("Console shutting down..");
+            try { pipe.close();  } catch (IOException e2) {} 
+            if (loader != null) loader.interrupt();
+            server.interrupt();    
         }
     }
 

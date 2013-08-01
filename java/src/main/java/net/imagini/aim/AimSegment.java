@@ -7,7 +7,7 @@ import net.imagini.aim.pipes.Pipe;
 
 public interface AimSegment {
 
-    void append(Pipe pipe) throws IOException;
+    void append(Pipe in) throws IOException;
 
     void close() throws IllegalAccessException, IOException;
 

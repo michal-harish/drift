@@ -35,58 +35,68 @@ public class TableServerQuerySession extends Thread {
     @Override
     public void run() {
         try {
-            AimSchema schema = table.schema.subset("user_uid","user_quizzed","api_key","timestamp","post_code");//,"url"
+            AimSchema schema = table.schema.subset("user_uid","user_quizzed","api_key","timestamp","url");
             AimQuery query = new AimQuery(table);
             Integer range = null;
             AimFilter filter = query.filter();
-            filter.where("user_quizzed").equals("true");
+            filter.where("user_quizzed").equals("true").and("api_key").contains("mirror");
             while(true) {
+                String command;
+                Queue<String> cmd;
                 String input = pipe.read();
-                Queue<String> cmd = tokenize(input);
-                String command = cmd.poll().toUpperCase();
-                switch(command.toUpperCase()) {
-
-                    case "STATS": handleStats(cmd); break;
-                    case "SCAN": handleScan(cmd); break;
-
-                    case "ALL": range = null; filter = null; break;
-                    case "LAST": range = table.getNumSegments()-1; filter = null; break;
-                    case "RANGE": handleRangeQuery(cmd,query); filter = null; break;
-
-                    case "FILTER": 
-                        if (cmd.size()>0) {
-                            filter = handleFilterQuery(range, query, schema, cmd); 
-                        }
-                        executeCount(range, query, filter);
-                        break;
-
-                    case "SELECT": 
-                        if (cmd.size()>0) {
-                            schema = table.schema.subset(new ArrayList<String>(cmd));
-                        }
-                        executeSelect(range, query, schema, filter, true); 
-                        break;
-
-                    default: 
+                try {
+                    cmd = tokenize(input);
+                    command = cmd.poll().toUpperCase();
+                    switch(command.toUpperCase()) {
+                        default: 
+                            pipe.write(true);
+                            pipe.write("ERROR");
+                            pipe.write("Unknown query command " + command); 
+                            break;
+    
+                        case "STATS": handleStats(cmd); break;
+                        case "SCAN": handleScan(cmd); break;
+    
+                        case "ALL": range = null; filter = null; break;
+                        case "LAST": range = table.getNumSegments()-1; filter = null; break;
+                        case "RANGE": handleRangeQuery(cmd,query); filter = null; break;
+    
+                        case "FILTER": 
+                            if (cmd.size()>0) {
+                                filter = handleFilterQuery(range, query, schema, cmd); 
+                            }
+                            executeCount(range, query, filter);
+                            break;
+    
+                        case "SELECT": 
+                            if (cmd.size()>0) {
+                                schema = table.schema.subset(new ArrayList<String>(cmd));
+                            }
+                            executeSelect(range, query, schema, filter, true); 
+                            break;
+                    }
+                    pipe.write(false);
+                    pipe.flush();
+                } catch (Exception e) {
+                    try {
                         pipe.write(true);
                         pipe.write("ERROR");
-                        pipe.write("Unknown query command " + command); 
-                        break;
+                        String[] trace = new String[e.getStackTrace().length];
+                        int i = 0; for(StackTraceElement t:e.getStackTrace()) trace[i++] = t.toString();
+                        pipe.write("Error " + e.getMessage() + "\n"  + Strings.join(trace,"\n"));
+                        pipe.write(false);
+                        pipe.flush();
+                    } catch (Exception e1) {
+                        System.out.println("Could not send error response to the clien: ");
+                        e.printStackTrace();
+                    }
                 }
-                pipe.write(false);
-                pipe.flush();
             }
-        } catch (IOException | ExecutionException e) {
+        } catch (IOException e) {
             try {
-                pipe.write(true);
-                pipe.write("ERROR");
-                pipe.write("Unknown command " + e.getMessage()).flush();
-                pipe.write(false);
-                pipe.flush();
-            } catch (Exception e1) {
-                System.out.println("Could not send error response to the clien: ");
-                e.printStackTrace();
-            }
+                pipe.close();
+            } catch (IOException e1) {}
+            return;
         }
     }
     private void handleStats(Queue<String> cmd) throws IOException {

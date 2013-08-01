@@ -1,9 +1,6 @@
 package net.imagini.aim;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.node.AimTable;
@@ -55,10 +52,8 @@ public class AimQuery {
         return table.open(startSegment, endSegment, filter, colNames);
     }
 
-    final ExecutorService executor = Executors.newFixedThreadPool(4);
-
-    public Long count(AimFilter filter) throws ExecutionException {
-        return table.count(executor, startSegment, endSegment, filter); 
+    public Long count(AimFilter filter) throws IOException {
+        return table.count(startSegment, endSegment, filter); 
     }
 
 }

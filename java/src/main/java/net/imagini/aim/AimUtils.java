@@ -4,6 +4,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.LinkedHashMap;
 
@@ -80,6 +81,12 @@ public class AimUtils {
         return in.skip(size);
     }
 
+    public static String read(InputStream in) throws IOException {
+        byte[] buf = new byte[Aim.COLUMN_BUFFER_SIZE];
+        read(in,Aim.STRING,buf);
+        return Aim.STRING.convert(buf);
+    }
+
     static public int read(InputStream in,AimDataType type, byte[] buf) throws IOException {
         int size;
         int offset = 0;
@@ -96,18 +103,23 @@ public class AimUtils {
     }
 
     public static int write(AimDataType type, byte[] value, OutputStream out) throws IOException {
-        int size = 0; 
-        if (type.equals(Aim.STRING)) {
-            size = getIntegerValue(value);
-            out.write(value, 0, size + 4);
-            return size + 4;
-        } else if (type instanceof Aim.BYTEARRAY) {
-            size = ((Aim.BYTEARRAY)type).size;
-        } else {
-            size = type.getSize();
+        int size = 0;
+        try {
+            if (type.equals(Aim.STRING)) {
+                size = getIntegerValue(value);
+                out.write(value, 0, size + 4);
+                return size + 4;
+            } else if (type instanceof Aim.BYTEARRAY) {
+                size = ((Aim.BYTEARRAY)type).size;
+            } else {
+                size = type.getSize();
+            }
+            out.write(value,0,size);
+            return size;
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.err.println(value.length + " ?? " + (size + 4));
+            throw e;
         }
-        out.write(value,0,size);
-        return size;
     }
 
     static public void read(InputStream in, byte[] buf, int offset, int len) throws IOException {
@@ -132,6 +144,25 @@ public class AimUtils {
                 (((int)value[offset+1] & 0xff) << 16) + 
                 (((int)value[offset+2] & 0xff) << 8) + 
                 (((int)value[offset+3] & 0xff) << 0)
+            );
+        }
+    }
+
+    static public int getIntegerValue(ByteBuffer value) {
+        int offset = value.position();
+        if (Aim.endian.equals(ByteOrder.LITTLE_ENDIAN)) {
+            return (
+                    (((int)value.get(offset+3)) << 24) + 
+                    (((int)value.get(offset+2) & 0xff) << 16) + 
+                    (((int)value.get(offset+1) & 0xff) << 8) + 
+                    (((int)value.get(offset+0) & 0xff) << 0)
+                );
+        } else {
+            return (
+                (((int)value.get(offset+0)) << 24) + 
+                (((int)value.get(offset+1) & 0xff) << 16) + 
+                (((int)value.get(offset+2) & 0xff) << 8) + 
+                (((int)value.get(offset+3) & 0xff) << 0)
             );
         }
     }
