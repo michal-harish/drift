@@ -1,5 +1,6 @@
 package net.imagini.aim.node;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -119,6 +120,50 @@ public class Segment implements AimSegment {
         return originalSize.get();
     }
 
+    @Override public Long count(AimFilter filter) throws IOException {
+        //TODO extract schema from the filter
+        final AimSchema subSchema = schema.subset("user_quizzed");
+        if (filter != null) filter.updateFormula(subSchema.names());
+
+        final LZ4Buffer[] streams = new LZ4Buffer[subSchema.size()];
+        int i = 0; for(String colName: subSchema.names()) {
+            LZ4Buffer buffer = columnar.get(schema.get(colName));
+            buffer.rewind(); // FIXME must be done on thread-safe instance not on the shared buffer
+            streams[i++] = buffer;
+        }
+
+        long count = 0;
+        try {
+            for(int c=0; c < subSchema.size(); c++) {
+                LZ4Buffer stream = streams[c];
+                if (stream.eof()) {
+                    throw new EOFException();
+                }
+            }
+            while(true) {
+                if (filter == null || filter.match(streams)) {
+                    count++;
+                }
+                for(int c=0; c< subSchema.size(); c++) {
+                    AimType type = subSchema.get(c);
+                    LZ4Buffer stream = streams[c];
+                    int skipLength;
+                    if (type.equals(Aim.STRING)) {
+                        skipLength = 4 + stream.asIntValue();
+                    } else {
+                        skipLength  = type.getDataType().getSize();
+                    }
+                    stream.skip(skipLength);
+                    if (stream.eof()) {
+                        throw new EOFException();
+                    }
+                }
+            }
+        } catch (EOFException e) {
+            return count;
+        }
+    }
+
     /**
      * ZeroCopy
      * Not Thread-safe 
@@ -145,11 +190,14 @@ public class Segment implements AimSegment {
 
             @Override
             public long skip(long n) throws IOException {
-                long skipped = 0;
-                while(checkNextByte() && skipped < n) {
-                    skipped += currentBuffer.skip(1);
+                if(checkNextByte()) {
+                    long skipped = currentBuffer.skip(n);
+                    //TODO break n into max column lenghts
+                    read+=skipped;
+                    return skipped;
+                } else {
+                    return 0;
                 }
-                return skipped;
             }
 
             @Override public int read() throws IOException {

@@ -3,9 +3,15 @@ package net.imagini.aim.node;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -100,6 +106,38 @@ public class AimTable {
     }
 
     /**
+     * Parallel count - currently hard-coded for 4-core processors, however once the table
+     * is distributed across multiple machines this thread pool should be bigger until the 
+     * I/O becomes bottleneck.
+     */
+    public long count(
+        ExecutorService executor,
+        int startSegment, 
+        int endSegment, 
+        final AimFilter filter
+    ) throws ExecutionException {
+        final int[] seg = new int[endSegment-startSegment+1];
+        for(int i=startSegment; i<= endSegment; i++) seg[i-startSegment] = i;
+        final List<Future<Long>> results = new ArrayList<Future<Long>>();
+        for(final int s: seg) {
+            results.add(executor.submit(new Callable<Long>() {
+                @Override public Long call() throws Exception {
+                    return segments.get(s).count(filter);
+                }
+            }));
+        }
+        long count = 0;
+        for(Future<Long> result: results) {
+            try {
+                count += result.get();
+            } catch (InterruptedException e) {
+                throw new ExecutionException(e);
+            }
+        }
+        return count;
+    }
+
+    /**
      * ZeroCopy 
      * Open multiple segments - this is where streaming-merge-sort happens
      * Note: merge sort is combined with TreeMap O=log(n) indexing so
@@ -115,85 +153,89 @@ public class AimTable {
     public long readMs = 0;
     public long mergeSortMs = 0;
     public Pipe open(
-            int startSegment, 
-            int endSegment,
-            final AimFilter filter, 
-            final String... columnNames
-        ) throws IOException {
-            //TODO sortColumn columns must be present, so will be added if missing
-            final int[] seg = new int[endSegment-startSegment+1];
-            for(int i=startSegment; i<= endSegment; i++) seg[i-startSegment] = i;
-            final InputStream[] str = new InputStream[segments.size()];
-            final AimSchema subSchema = schema.subset(columnNames);
-            for(int s = 0; s <seg.length; s++) {
-                str[s] = segments.get(seg[s]).open(filter, columnNames);
-            }
-
-            final int sortSubColumn = subSchema.get(schema.name(sortColumn));
-            loadRecordsMs = 0;
-            return new Pipe() {
-                private int currentSegment = -1;
-                private int currentColumn = columnNames.length-1;
-                //TODO get rid of ByteArrayWrapper and use just ByteBuffer
-                private TreeMap<ByteArrayWrapper,Integer> sortIndex = new TreeMap<>();
-                final private Boolean[] hasData = new Boolean[segments.size()];
-                final private byte[][][] buffer = new byte[segments.size()][schema.size()][Aim.COLUMN_BUFFER_SIZE];
-                @Override
-                public void skip(AimDataType type) throws IOException {
-                    if (++currentColumn == columnNames.length) {
-                        currentColumn = 0;
-                        readNextRecord();
-                    }
-                }
-                @Override public byte[] read(AimDataType type) throws IOException {
-                    if (++currentColumn == columnNames.length) {
-                        currentColumn = 0;
-                        readNextRecord();
-                    }
-                    return buffer[currentSegment][currentColumn];
-                }
-                private void readNextRecord() throws IOException {
-                    if (currentSegment ==-1 ) {
-                        for(int s = 0; s <seg.length; s++) {
-                            loadRecordFromSegment(s);
-                        }
-                    } else if (hasData[currentSegment]) {
-                        loadRecordFromSegment(currentSegment);
-                    }
-                    long t = System.currentTimeMillis();
-                    if (sortIndex.size() == 0) {
-                        throw new EOFException();
-                    }
-                    Entry<ByteArrayWrapper,Integer> next;
-                    switch(sortOrder) {
-                        case DESC: next = sortIndex.pollLastEntry();break;
-                        default: case ASC: next = sortIndex.pollLastEntry();break;
-                    }
-                    currentSegment = next.getValue();
-                    mergeSortMs += System.currentTimeMillis() - t;
-                }
-                private void loadRecordFromSegment(int s) throws IOException {
-                    long t = System.currentTimeMillis();
-                    try {
-                        for(String colName: columnNames) {
-                            int c = subSchema.get(colName);
-                            AimType type = subSchema.get(c);
-                            long t2 = System.currentTimeMillis();
-                            AimUtils.read(str[s],type.getDataType(), buffer[s][c]);
-                            readMs += System.currentTimeMillis() - t2;
-                        }
-                        long t2 = System.currentTimeMillis();
-                        sortIndex.put(new ByteArrayWrapper(buffer[s][sortSubColumn],s), s);
-                        hasData[s] = true;
-                        mergeSortMs += System.currentTimeMillis() - t2;
-                    } catch (EOFException e) {
-                        hasData[s] = false;
-                    }
-                    loadRecordsMs += System.currentTimeMillis() - t;
-
-                }
-            };
+        int startSegment, 
+        int endSegment,
+        final AimFilter filter, 
+        final String... columnNames
+    ) throws IOException {
+        //TODO sortColumn columns must be present, so will be added if missing
+        final int[] seg = new int[endSegment-startSegment+1];
+        for(int i=startSegment; i<= endSegment; i++) seg[i-startSegment] = i;
+        final InputStream[] str = new InputStream[segments.size()];
+        final AimSchema subSchema = schema.subset(columnNames);
+        for(int s = 0; s <seg.length; s++) {
+            str[s] = segments.get(seg[s]).open(filter, columnNames);
         }
+
+        final int sortSubColumn = subSchema.get(schema.name(sortColumn));
+        loadRecordsMs = 0;
+
+        return new Pipe() {
+            //TODO Create internal executor thread pool that fetches next record in the background
+            //whenever the previous one is polled from the tree map.
+
+            private int currentSegment = -1;
+            private int currentColumn = columnNames.length-1;
+            //TODO get rid of ByteArrayWrapper and use just ByteBuffer
+            private TreeMap<ByteArrayWrapper,Integer> sortIndex = new TreeMap<>();
+            final private Boolean[] hasData = new Boolean[segments.size()];
+            final private byte[][][] buffer = new byte[segments.size()][schema.size()][Aim.COLUMN_BUFFER_SIZE];
+            @Override
+            public void skip(AimDataType type) throws IOException {
+                if (++currentColumn == columnNames.length) {
+                    currentColumn = 0;
+                    readNextRecord();
+                }
+            }
+            @Override public byte[] read(AimDataType type) throws IOException {
+                if (++currentColumn == columnNames.length) {
+                    currentColumn = 0;
+                    readNextRecord();
+                }
+                return buffer[currentSegment][currentColumn];
+            }
+            private void readNextRecord() throws IOException {
+                if (currentSegment ==-1 ) {
+                    for(int s = 0; s <seg.length; s++) {
+                        loadRecordFromSegment(s);
+                    }
+                } else if (hasData[currentSegment]) {
+                    loadRecordFromSegment(currentSegment);
+                }
+                long t = System.currentTimeMillis();
+                if (sortIndex.size() == 0) {
+                    throw new EOFException();
+                }
+                Entry<ByteArrayWrapper,Integer> next;
+                switch(sortOrder) {
+                    case DESC: next = sortIndex.pollLastEntry();break;
+                    default: case ASC: next = sortIndex.pollLastEntry();break;
+                }
+                currentSegment = next.getValue();
+                mergeSortMs += System.currentTimeMillis() - t;
+            }
+            private void loadRecordFromSegment(int s) throws IOException {
+                long t = System.currentTimeMillis();
+                try {
+                    for(String colName: columnNames) {
+                        int c = subSchema.get(colName);
+                        AimType type = subSchema.get(c);
+                        long t2 = System.currentTimeMillis();
+                        AimUtils.read(str[s],type.getDataType(), buffer[s][c]);
+                        readMs += System.currentTimeMillis() - t2;
+                    }
+                    long t2 = System.currentTimeMillis();
+                    sortIndex.put(new ByteArrayWrapper(buffer[s][sortSubColumn],s), s);
+                    hasData[s] = true;
+                    mergeSortMs += System.currentTimeMillis() - t2;
+                } catch (EOFException e) {
+                    hasData[s] = false;
+                }
+                loadRecordsMs += System.currentTimeMillis() - t;
+
+            }
+        };
+    }
 
 /* 
     public InputStream[] open(int startSegment, int endSegment, String... columnNames) throws IOException {

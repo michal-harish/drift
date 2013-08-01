@@ -23,13 +23,13 @@ public class Console extends Thread {
     final private Pipe pipe;
 
     public static void main(String[] args) throws IOException {
-        AimTable table = new AimTable("events", 10000, new EventsSchema(), "user_uid", SortOrder.DESC);
+        AimTable table = new AimTable("events", 100000, new EventsSchema(), "user_uid", SortOrder.DESC);
         new TableServer(table, 4000).start();
         //new TestEventsLoader().start();
         /**/
         new CSVLoader(new String[]{
                 "--gzip", 
-                "--limit","20000000",
+                "--limit","10000000",
                 "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(BYTEARRAY[2]),region_code(BYTEARRAY[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:BYTEARRAY[16]),user_quizzed(BOOL)",
                 "/Users/mharis/events-2013-07-23.csv.gz"
         }).start();
@@ -89,6 +89,8 @@ public class Console extends Thread {
 
     private void processResponse() throws IOException {
         while(pipe.readBool()) {
+            String filter;
+            Long count;
             switch(pipe.read()) {
                 case "STATS":
                     System.out.println("Table name: " + pipe.read()); 
@@ -103,16 +105,23 @@ public class Console extends Thread {
                     if (originalSize>0) System.out.print(" Mb = " + ( size * 100 / originalSize ) + "%");
                     System.out.println();
                     break;
+                case "COUNT":
+                    filter = pipe.read();
+                    count = pipe.readLong();
+                    long totalCount = pipe.readLong();
+                    print("Filter: " + filter);
+                    print("Count: " + count + "/" + totalCount);
+                    break;
                 case "RESULT":
                     AimSchema schema = AimUtils.parseSchema(pipe.read());
-                    String filter = pipe.read();
+                    filter = pipe.read();
                     //long count = 0;
                     while (pipe.readBool()) {
                         print(Strings.join(AimUtils.collect(schema, pipe), ", "));
                         //count++;
                     }
                     long filteredCount = pipe.readLong();
-                    long count = pipe.readLong();
+                    count = pipe.readLong();
                     String error = pipe.read();
                     print("Schema: " + schema);
                     print("Filter: " + filter);

@@ -65,11 +65,21 @@ public class AimUtils {
         }
         return result;
     }
-    
 
-    /**
-     * ZeroCopy
-     */
+    public static long skip(InputStream in, AimDataType type) throws IOException {
+        int size;
+        if (type.equals(Aim.STRING)) {
+            byte[] buf = new byte[4];
+            read(in, buf, 0, 4);
+            size = getIntegerValue(buf);
+        } else if (type instanceof Aim.BYTEARRAY) {
+            size = ((Aim.BYTEARRAY)type).size;
+        } else {
+            size = type.getSize();
+        }
+        return in.skip(size);
+    }
+
     static public int read(InputStream in,AimDataType type, byte[] buf) throws IOException {
         int size;
         int offset = 0;

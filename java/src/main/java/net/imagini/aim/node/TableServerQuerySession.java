@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,7 +38,8 @@ public class TableServerQuerySession extends Thread {
             AimSchema schema = table.schema.subset("user_uid","user_quizzed","api_key","timestamp","post_code");//,"url"
             AimQuery query = new AimQuery(table);
             Integer range = null;
-            AimFilter filter = query.filter().where("user_quizzed").equals("true");
+            AimFilter filter = query.filter();
+            filter.where("user_quizzed").equals("true");
             while(true) {
                 String input = pipe.read();
                 Queue<String> cmd = tokenize(input);
@@ -55,14 +57,14 @@ public class TableServerQuerySession extends Thread {
                         if (cmd.size()>0) {
                             filter = handleFilterQuery(range, query, schema, cmd); 
                         }
-                        executeQuery(range, query, schema, filter, false);
+                        executeCount(range, query, filter);
                         break;
 
                     case "SELECT": 
                         if (cmd.size()>0) {
                             schema = table.schema.subset(new ArrayList<String>(cmd));
                         }
-                        executeQuery(range, query, schema, filter, true); 
+                        executeSelect(range, query, schema, filter, true); 
                         break;
 
                     default: 
@@ -74,7 +76,7 @@ public class TableServerQuerySession extends Thread {
                 pipe.write(false);
                 pipe.flush();
             }
-        } catch (IOException e) {
+        } catch (IOException | ExecutionException e) {
             try {
                 pipe.write(true);
                 pipe.write("ERROR");
@@ -171,15 +173,29 @@ public class TableServerQuerySession extends Thread {
         }
     }
 
-    private void executeQuery(
+    private void executeCount(
+        Integer range, 
+        AimQuery query, 
+        AimFilter filter
+    ) throws IOException, ExecutionException {
+        long t = System.currentTimeMillis();
+        t = (System.currentTimeMillis()-t);
+        query.range(range);
+        Long count = query.count(filter);
+        pipe.write(true);
+        pipe.write("COUNT");
+        pipe.write(filter.toString());
+        pipe.write(count);
+        pipe.write((long)table.getCount());
+        pipe.flush();
+    }
+    private void executeSelect(
         Integer range, 
         AimQuery query, 
         AimSchema schema, 
         AimFilter filter,
         boolean fetch
     ) throws IOException {
-        long t = System.currentTimeMillis();
-        t = (System.currentTimeMillis()-t);
         query.range(range);
         Pipe result = query.select(filter, schema.names());
         pipe.write(true);

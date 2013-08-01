@@ -17,6 +17,8 @@ public interface AimSegment {
 
     long getOriginalSize();
 
+    Long count(AimFilter filter)  throws IOException;
+
     InputStream open(AimFilter filter, String[] columnNames) throws IOException;
 
 }
