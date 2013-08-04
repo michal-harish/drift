@@ -1,56 +1,77 @@
 package net.imagini.aim.loaders;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.util.Arrays;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.UUID;
 
-import net.imagini.aim.AimSchema;
-import net.imagini.aim.pipes.Pipe;
-import net.imagini.aim.pipes.PipeLZ4;
+import net.imagini.aim.Aim;
+import net.imagini.aim.node.AimTable;
+import net.imagini.aim.node.Segment;
 
 public class TestEventsLoader extends Thread{
 
-    public static void main(String[] args) throws InterruptedException, IOException {
-        TestEventsLoader loader = new TestEventsLoader();
-        loader.start();
-        loader.join();
+    private AimTable table;
+    private Segment currentSegment; 
+    private ByteBuffer buffer = ByteBuffer.allocate(1000000);
+
+    public TestEventsLoader(AimTable table) {
+        this.table = table;
     }
 
     public void run() {
         try {
-            Socket socket = new Socket(
-                InetAddress.getByName("localhost"), //10.100.11.239 
-                4000
-            );
-            final Pipe pipe = new PipeLZ4(socket.getOutputStream(), Pipe.Protocol.LOADER);
-            AimSchema schema = new EventsSchema();
-            pipe.write(schema.toString());
-            for (long i = 1; i <=3000; i++) {
+            buffer.order(ByteOrder.BIG_ENDIAN);
+            for (long i = 1; i <=10000000; i++) {
+                if (currentSegment == null) {
+                    currentSegment = new Segment(table.schema);
+                }
                 try {
                     UUID userUid  = UUID.randomUUID();
-                    pipe.write(i);
-                    pipe.write(schema.def("client_ip").convert("173.194.41.99"));
-                    pipe.write("VDNAUserTestEvent");
-                    pipe.write("user agent info ..");
-                    pipe.write(Arrays.copyOfRange("GB".getBytes(), 0, 2));
-                    pipe.write(Arrays.copyOfRange("LDN".getBytes(), 0, 3));
-                    pipe.write("EC2 A"+ i);
-                    pipe.write("test");
-                    pipe.write("http://");
-                    pipe.write(schema.def("user_uid").convert(userUid.toString()));
-                    pipe.write(userUid.hashCode() % 100 == 0);
-                } catch(IOException e) {
+                    buffer.putLong(i); 
+                    buffer.put(Aim.IPV4(Aim.INT).convert("173.194.41.99"));
+                    buffer.put(Aim.STRING.convert("VDNAUserTestEvent"));
+                    buffer.put(Aim.STRING.convert("user agent info .."));
+                    buffer.put(Aim.BYTEARRAY(2).convert("GB"));
+                    buffer.put(Aim.BYTEARRAY(3).convert("LDN"));
+                    buffer.put(Aim.STRING.convert("EC2 A"+ i));
+                    buffer.put(Aim.STRING.convert("test"));
+                    buffer.put(Aim.STRING.convert("http://"));
+                    buffer.put(Aim.BYTEARRAY(16).convert(userUid.toString()));
+                    buffer.put(Aim.BOOL.convert(userUid.hashCode() % 100 == 0 ? "true" : "false"));
+                    commitCurrentSegment();
+                } catch(Exception e) {
                     e.printStackTrace();
                     break;
                 }
             }
-            pipe.close();
-            socket.close();
+            commitCurrentSegment();
         } catch (Exception  ex) {
            ex.printStackTrace();
            System.exit(0);
         } 
+    }
+
+    private void commitCurrentSegment() throws IOException {
+        if (currentSegment != null) {
+            boolean commit = currentSegment.getSize() > 2000000L;
+            if (commit || buffer.position() > 65535) {
+                buffer.flip();
+                currentSegment.append(buffer);
+                buffer.clear();
+            }
+            if (commit) {
+                commitCurrentSegment();
+                try {
+                    currentSegment.close();
+                    if (currentSegment.getOriginalSize() > 0) {
+                        table.add(currentSegment);
+                    }
+                    currentSegment = null;
+                } catch (IllegalAccessException e) {
+                    throw new IOException(e);
+                }
+            }
+        }
     }
 }

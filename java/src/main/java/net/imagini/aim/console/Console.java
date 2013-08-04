@@ -28,20 +28,20 @@ public class Console extends Thread {
     public static void main(String[] args) throws IOException {
         System.out.println("\nAIM/CASSPAR Test Console\n");
 
-        AimTable table = new AimTable("events", 100000, new EventsSchema(), "user_uid", SortOrder.DESC);
+        AimTable table = new AimTable("events", 1000000, new EventsSchema(), "user_uid", SortOrder.DESC);
         server = new TableServer(table, 4000);
         server.start();
 
-        //loader = new TestEventsLoader().start();
+        //loader = new TestEventsLoader(table);
         /**/
         loader = new CSVLoader(new String[]{
                 "--gzip", 
-                "--limit","7200000",
+                "--limit","10000000",
                 "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(BYTEARRAY[2]),region_code(BYTEARRAY[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:BYTEARRAY[16]),user_quizzed(BOOL)",
                 "/Users/mharis/events-2013-07-23.csv.gz"
         });
-        loader.start();
         /**/
+        loader.start();
 
         new Console("localhost", 4000).run();
 
@@ -92,7 +92,7 @@ public class Console extends Thread {
             System.out.println("Console shutting down..");
             try { pipe.close();  } catch (IOException e2) {} 
             if (loader != null) loader.interrupt();
-            server.interrupt();    
+            server.interrupt();
         }
     }
 

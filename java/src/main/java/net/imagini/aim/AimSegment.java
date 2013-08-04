@@ -2,12 +2,11 @@ package net.imagini.aim;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import net.imagini.aim.pipes.Pipe;
+import java.nio.ByteBuffer;
 
 public interface AimSegment {
 
-    void append(Pipe in) throws IOException;
+    void append(ByteBuffer records) throws IOException;
 
     void close() throws IllegalAccessException, IOException;
 

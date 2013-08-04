@@ -73,8 +73,6 @@ public class AimUtils {
             byte[] buf = new byte[4];
             read(in, buf, 0, 4);
             size = getIntegerValue(buf);
-        } else if (type instanceof Aim.BYTEARRAY) {
-            size = ((Aim.BYTEARRAY)type).size;
         } else {
             size = type.getSize();
         }
@@ -93,14 +91,31 @@ public class AimUtils {
         if (type.equals(Aim.STRING)) {
             read(in, buf, 0, (offset  = 4));
             size = getIntegerValue(buf);
-        } else if (type instanceof Aim.BYTEARRAY) {
-            size = ((Aim.BYTEARRAY)type).size;
         } else {
             size = type.getSize();
         }
         read(in, buf, offset, size);
         return offset + size;
     }
+
+    public static long copy(ByteBuffer src, AimDataType type, ByteBuffer dest) {
+        int size;
+        int head = 0;
+        if (type.equals(Aim.STRING)) {
+            size = src.getInt();
+            dest.putInt(size);
+            head = 4;
+        } else {
+            size = type.getSize();
+        }
+        //TODO array buffer specific code should be done with slice instead
+        int o = dest.arrayOffset();
+        o += dest.position();
+        src.get(dest.array(),o,size);
+        dest.position(dest.position()+size);
+        return head + size;
+    }
+
 
     public static int write(AimDataType type, byte[] value, OutputStream out) throws IOException {
         int size = 0;
@@ -109,16 +124,28 @@ public class AimUtils {
                 size = getIntegerValue(value);
                 out.write(value, 0, size + 4);
                 return size + 4;
-            } else if (type instanceof Aim.BYTEARRAY) {
-                size = ((Aim.BYTEARRAY)type).size;
             } else {
                 size = type.getSize();
             }
             out.write(value,0,size);
             return size;
         } catch (ArrayIndexOutOfBoundsException e) {
-            System.err.println(value.length + " ?? " + (size + 4));
+            out.write(value, 0, size + 4);
+            System.err.println(value.length + " ?? " + (size + 4)  + " " + new String(value,4, size));
             throw e;
+        }
+    }
+
+    static public void read(InputStream in, ByteBuffer buf, int len) throws IOException {
+        int totalRead = 0;
+        while (totalRead < len) {
+            //buf.put(in. src)
+            int read = in.read(buf.array(),buf.arrayOffset()+buf.position(),len-totalRead);
+            if (read < 0 ) throw new EOFException();
+            else {
+                buf.position(buf.position()+read);
+                totalRead += read;
+            }
         }
     }
 

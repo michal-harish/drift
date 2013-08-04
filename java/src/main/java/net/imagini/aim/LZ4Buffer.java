@@ -3,6 +3,8 @@ package net.imagini.aim;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
+import scala.actors.threadpool.Arrays;
+
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Decompressor;
@@ -26,16 +28,19 @@ import net.jpountz.lz4.LZ4Factory;
 public class LZ4Buffer {
 
     protected Integer size = 0;
+    //FIXME for 481Mb byte[] list the heap is saying there's 876mb allocated in all byte[] arrays
     protected LinkedList<byte[]> compressedBlocks = new LinkedList<byte[]>();
     protected LinkedList<Integer> lengths = new LinkedList<Integer>();
 
+    static private Object compress_lock = new Object();
+    static private byte[] compress_buffer = new byte[65535];
     static private LZ4Compressor compressor = LZ4Factory.fastestInstance().highCompressor();
     static protected LZ4Decompressor decompressor = LZ4Factory.fastestInstance().decompressor();
 
     static public void main(String[] args) {
 
         LZ4Buffer instance = new LZ4Buffer();
-        instance.addBlock((
+        instance.addBlock(ByteBuffer.wrap((
             "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
             "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
             "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
@@ -44,9 +49,9 @@ public class LZ4Buffer {
             "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
             "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
             "\n"
-        ).getBytes());
+        ).getBytes()));
 
-        instance.addBlock((
+        instance.addBlock(ByteBuffer.wrap((
             "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
             "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
             "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
@@ -55,7 +60,7 @@ public class LZ4Buffer {
             "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
             "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
             "\n"
-        ).getBytes());
+        ).getBytes()));
 
         LZ4Scanner scanner = new LZ4Scanner(instance);
         byte[] b = new byte[1];
@@ -66,13 +71,20 @@ public class LZ4Buffer {
     }
 
 
-    public void addBlock(byte[] block) {
-        int blockLength = block.length;
-        byte[] compress_buffer = new byte[compressor.maxCompressedLength(blockLength)];
-        int cLen = compressor.compress(block, 0, blockLength, compress_buffer, 0);
-        compressedBlocks.add(compress_buffer);
-        lengths.add(blockLength);
-        size += cLen;
+    public int addBlock(ByteBuffer block) {
+
+        int blockLength = block.limit();
+        int maxCLen = compressor.maxCompressedLength(blockLength);
+        synchronized(compress_lock) {
+            if (compress_buffer.length < maxCLen) {
+                compress_buffer = new byte[maxCLen+65535];
+            }
+            int cLen = compressor.compress(block.array(), 0, blockLength, compress_buffer, 0);
+            compressedBlocks.add(Arrays.copyOfRange(compress_buffer, 0, cLen));
+            lengths.add(blockLength);
+            size += cLen;
+            return cLen;
+        }
     }
 
     public long size() {

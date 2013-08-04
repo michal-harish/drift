@@ -3,9 +3,8 @@ package net.imagini.aim.node;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.imagini.aim.Aim;
@@ -17,9 +16,6 @@ import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.AimUtils;
 import net.imagini.aim.LZ4Buffer;
 import net.imagini.aim.LZ4Buffer.LZ4Scanner;
-import net.imagini.aim.pipes.Pipe;
-
-import org.apache.commons.io.output.ByteArrayOutputStream;
 
 /**
  * zero-copy open methods, i.e. multiple stream readers should be able to operate without 
@@ -30,24 +26,12 @@ public class Segment implements AimSegment {
 
     final protected AimSchema schema;
     final protected LinkedHashMap<Integer,LZ4Buffer> columnar = new LinkedHashMap<>();
-    protected LinkedHashMap<Integer,ByteArrayOutputStream> writers = null;
+    //TODO move writers into the loader session context
+    protected LinkedHashMap<Integer,ByteBuffer> writers = null;
     private boolean writable;
     private AtomicLong count = new AtomicLong(0);
     private AtomicLong originalSize = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
-
-    /**
-     * TODO Open segment from mmap file
-     * @param data
-    public Segment(AimSchema schema, LinkedList<ByteArrayOutputStream> data) {
-        this.schema = schema;
-        this.writable = false;
-        int i = 0; for(ByteArrayOutputStream b: data) {
-            LZ4Buffer buffer = new LZ4Buffer();
-            buffer.addBlock(b.toByteArray());
-            columnar.put(i++, buffer);
-        }
-    }*/
 
     /**
      * Append-only segment
@@ -58,7 +42,8 @@ public class Segment implements AimSegment {
         this.writable = true;
         writers = new LinkedHashMap<>();
         for(int col=0; col < schema.size(); col++) {
-            writers.put(col, new ByteArrayOutputStream(65535));
+            columnar.put(col, new LZ4Buffer());
+            writers.put(col, ByteBuffer.allocate(65535));
         }
     }
 
@@ -68,42 +53,46 @@ public class Segment implements AimSegment {
         }
     }
 
-    @Override final public void append(Pipe in) throws IOException {
+    /**
+     * ByteBuffer input is a horizontal buffer where columns of a single record 
+     * follow in precise order before moving onto another record.
+     * @param buffer
+     * @throws IOException
+     */
+    final public void append(ByteBuffer input) throws IOException {
         try {
             checkWritable(true);
-            //System.out.println("--------");
-            byte[][] record = new byte[schema.size()][Aim.COLUMN_BUFFER_SIZE];
             for(int col = 0; col < schema.size() ; col++) {
-                AimDataType type = schema.dataType(col);
-                record[col] = in.read(type);
+                writers.get(col).clear();
+            }
+            while(input.position() < input.limit()) {
+                for(int col = 0; col < schema.size() ; col++) {
+                    AimDataType type = schema.dataType(col);
+                    try {
+                        originalSize.addAndGet(
+                            AimUtils.copy(input, type, writers.get(col))
+                        );
+                    } catch (Exception e) {
+                        System.err.println(input.position() + " " + input.limit() + " " + type);
+                        throw e;
+                    }
+                }
+                count.incrementAndGet();
             }
             for(int col = 0; col < schema.size() ; col++) {
-                AimDataType type = schema.dataType(col); 
-                originalSize.addAndGet(write(col, type, record[col]));
+                ByteBuffer writer = writers.get(col);
+                writer.flip();
+                size.addAndGet(columnar.get(col).addBlock(writer));
+                writer.clear();
             }
-            count.incrementAndGet();
         } catch (IllegalAccessException e1) {
             throw new IOException(e1);
         }
     }
 
-    protected int write(int column, AimDataType type, byte[] value) throws IOException {
-        return AimUtils.write(type, value, writers.get(column));
-    }
-
-
     @Override public void close() throws IOException, IllegalAccessException {
         checkWritable(true);
         this.writable = false;
-        for(Entry<Integer,ByteArrayOutputStream> c: writers.entrySet()) {
-            OutputStream writer = writers.get(c.getKey());
-            writer.close();
-            LZ4Buffer lz4buf = new LZ4Buffer();
-            lz4buf.addBlock(c.getValue().toByteArray());
-            columnar.put(c.getKey(), lz4buf);
-            size.addAndGet(lz4buf.size());
-        }
-        writers = null;
     }
 
     @Override public long getCount() {

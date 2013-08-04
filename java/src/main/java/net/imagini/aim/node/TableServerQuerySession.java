@@ -194,7 +194,7 @@ public class TableServerQuerySession extends Thread {
         Long count = query.count(filter);
         pipe.write(true);
         pipe.write("COUNT");
-        pipe.write(filter.toString());
+        pipe.write(filter == null ? null : filter.toString());
         pipe.write(count);
         pipe.write((long)table.getCount());
         pipe.flush();
@@ -211,7 +211,7 @@ public class TableServerQuerySession extends Thread {
         pipe.write(true);
         pipe.write("RESULT");
         pipe.write(schema.toString());
-        pipe.write(filter.toString());
+        pipe.write(filter == null ? null : filter.toString());
         long count = 0; 
         try {
             boolean written;

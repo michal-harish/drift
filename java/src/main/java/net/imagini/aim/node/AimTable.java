@@ -24,7 +24,6 @@ import net.imagini.aim.AimSegment;
 import net.imagini.aim.AimType;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.AimUtils;
-import net.imagini.aim.ByteArrayWrapper;
 import net.imagini.aim.pipes.Pipe;
 
 /**
@@ -34,7 +33,7 @@ public class AimTable {
 
     public final AimSchema schema;
     public final String name;
-    public final Integer segmentSize;
+    public final Integer segmentSizeBytes;
     public final int sortColumn;
     public final SortOrder sortOrder;
     private LinkedList<AimSegment> segments = new LinkedList<>();
@@ -49,12 +48,12 @@ public class AimTable {
     final ExecutorService executor = Executors.newFixedThreadPool(1);
 
     //TODO segmentSize in bytes rather than records
-    public AimTable(String name, Integer segmentSize, AimSchema schema, String sortField, SortOrder order) throws IOException {
+    public AimTable(String name, Integer segmentSizeBytes, AimSchema schema, String sortField, SortOrder order) throws IOException {
         this.name = name;
         this.sortColumn = schema.get(sortField);
         this.sortOrder = order;
         this.schema = schema;
-        this.segmentSize = segmentSize;
+        this.segmentSizeBytes = segmentSizeBytes;
         System.out.println("Table " + name + " (" + schema.toString() + ")");
     }
 
@@ -197,8 +196,8 @@ public class AimTable {
 
             private int currentSegment = -1;
             private int currentColumn = columnNames.length-1;
-            //TODO get rid of ByteArrayWrapper and use just ByteBuffer
-            private TreeMap<ByteArrayWrapper,Integer> sortIndex = new TreeMap<>();
+            //TODO get rid of ByteArrayWrapper and use just LZ4Scanner
+            private TreeMap<ComparableByteArray,Integer> sortIndex = new TreeMap<>();
             final private Boolean[] hasData = new Boolean[segments.size()];
             final private byte[][][] buffer = new byte[segments.size()][schema.size()][Aim.COLUMN_BUFFER_SIZE];
             @Override
@@ -227,7 +226,7 @@ public class AimTable {
                 if (sortIndex.size() == 0) {
                     throw new EOFException();
                 }
-                Entry<ByteArrayWrapper,Integer> next;
+                Entry<ComparableByteArray,Integer> next;
                 switch(sortOrder) {
                     case DESC: next = sortIndex.pollLastEntry();break;
                     default: case ASC: next = sortIndex.pollLastEntry();break;
@@ -246,7 +245,7 @@ public class AimTable {
                         readMs += System.currentTimeMillis() - t2;
                     }
                     long t2 = System.currentTimeMillis();
-                    sortIndex.put(new ByteArrayWrapper(buffer[s][sortSubColumn],s), s);
+                    sortIndex.put(new ComparableByteArray(buffer[s][sortSubColumn],s), s);
                     hasData[s] = true;
                     mergeSortMs += System.currentTimeMillis() - t2;
                 } catch (EOFException e) {

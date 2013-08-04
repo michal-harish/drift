@@ -91,23 +91,17 @@ public class CSVLoader extends Thread {
                         int i = 0; for(AimType type: schema.def()) {
                             String value = values[i];
                             record[i] = type.convert(value);
-                            /*
                             i++;
                         }
                         i = 0; for(AimType type: schema.def()) {
-                        */
-                            try {
-                                out.write(type.getDataType(), record[i]);
-                                i++;
-                            } catch (Exception e) {
-                                System.err.println(type + " " + value);
-                                throw e;
-                            }
+                            out.write(type.getDataType(), record[i]);
+                            i++;
                         }
                     } catch (SocketException e) {
                         e.printStackTrace();
                         break;
                     } catch (EOFException e) {
+                        out.flush();
                         break;
                     } catch (Exception e) {
                         System.out.println(line);

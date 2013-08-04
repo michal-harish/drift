@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import net.imagini.aim.Aim;
@@ -134,6 +135,22 @@ public class Pipe {
     }
     public int write(AimDataType type, byte[] value) throws IOException {
         return AimUtils.write(type, value, outputPipe);
+    }
+
+    public int read(AimDataType type, ByteBuffer buf) throws IOException {
+        int size;
+        int offset = 0;
+        if (type.equals(Aim.STRING)) {
+            buf.mark();
+            AimUtils.read(inputPipe, buf, (offset  = 4));
+            buf.reset();
+            size = AimUtils.getIntegerValue(buf);
+            buf.position(buf.position()+4);
+        } else {
+            size = type.getSize();
+        }
+        AimUtils.read(inputPipe, buf, size);
+        return offset + size;
     }
 
     public String read() throws IOException {

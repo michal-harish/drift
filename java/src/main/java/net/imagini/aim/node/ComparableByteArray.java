@@ -1,12 +1,12 @@
-package net.imagini.aim;
+package net.imagini.aim.node;
 
 import java.util.Arrays;
 
-public class ByteArrayWrapper implements Comparable<ByteArrayWrapper> {
+public class ComparableByteArray implements Comparable<ComparableByteArray> {
     public final byte[] bytes;
     private int classifier;
 
-    public ByteArrayWrapper(byte[] data, int classifier) {
+    public ComparableByteArray(byte[] data, int classifier) {
         if (data == null) {
             throw new NullPointerException();
         }
@@ -15,10 +15,10 @@ public class ByteArrayWrapper implements Comparable<ByteArrayWrapper> {
     }
 
     @Override public boolean equals(Object other) {
-        if (!(other instanceof ByteArrayWrapper)) {
+        if (!(other instanceof ComparableByteArray)) {
             return false;
         }
-        return Arrays.equals(bytes, ((ByteArrayWrapper)other).bytes);
+        return Arrays.equals(bytes, ((ComparableByteArray)other).bytes);
     }
 
     @Override public int hashCode() {
@@ -26,7 +26,7 @@ public class ByteArrayWrapper implements Comparable<ByteArrayWrapper> {
     }
 
     @Override
-    public int compareTo(ByteArrayWrapper val) {
+    public int compareTo(ComparableByteArray val) {
         int i = 0;
         while (i<bytes.length) {
             if (bytes.length < val.bytes.length) {

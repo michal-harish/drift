@@ -2,8 +2,10 @@ package net.imagini.aim.node;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import net.imagini.aim.AimSegment;
+import net.imagini.aim.AimType;
 import net.imagini.aim.pipes.Pipe;
 
 /**
@@ -16,7 +18,8 @@ public class TableServerLoaderSession extends Thread  {
     private Pipe pipe;
     private AimTable table;
     private Integer count = 0;
-    private AimSegment currentSegment; 
+    private AimSegment currentSegment;
+    private ByteBuffer buffer = ByteBuffer.allocate(1000000);
 
     public TableServerLoaderSession(AimTable table, Pipe pipe) throws IOException {
         this.pipe = pipe;
@@ -35,7 +38,20 @@ public class TableServerLoaderSession extends Thread  {
             try {
                 while (true) {
                     if (interrupted())  break;
-                    append(pipe);
+                    if (currentSegment == null) {
+                        //TODO add sortColumn to schema and if set instantiate sorted
+                        //currentSegment = new Segment(table.schema);
+                        currentSegment = new Segment/*Sorted*/(table.schema);//, table.sortColumn, table.sortOrder);
+                    }
+                    try { 
+                        for(AimType type: table.schema.def()) {
+                            pipe.read(type.getDataType(), buffer);
+                        }
+                        commitCurrentSegment(false);
+                    } catch (EOFException e) {
+                        commitCurrentSegment(true);
+                        throw e;
+                    }
                 }
             } catch (EOFException e) {
                 System.out.println("load(EOF) records: " + count
@@ -45,41 +61,29 @@ public class TableServerLoaderSession extends Thread  {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            try {
-                commitCurrentSegment();
-            } catch (IOException e) {}
             System.out.println("Loading into " + table.name + " finished");
             try { pipe.close(); } catch (IOException e) { }
         }
     }
 
-    private void append(Pipe pipe) throws IOException {
-        if (currentSegment == null || currentSegment.getCount() % table.segmentSize == 0) {
-            //FIXME add sortColumn to schema and if set instantiate sorted
-            //currentSegment = new Segment(table.schema);
-            currentSegment = new SegmentSorted(table.schema, table.sortColumn, table.sortOrder);
-        }
-        try {
-            currentSegment.append(pipe);
-            if (currentSegment.getCount() % table.segmentSize == 0) {
-                commitCurrentSegment();
-            }
-        } catch (EOFException e) {
-            commitCurrentSegment();
-            throw e;
-        }
-    }
-
-    private void commitCurrentSegment() throws IOException {
+    private void commitCurrentSegment(boolean force) throws IOException {
         if (currentSegment != null) {
-            try {
-                currentSegment.close();
-                if (currentSegment.getOriginalSize() > 0) {
-                    table.add(currentSegment);
+            boolean commit = force || currentSegment.getSize() > table.segmentSizeBytes;
+            if (commit || buffer.position() > 65535) {
+                buffer.flip();
+                currentSegment.append(buffer);
+                buffer.clear();
+            }
+            if (commit) {
+                try {
+                    currentSegment.close();
+                    if (currentSegment.getOriginalSize() > 0) {
+                        table.add(currentSegment);
+                    }
+                    currentSegment = null;
+                } catch (IllegalAccessException e) {
+                    throw new IOException(e);
                 }
-                currentSegment = null;
-            } catch (IllegalAccessException e) {
-                throw new IOException(e);
             }
         }
     }
