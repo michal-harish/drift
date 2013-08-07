@@ -22,7 +22,7 @@ public class TestEventsLoader extends Thread{
     public void run() {
         try {
             buffer.order(ByteOrder.BIG_ENDIAN);
-            for (long i = 1; i <=10000000; i++) {
+            for (long i = 1; i <=1000000; i++) {
                 if (currentSegment == null) {
                     currentSegment = new Segment(table.schema);
                 }
@@ -39,29 +39,28 @@ public class TestEventsLoader extends Thread{
                     buffer.put(Aim.STRING.convert("http://"));
                     buffer.put(Aim.BYTEARRAY(16).convert(userUid.toString()));
                     buffer.put(Aim.BOOL.convert(userUid.hashCode() % 100 == 0 ? "true" : "false"));
-                    commitCurrentSegment();
+                    commitCurrentSegment(false);
                 } catch(Exception e) {
                     e.printStackTrace();
                     break;
                 }
             }
-            commitCurrentSegment();
+            commitCurrentSegment(true);
         } catch (Exception  ex) {
            ex.printStackTrace();
            System.exit(0);
         } 
     }
 
-    private void commitCurrentSegment() throws IOException {
+    private void commitCurrentSegment(boolean force) throws IOException {
         if (currentSegment != null) {
-            boolean commit = currentSegment.getSize() > 2000000L;
+            boolean commit = force || currentSegment.getSize() > 2097152L;
             if (commit || buffer.position() > 65535) {
                 buffer.flip();
                 currentSegment.append(buffer);
                 buffer.clear();
             }
             if (commit) {
-                commitCurrentSegment();
                 try {
                     currentSegment.close();
                     if (currentSegment.getOriginalSize() > 0) {

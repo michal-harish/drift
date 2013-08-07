@@ -68,14 +68,9 @@ public class Segment implements AimSegment {
             while(input.position() < input.limit()) {
                 for(int col = 0; col < schema.size() ; col++) {
                     AimDataType type = schema.dataType(col);
-                    try {
-                        originalSize.addAndGet(
-                            AimUtils.copy(input, type, writers.get(col))
-                        );
-                    } catch (Exception e) {
-                        System.err.println(input.position() + " " + input.limit() + " " + type);
-                        throw e;
-                    }
+                    originalSize.addAndGet(
+                        AimUtils.copy(input, type, writers.get(col))
+                    );
                 }
                 count.incrementAndGet();
             }
@@ -108,8 +103,9 @@ public class Segment implements AimSegment {
     }
 
     @Override public Long count(AimFilter filter) throws IOException {
-        //TODO extract schema from the filter
+        //FIXME extract schema via filter.getSchema();
         final AimSchema subSchema = schema.subset("user_quizzed","api_key");
+
         if (filter != null) filter.updateFormula(subSchema.names());
 
         final LZ4Scanner[] scanners = new LZ4Scanner[subSchema.size()];
@@ -157,14 +153,14 @@ public class Segment implements AimSegment {
      * Not Thread-safe 
      * Filtered, Aggregate Input stream for all the selected columns in this segment.
      */
-    @Override public InputStream open(final AimFilter filter, final String[] colums) throws IOException {
+    @Override public InputStream select(final AimFilter filter, final String[] colums) throws IOException {
         try {
             checkWritable(false);
         } catch (IllegalAccessException e) {
             throw new IOException(e); 
         }
         final AimSchema subSchema = schema.subset(colums);
-        //TODO detect missing filter columns 
+        //FIXME detect missing filter columns 
  
         if (filter != null) filter.updateFormula(subSchema.names());
 
@@ -214,9 +210,13 @@ public class Segment implements AimSegment {
                     currentColumn = 0;
                     currentScanner = scanners[currentColumn];
                     while(true) {
-                        if (currentScanner.eof()) {
-                            return false;
-                        } else if (filter == null || filter.match(scanners)) {
+                        for(int c=0; c < subSchema.size(); c++) {
+                            LZ4Scanner scanner = scanners[c];
+                            if (scanner.eof()) {
+                                return false;
+                            }
+                        }
+                        if (filter == null || filter.match(scanners)) {
                             break;
                         }
                         skipNextRecord();
@@ -248,5 +248,4 @@ public class Segment implements AimSegment {
             }
         };
     }
-   
 }

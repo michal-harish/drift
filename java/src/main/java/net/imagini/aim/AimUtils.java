@@ -8,6 +8,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.LinkedHashMap;
 
+import joptsimple.internal.Strings;
+
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.pipes.Pipe;
 
@@ -119,21 +121,15 @@ public class AimUtils {
 
     public static int write(AimDataType type, byte[] value, OutputStream out) throws IOException {
         int size = 0;
-        try {
-            if (type.equals(Aim.STRING)) {
-                size = getIntegerValue(value);
-                out.write(value, 0, size + 4);
-                return size + 4;
-            } else {
-                size = type.getSize();
-            }
-            out.write(value,0,size);
-            return size;
-        } catch (ArrayIndexOutOfBoundsException e) {
+        if (type.equals(Aim.STRING)) {
+            size = getIntegerValue(value);
             out.write(value, 0, size + 4);
-            System.err.println(value.length + " ?? " + (size + 4)  + " " + new String(value,4, size));
-            throw e;
+            return size + 4;
+        } else {
+            size = type.getSize();
         }
+        out.write(value,0,size);
+        return size;
     }
 
     static public void read(InputStream in, ByteBuffer buf, int len) throws IOException {
@@ -218,6 +214,12 @@ public class AimUtils {
             result[offset+2] = (byte)((value >>>  8) & 0xFF);
             result[offset+3] = (byte)((value >>>  0) & 0xFF);
         }
+    }
+
+    public static String exceptionAsString(Exception e) {
+        String[] trace = new String[e.getStackTrace().length];
+        int i = 0; for(StackTraceElement t:e.getStackTrace()) trace[i++] = t.toString();
+        return e.toString() + "\n"  + Strings.join(trace,"\n");
     }
 
 }

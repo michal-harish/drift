@@ -117,7 +117,7 @@ public class CSVLoader extends Thread {
     }
 
     private static void printHelp() {
-        // TODO Auto-generated method stub
+        System.out.println("Usage: aim-loader [--gzip] [--limit <limit>] --schema <...>\n");
     }
 
 }

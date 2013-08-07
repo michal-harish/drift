@@ -28,7 +28,7 @@ public class Console extends Thread {
     public static void main(String[] args) throws IOException {
         System.out.println("\nAIM/CASSPAR Test Console\n");
 
-        AimTable table = new AimTable("events", 1000000, new EventsSchema(), "user_uid", SortOrder.DESC);
+        AimTable table = new AimTable("events", 4194304, new EventsSchema(), "user_uid", SortOrder.DESC);
         server = new TableServer(table, 4000);
         server.start();
 
@@ -36,7 +36,7 @@ public class Console extends Thread {
         /**/
         loader = new CSVLoader(new String[]{
                 "--gzip", 
-                "--limit","10000000",
+                "--limit","1000000",
                 "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(BYTEARRAY[2]),region_code(BYTEARRAY[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:BYTEARRAY[16]),user_quizzed(BOOL)",
                 "/Users/mharis/events-2013-07-23.csv.gz"
         });
@@ -134,7 +134,7 @@ public class Console extends Thread {
                     String error = pipe.read();
                     print("Schema: " + schema);
                     print("Filter: " + filter);
-                    print((Strings.isNullOrEmpty(error) ? "OK" : "ERROR " + error) +" Num.records: " + filteredCount + "/" + count);
+                    print((Strings.isNullOrEmpty(error) ? "OK" : "SERVER-SIDE EXCEPTION: " + error) +" Num.records: " + filteredCount + "/" + count);
                     break;
                 case "ERROR":
                    print("Error: " + pipe.read());

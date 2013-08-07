@@ -4,7 +4,7 @@ package net.imagini.aim.node;
 /**
  * @author mharis
  * 
- * TODO replace ByteArrayWrapper with ByteBuffer
+ * FIXME replace ByteArrayWrapper with ByteBuffer
  */
 public class SegmentSorted {/*extends Segment {
 

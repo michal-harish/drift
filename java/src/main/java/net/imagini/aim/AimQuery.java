@@ -38,7 +38,7 @@ public class AimQuery {
     }
 
     public Pipe select(final String... colNames) throws IOException {
-        final Pipe range = table.open(startSegment, endSegment, null, colNames);
+        final Pipe range = table.select(startSegment, endSegment, null, colNames);
         return new Pipe() {
             private int fieldIndex = -1;
             @Override public byte[] read(AimDataType type) throws IOException {
@@ -49,7 +49,7 @@ public class AimQuery {
     }
 
     public Pipe select(AimFilter filter, final String... colNames) throws IOException {
-        return table.open(startSegment, endSegment, filter, colNames);
+        return table.select(startSegment, endSegment, filter, colNames);
     }
 
     public Long count(AimFilter filter) throws IOException {

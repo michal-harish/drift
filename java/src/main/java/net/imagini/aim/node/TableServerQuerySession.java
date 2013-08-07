@@ -20,6 +20,7 @@ import net.imagini.aim.AimQuery;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimType;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
+import net.imagini.aim.AimUtils;
 import net.imagini.aim.pipes.Pipe;
 
 public class TableServerQuerySession extends Thread {
@@ -81,9 +82,7 @@ public class TableServerQuerySession extends Thread {
                     try {
                         pipe.write(true);
                         pipe.write("ERROR");
-                        String[] trace = new String[e.getStackTrace().length];
-                        int i = 0; for(StackTraceElement t:e.getStackTrace()) trace[i++] = t.toString();
-                        pipe.write("Error " + e.getMessage() + "\n"  + Strings.join(trace,"\n"));
+                        pipe.write(AimUtils.exceptionAsString(e));
                         pipe.write(false);
                         pipe.flush();
                     } catch (Exception e1) {
@@ -162,8 +161,8 @@ public class TableServerQuerySession extends Thread {
         AimSchema schema = table.schema.subset(Arrays.asList("timestamp","api_key","user_quizzed","user_uid"));
         long t = System.currentTimeMillis();
         int n = table.getNumSegments();
-        Pipe scanner = table.open(0, n-1, null, schema.names());
-        System.err.println("Open ms: " + (System.currentTimeMillis()-t));
+        Pipe scanner = table.select(0, n-1, null, schema.names());
+        System.out.println("Open ms: " + (System.currentTimeMillis()-t));
         long count = 0;
         table.loadRecordsMs = 0;
         table.readMs = 0;
@@ -176,10 +175,10 @@ public class TableServerQuerySession extends Thread {
                 count++;
             }
         } catch (EOFException e) {
-            System.err.println("Segment scanned records: "+count);
-            System.err.println("-nextRecord ms: " + table.loadRecordsMs);
-            System.err.println("--table.mergeSortMs ms: " + table.mergeSortMs);
-            System.err.println("--table.readMs ms: " + table.readMs);
+            System.out.println("Segment scanned records: "+count);
+            System.out.println("-nextRecord ms: " + table.loadRecordsMs);
+            System.out.println("--table.mergeSortMs ms: " + table.mergeSortMs);
+            System.out.println("--table.readMs ms: " + table.readMs);
         }
     }
 
@@ -233,7 +232,7 @@ public class TableServerQuerySession extends Thread {
             pipe.write(false);
             pipe.write((long)count);
             pipe.write((long)table.getCount());
-            pipe.write((e instanceof EOFException ? "" : e.getMessage() + ": "+ e.getStackTrace()[0].toString())); //success flag
+            pipe.write((e instanceof EOFException ? "" : AimUtils.exceptionAsString(e))); //success flag
             pipe.flush();
         }
 

@@ -47,7 +47,6 @@ public class AimTable {
     //it manifests when using more than 1 thread by occasional zoom buffer getting IndexOutOfBounds
     final ExecutorService executor = Executors.newFixedThreadPool(1);
 
-    //TODO segmentSize in bytes rather than records
     public AimTable(String name, Integer segmentSizeBytes, AimSchema schema, String sortField, SortOrder order) throws IOException {
         this.name = name;
         this.sortColumn = schema.get(sortField);
@@ -172,31 +171,31 @@ public class AimTable {
     public long loadRecordsMs = 0;
     public long readMs = 0;
     public long mergeSortMs = 0;
-    public Pipe open(
+    public Pipe select(
         int startSegment, 
         int endSegment,
         final AimFilter filter, 
         final String... columnNames
     ) throws IOException {
-        //TODO sortColumn columns must be present, so will be added if missing
+        //FIXME sortColumn columns must be present, so will be added if missing
         final int[] seg = new int[endSegment-startSegment+1];
         for(int i=startSegment; i<= endSegment; i++) seg[i-startSegment] = i;
         final InputStream[] str = new InputStream[segments.size()];
         final AimSchema subSchema = schema.subset(columnNames);
         for(int s = 0; s <seg.length; s++) {
-            str[s] = segments.get(seg[s]).open(filter, columnNames);
+            str[s] = segments.get(seg[s]).select(filter, columnNames);
         }
 
         final int sortSubColumn = subSchema.get(schema.name(sortColumn));
         loadRecordsMs = 0;
 
         return new Pipe() {
-            //TODO Create internal executor thread pool that fetches next record in the background
+            //FIXME Create internal executor thread pool that fetches next record in the background
             //like in the count() .. whenever the previous one is polled from the tree map.
 
             private int currentSegment = -1;
             private int currentColumn = columnNames.length-1;
-            //TODO get rid of ByteArrayWrapper and use just LZ4Scanner
+            //FIXME get rid of ByteArrayWrapper and use just LZ4Scanner
             private TreeMap<ComparableByteArray,Integer> sortIndex = new TreeMap<>();
             final private Boolean[] hasData = new Boolean[segments.size()];
             final private byte[][][] buffer = new byte[segments.size()][schema.size()][Aim.COLUMN_BUFFER_SIZE];
@@ -256,40 +255,4 @@ public class AimTable {
             }
         };
     }
-
-/* 
-    public InputStream[] open(int startSegment, int endSegment, String... columnNames) throws IOException {
-        if (columnNames.length == 0) columnNames = schema.getNames();
-        InputStream[] result = new InputStream[columnNames.length];
-        int i = 0; for(String colName: columnNames) {
-            result[i++] = new ColumnInputStream(startSegment, endSegment, schema.get(colName));
-        }
-        return result;
-    }
-
-    private class ColumnInputStream extends InputStream {
-        private int column;
-        protected int segmentIndex = 0;
-        private int endSegment = 0;
-        private InputStream columnSegmentInputStream;
-        public ColumnInputStream(int startSegment, int endSegment, int column) throws IOException {
-            this.segmentIndex = startSegment;
-            this.endSegment = Math.min(endSegment, segments.size());
-            this.column = column;
-            nextSegment();
-        }
-        protected void nextSegment() throws IOException {
-            if (segmentIndex > endSegment) throw new EOFException();
-            columnSegmentInputStream = segments.get(segmentIndex++).open(column);
-        }
-        @Override public final int read() throws IOException {
-            int result;
-            if (-1 == (result = columnSegmentInputStream.read())) {
-                nextSegment();
-                result = columnSegmentInputStream.read();
-            }
-            return result;
-        }
-    }
-*/
 }

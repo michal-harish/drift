@@ -126,7 +126,7 @@ public enum Aim implements AimDataType {
         }
 
         @Override public String convert(byte[] value) {
-            return new String(value,0,size);//TODO clean 0 bytes
+            return new String(value,0,size);//FIXME clean 0 bytes
         }
 
         @Override final public AimDataType getDataType() {
