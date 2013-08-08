@@ -31,7 +31,7 @@ public class Segment implements AimSegment {
 
     final protected AimSchema schema;
     final protected LinkedHashMap<Integer,LZ4Buffer> columnar = new LinkedHashMap<>();
-    //TODO move writers into the loader session context
+    //FIXME move writers into the loader session context
     protected LinkedHashMap<Integer,ByteBuffer> writers = null;
     private boolean writable;
     private AtomicLong count = new AtomicLong(0);
@@ -92,6 +92,7 @@ public class Segment implements AimSegment {
 
     @Override public void close() throws IOException, IllegalAccessException {
         checkWritable(true);
+        this.writers = null;
         this.writable = false;
     }
 

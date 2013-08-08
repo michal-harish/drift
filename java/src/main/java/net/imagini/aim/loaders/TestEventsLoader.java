@@ -22,7 +22,7 @@ public class TestEventsLoader extends Thread{
     public void run() {
         try {
             buffer.order(ByteOrder.BIG_ENDIAN);
-            for (long i = 1; i <=1000000; i++) {
+            for (long i = 1; i <=10000000; i++) {
                 if (currentSegment == null) {
                     currentSegment = new Segment(table.schema);
                 }
@@ -62,10 +62,10 @@ public class TestEventsLoader extends Thread{
             }
             if (commit) {
                 try {
-                    currentSegment.close();
                     if (currentSegment.getOriginalSize() > 0) {
                         table.add(currentSegment);
                     }
+                    currentSegment.close();
                     currentSegment = null;
                 } catch (IllegalAccessException e) {
                     throw new IOException(e);

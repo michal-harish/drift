@@ -10,8 +10,8 @@ import joptsimple.internal.Strings;
 import net.imagini.aim.Aim.SortOrder;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimUtils;
-import net.imagini.aim.loaders.CSVLoader;
 import net.imagini.aim.loaders.EventsSchema;
+import net.imagini.aim.loaders.TestEventsLoader;
 import net.imagini.aim.node.AimTable;
 import net.imagini.aim.node.TableServer;
 import net.imagini.aim.pipes.Pipe;
@@ -32,8 +32,8 @@ public class Console extends Thread {
         server = new TableServer(table, 4000);
         server.start();
 
-        //loader = new TestEventsLoader(table);
-        /**/
+        loader = new TestEventsLoader(table);
+        /**
         loader = new CSVLoader(new String[]{
                 "--gzip", 
                 "--limit","1000000",

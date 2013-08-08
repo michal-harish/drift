@@ -28,7 +28,6 @@ import net.jpountz.lz4.LZ4Factory;
 public class LZ4Buffer {
 
     protected Integer size = 0;
-    //FIXME for 481Mb byte[] list the heap is saying there's 876mb allocated in all byte[] arrays
     protected LinkedList<byte[]> compressedBlocks = new LinkedList<byte[]>();
     protected LinkedList<Integer> lengths = new LinkedList<Integer>();
 
@@ -39,6 +38,7 @@ public class LZ4Buffer {
 
     static public void main(String[] args) {
 
+        //TODO move lz4buffer static main to a test class
         LZ4Buffer instance = new LZ4Buffer();
         instance.addBlock(ByteBuffer.wrap((
             "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +

@@ -194,7 +194,6 @@ public class AimTable {
 
             private int currentSegment = -1;
             private int currentColumn = columnNames.length-1;
-            //FIXME get rid of ByteArrayWrapper and use just LZ4Scanner
             private TreeMap<ComparableByteArray,Integer> sortIndex = new TreeMap<>();
             final private Boolean[] hasData = new Boolean[segments.size()];
             final private byte[][][] buffer = new byte[segments.size()][schema.size()][Aim.COLUMN_BUFFER_SIZE];
@@ -250,7 +249,6 @@ public class AimTable {
                     hasData[s] = false;
                 }
                 loadRecordsMs += System.currentTimeMillis() - t;
-
             }
         };
     }
