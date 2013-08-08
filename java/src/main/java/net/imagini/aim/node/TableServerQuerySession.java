@@ -42,7 +42,7 @@ public class TableServerQuerySession extends Thread {
             AimFilter filter = query.filter();
             filter.where("user_quizzed").equals("true")
                 .and("api_key").contains("mirror")
-                .and("timestamp").equals("1374541507")
+                //.and("timestamp").equals("1374541507")
                 ;
             while(true) {
                 String command;

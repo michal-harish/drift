@@ -4,12 +4,9 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.imagini.aim.Aim;
@@ -207,7 +204,7 @@ public class Segment implements AimSegment {
                 } else if (read == currentReadLength) {
                     read = -1;
                     currentSelectColumn++;
-                    currentSelectScanner = (currentSelectColumn < columns.length) ? scanners[subSchema.get(columns[currentSelectColumn])] : null;
+                    currentSelectScanner = (currentSelectColumn < columns.length) ? scanners[selectColumns.get(currentSelectColumn)] : null;
                     if (currentSelectScanner != null && currentSelectScanner.eof()) {
                         return false;
                     }
@@ -216,7 +213,7 @@ public class Segment implements AimSegment {
                 if (currentSelectScanner == null) {
                     read = -1;
                     currentSelectColumn = 0;
-                    currentSelectScanner = scanners[subSchema.get(columns[currentSelectColumn])];
+                    currentSelectScanner = scanners[selectColumns.get(currentSelectColumn)];
                     while(true) {
                         for(int c=0; c < subSchema.size(); c++) {
                             LZ4Scanner scanner = scanners[c];
@@ -233,7 +230,7 @@ public class Segment implements AimSegment {
                 } 
                 if (read == -1) {
                     read = 0;
-                    AimType type = subSchema.get(subSchema.get(columns[currentSelectColumn]));
+                    AimType type = subSchema.get(selectColumns.get(currentSelectColumn));
                     if (type.equals(Aim.STRING)) {
                         currentReadLength = 4 + currentSelectScanner.asIntValue();
                     } else {
