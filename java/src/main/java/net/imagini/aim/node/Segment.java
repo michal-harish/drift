@@ -4,9 +4,12 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.imagini.aim.Aim;
@@ -154,13 +157,16 @@ public class Segment implements AimSegment {
      * Not Thread-safe 
      * Filtered, Aggregate Input stream for all the selected columns in this segment.
      */
-    @Override public InputStream select(final AimFilter filter, final String[] columns) throws IOException {
+    @Override public InputStream select(final AimFilter filter, final String sortColumn, final String[] columns) throws IOException {
         try {
             checkWritable(false);
         } catch (IllegalAccessException e) {
             throw new IOException(e); 
         }
-        final AimSchema subSchema = schema.subset(filter.getColumns(columns));
+        Set<String> totalColumnSet = new HashSet<String>(Arrays.asList(columns));
+        totalColumnSet.addAll(Arrays.asList(filter.getColumns()));
+        totalColumnSet.add(sortColumn);
+        final AimSchema subSchema = schema.subset(totalColumnSet.toArray(new String[totalColumnSet.size()]));
         final List<Integer> allColumns = new LinkedList<Integer>(); 
         for(String colName: subSchema.names()) allColumns.add(subSchema.get(colName));
         final List<Integer> selectColumns = new LinkedList<Integer>();

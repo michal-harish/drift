@@ -38,7 +38,7 @@ public enum Aim implements AimDataType {
     /**
      * This is for ZeroCopy routines when they allocate mulit-dimensional buffers
      */
-    final public static Integer COLUMN_BUFFER_SIZE = 2048; //FIXME 2048
+    final public static Integer COLUMN_BUFFER_SIZE = 2048; //FIXME COLUMN_BUFFER_SIZE = 2048 !
 
     final public int size;
 

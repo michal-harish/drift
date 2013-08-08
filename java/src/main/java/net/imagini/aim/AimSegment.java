@@ -18,6 +18,6 @@ public interface AimSegment {
 
     Long count(AimFilter filter)  throws IOException;
 
-    InputStream select(AimFilter filter, String[] columnNames) throws IOException;
+    InputStream select(AimFilter filter, String sortColumn, String[] columnNames) throws IOException;
 
 }

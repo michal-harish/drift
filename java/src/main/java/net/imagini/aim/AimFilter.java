@@ -65,8 +65,8 @@ public class AimFilter {
         root.update(usedColumns);
     }
 
-    public String[] getColumns(String... fields) {
-        Set<String> fieldSet = root.getColumnSet(fields);
+    public String[] getColumns() {
+        Set<String> fieldSet = root.getColumnSet();
         return fieldSet.toArray(new String[fieldSet.size()]);
     }
 

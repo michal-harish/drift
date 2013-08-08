@@ -177,13 +177,12 @@ public class AimTable {
         final AimFilter filter, 
         final String... columnNames
     ) throws IOException {
-        //FIXME sortColumn columns must be present, so will be added if missing
         final int[] seg = new int[endSegment-startSegment+1];
         for(int i=startSegment; i<= endSegment; i++) seg[i-startSegment] = i;
         final InputStream[] str = new InputStream[segments.size()];
         final AimSchema subSchema = schema.subset(columnNames);
         for(int s = 0; s <seg.length; s++) {
-            str[s] = segments.get(seg[s]).select(filter, columnNames);
+            str[s] = segments.get(seg[s]).select(filter, schema.name(sortColumn), columnNames);
         }
 
         final int sortSubColumn = subSchema.get(schema.name(sortColumn));
