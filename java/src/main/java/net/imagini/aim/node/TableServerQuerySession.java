@@ -36,11 +36,14 @@ public class TableServerQuerySession extends Thread {
     @Override
     public void run() {
         try {
-            AimSchema schema = table.schema.subset("user_uid","user_quizzed","api_key","timestamp","url");
+            AimSchema schema = table.schema.subset("user_uid", "timestamp","api_key","url");
             AimQuery query = new AimQuery(table);
             Integer range = null;
             AimFilter filter = query.filter();
-            filter.where("user_quizzed").equals("true").and("api_key").contains("mirror");
+            filter.where("user_quizzed").equals("true")
+                .and("api_key").contains("mirror")
+                .and("timestamp").equals("1374541507")
+                ;
             while(true) {
                 String command;
                 Queue<String> cmd;
@@ -54,21 +57,21 @@ public class TableServerQuerySession extends Thread {
                             pipe.write("ERROR");
                             pipe.write("Unknown query command " + command); 
                             break;
-    
+
                         case "STATS": handleStats(cmd); break;
                         case "SCAN": handleScan(cmd); break;
-    
+
                         case "ALL": range = null; filter = null; break;
                         case "LAST": range = table.getNumSegments()-1; filter = null; break;
                         case "RANGE": handleRangeQuery(cmd,query); filter = null; break;
-    
+
                         case "FILTER": 
                             if (cmd.size()>0) {
                                 filter = handleFilterQuery(range, query, schema, cmd); 
                             }
                             executeCount(range, query, filter);
                             break;
-    
+
                         case "SELECT": 
                             if (cmd.size()>0) {
                                 schema = table.schema.subset(new ArrayList<String>(cmd));
@@ -98,6 +101,7 @@ public class TableServerQuerySession extends Thread {
             return;
         }
     }
+
     private void handleStats(Queue<String> cmd) throws IOException {
         pipe.write(true);
         pipe.write("STATS");
@@ -151,7 +155,6 @@ public class TableServerQuerySession extends Thread {
 
     }
 
-
     private AimQuery handleRangeQuery(Queue<String> cmd, AimQuery query) {
         // TODO Auto-generated method stub
         return null;
@@ -198,6 +201,7 @@ public class TableServerQuerySession extends Thread {
         pipe.write((long)table.getCount());
         pipe.flush();
     }
+
     private void executeSelect(
         Integer range, 
         AimQuery query, 
@@ -238,10 +242,10 @@ public class TableServerQuerySession extends Thread {
 
     }
 
-
     static enum Token { 
         WHITESPACE,KEYWORD,OPERATOR,NUMBER,STRING
     }
+
     @SuppressWarnings("serial")
     static final Map<Token,Pattern> matchers = new HashMap<Token,Pattern>() {{
         put(Token.WHITESPACE, Pattern.compile("^((\\s+))"));
@@ -250,6 +254,7 @@ public class TableServerQuerySession extends Thread {
         put(Token.NUMBER,  Pattern.compile("^(([0-9]+|[0-9]+\\.[0-9]+))"));
         put(Token.STRING, Pattern.compile("^('(.*?)')")); // TODO fix escape sequence (?:\\"|.)*? OR /'(?:[^'\\]|\\.)*'/
     }};
+
     private Queue<String> tokenize(String input) throws IOException {
         Queue<String> result = new LinkedList<String>();
         int i = 0;

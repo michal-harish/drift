@@ -135,7 +135,6 @@ public class AimUtils {
     static public void read(InputStream in, ByteBuffer buf, int len) throws IOException {
         int totalRead = 0;
         while (totalRead < len) {
-            //buf.put(in. src)
             int read = in.read(buf.array(),buf.arrayOffset()+buf.position(),len-totalRead);
             if (read < 0 ) throw new EOFException();
             else {

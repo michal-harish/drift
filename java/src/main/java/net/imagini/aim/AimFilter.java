@@ -2,6 +2,9 @@ package net.imagini.aim;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import joptsimple.internal.Strings;
 import net.imagini.aim.LZ4Buffer.LZ4Scanner;
@@ -60,6 +63,19 @@ public class AimFilter {
 
     final public void updateFormula(String[] usedColumns) {
         root.update(usedColumns);
+    }
+
+    public String[] getColumns(String... fields) {
+        Set<String> fieldSet = root.getColumnSet(fields);
+        return fieldSet.toArray(new String[fieldSet.size()]);
+    }
+
+    protected Set<String> getColumnSet(String... fields) {
+        Set<String >result = new HashSet<String>(Arrays.asList(fields));
+        if (next != null) {
+            result.addAll(next.getColumnSet());
+        }
+        return result;
     }
 
     final public void write(Pipe pipe) throws IOException {
@@ -140,7 +156,6 @@ public class AimFilter {
         };
     }
 
-
     public AimFilter greaterThan(final String value) {
         if (type == null) return next.greaterThan(value);
         final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
@@ -191,6 +206,10 @@ public class AimFilter {
             super(root, table.def(field));
             this.colName = field;
         }
+        @Override protected Set<String> getColumnSet(String... fields) {
+            return super.getColumnSet(colName);
+        }
+
         @Override public void update(String[] usedColumns) {
             super.update(usedColumns);
             for(colIndex=0;colIndex<usedColumns.length;colIndex++) {
@@ -227,7 +246,7 @@ public class AimFilter {
      * 
      * filters run for each segment in parallel thread and should be sending 
      * the serialized filter over the pipe "to" the segment.
-     
+
     final public AimFilterSet go() throws IOException {
         final AimFilterSet result = new AimFilterSet();
         final List<Integer> segments = new LinkedList<Integer>();

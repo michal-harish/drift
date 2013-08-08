@@ -4,7 +4,12 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.imagini.aim.Aim;
@@ -103,8 +108,7 @@ public class Segment implements AimSegment {
     }
 
     @Override public Long count(AimFilter filter) throws IOException {
-        //FIXME extract schema via filter.getSchema();
-        final AimSchema subSchema = schema.subset("user_quizzed","api_key");
+        final AimSchema subSchema = schema.subset(filter.getColumns());
 
         if (filter != null) filter.updateFormula(subSchema.names());
 
@@ -153,14 +157,18 @@ public class Segment implements AimSegment {
      * Not Thread-safe 
      * Filtered, Aggregate Input stream for all the selected columns in this segment.
      */
-    @Override public InputStream select(final AimFilter filter, final String[] colums) throws IOException {
+    @Override public InputStream select(final AimFilter filter, final String[] columns) throws IOException {
         try {
             checkWritable(false);
         } catch (IllegalAccessException e) {
             throw new IOException(e); 
         }
-        final AimSchema subSchema = schema.subset(colums);
-        //FIXME detect missing filter columns 
+        final AimSchema subSchema = schema.subset(filter.getColumns(columns));
+        final List<Integer> allColumns = new LinkedList<Integer>(); 
+        for(String colName: subSchema.names()) allColumns.add(subSchema.get(colName));
+        final List<Integer> selectColumns = new LinkedList<Integer>();
+        for(String colName: columns) selectColumns.add(subSchema.get(colName));
+        final List<Integer> hiddenColumns = new LinkedList<Integer>(allColumns); hiddenColumns.removeAll(selectColumns);
  
         if (filter != null) filter.updateFormula(subSchema.names());
 
@@ -173,7 +181,7 @@ public class Segment implements AimSegment {
             @Override
             public long skip(long n) throws IOException {
                 if(checkNextByte()) {
-                    long skipped = currentScanner.skip(n);
+                    long skipped = currentSelectScanner.skip(n);
                     //TODO break n into max column lenghts
                     read+=skipped;
                     return skipped;
@@ -184,31 +192,31 @@ public class Segment implements AimSegment {
 
             @Override public int read() throws IOException {
                 read++; 
-                return checkNextByte() ? currentScanner.read() & 0xff : -1;
+                return checkNextByte() ? currentSelectScanner.read() & 0xff : -1;
             }
 
-            private int currentColumn = -1;
-            private LZ4Scanner currentScanner = null;
+            private int currentSelectColumn = -1;
+            private LZ4Scanner currentSelectScanner = null;
             private int currentReadLength = 0;
             private int read = -1;
             private boolean checkNextByte() throws IOException {
-                if (currentColumn == -1) {
+                if (currentSelectColumn == -1) {
                     for(int c=0;c<subSchema.size();c++) {
                         if (scanners[c].eof()) return false;
                     }
                 } else if (read == currentReadLength) {
                     read = -1;
-                    currentColumn++;
-                    currentScanner = (currentColumn < subSchema.size()) ? scanners[currentColumn] : null;
-                    if (currentScanner != null && currentScanner.eof()) {
+                    currentSelectColumn++;
+                    currentSelectScanner = (currentSelectColumn < columns.length) ? scanners[subSchema.get(columns[currentSelectColumn])] : null;
+                    if (currentSelectScanner != null && currentSelectScanner.eof()) {
                         return false;
                     }
                 }
 
-                if (currentScanner == null) {
+                if (currentSelectScanner == null) {
                     read = -1;
-                    currentColumn = 0;
-                    currentScanner = scanners[currentColumn];
+                    currentSelectColumn = 0;
+                    currentSelectScanner = scanners[subSchema.get(columns[currentSelectColumn])];
                     while(true) {
                         for(int c=0; c < subSchema.size(); c++) {
                             LZ4Scanner scanner = scanners[c];
@@ -217,25 +225,26 @@ public class Segment implements AimSegment {
                             }
                         }
                         if (filter == null || filter.match(scanners)) {
+                            skipNextRecord(true);
                             break;
                         }
-                        skipNextRecord();
+                        skipNextRecord(false);
                     }
                 } 
                 if (read == -1) {
                     read = 0;
-                    AimType type = subSchema.get(currentColumn);
+                    AimType type = subSchema.get(subSchema.get(columns[currentSelectColumn]));
                     if (type.equals(Aim.STRING)) {
-                        currentReadLength = 4 + currentScanner.asIntValue();
+                        currentReadLength = 4 + currentSelectScanner.asIntValue();
                     } else {
                         currentReadLength = type.getDataType().getSize();
                     }
                 }
                 return true;
             }
-            private void skipNextRecord() throws IOException {
-                for(String colName: subSchema.names()) {
-                    int c = subSchema.get(colName);
+            private void skipNextRecord(boolean onlyHiddenColumns) throws IOException {
+                List<Integer> colNames = onlyHiddenColumns ? hiddenColumns : allColumns;
+                for(Integer c: colNames) {
                     AimType type = subSchema.get(c);
                     int skipLength;
                     if (type.equals(Aim.STRING)) {
