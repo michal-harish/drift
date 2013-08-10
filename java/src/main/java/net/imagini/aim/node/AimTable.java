@@ -24,6 +24,7 @@ import net.imagini.aim.AimSegment;
 import net.imagini.aim.AimType;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.AimUtils;
+import net.imagini.aim.ByteKey;
 import net.imagini.aim.pipes.Pipe;
 
 /**
@@ -34,7 +35,7 @@ public class AimTable {
     public final AimSchema schema;
     public final String name;
     public final Integer segmentSizeBytes;
-    public final int sortColumn;
+    public final Integer sortColumn;
     public final SortOrder sortOrder;
     private LinkedList<AimSegment> segments = new LinkedList<>();
     private AtomicInteger numSegments = new AtomicInteger(0);
@@ -194,7 +195,7 @@ public class AimTable {
 
             private int currentSegment = -1;
             private int currentColumn = columnNames.length-1;
-            private TreeMap<ComparableByteArray,Integer> sortIndex = new TreeMap<>();
+            private TreeMap<ByteKey,Integer> sortIndex = new TreeMap<>();
             final private Boolean[] hasData = new Boolean[segments.size()];
             final private byte[][][] buffer = new byte[segments.size()][schema.size()][Aim.COLUMN_BUFFER_SIZE];
             @Override
@@ -223,10 +224,10 @@ public class AimTable {
                 if (sortIndex.size() == 0) {
                     throw new EOFException();
                 }
-                Entry<ComparableByteArray,Integer> next;
+                Entry<ByteKey,Integer> next;
                 switch(sortOrder) {
                     case DESC: next = sortIndex.pollLastEntry();break;
-                    default: case ASC: next = sortIndex.pollLastEntry();break;
+                    default: case ASC: next = sortIndex.pollFirstEntry();break;
                 }
                 currentSegment = next.getValue();
                 mergeSortMs += System.currentTimeMillis() - t;
@@ -242,7 +243,7 @@ public class AimTable {
                         readMs += System.currentTimeMillis() - t2;
                     }
                     long t2 = System.currentTimeMillis();
-                    sortIndex.put(new ComparableByteArray(buffer[s][sortSubColumn],s), s);
+                    sortIndex.put(new ByteKey(buffer[s][sortSubColumn],s), s);
                     hasData[s] = true;
                     mergeSortMs += System.currentTimeMillis() - t2;
                 } catch (EOFException e) {
@@ -252,4 +253,5 @@ public class AimTable {
             }
         };
     }
+
 }

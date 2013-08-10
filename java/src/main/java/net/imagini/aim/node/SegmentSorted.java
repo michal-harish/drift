@@ -1,86 +1,95 @@
 package net.imagini.aim.node;
 
+import java.io.EOFException;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import net.imagini.aim.Aim.SortOrder;
+import net.imagini.aim.AimSchema;
+import net.imagini.aim.AimTypeAbstract.AimDataType;
+import net.imagini.aim.AimUtils;
+import net.imagini.aim.ByteKey;
+
 
 /**
- * @author mharis
+ * This segment type overrides the default segment behaviour 
+ * by sorting the record by a given sort column before compressing it.
  * 
- * FIXME rewrite SegmentSorted using ByteBuffer(s) instead of ComparableByteArray
+ * @author mharis
  */
-public class SegmentSorted {/*extends Segment {
+public class SegmentSorted extends Segment {
 
     final private int sortColumn;
-    final private int requiredColumns;
-    final private ByteArrayOutputStream recordBuffer;
-    private Map<ComparableByteArray,ByteArrayOutputStream> sortMap = new HashMap<>();
-    private ComparableByteArray sortValue;
-    private int recordedColumns;
+    private Map<ByteKey,List<ByteBuffer>> sortMap = new HashMap<>();
     private SortOrder sortOrder;
 
     public SegmentSorted(AimSchema schema, int sortColumn, SortOrder sortOrder) throws IOException {
         super(schema);
         this.sortColumn = sortColumn;
         this.sortOrder = sortOrder;
-        this.requiredColumns = schema.size();
-        this.recordedColumns = 0;
-        this.recordBuffer = new ByteArrayOutputStream();
     }
 
     @Override public void close() throws IOException, IllegalAccessException {
         checkWritable(true);
-        closeRecord();
-        ArrayList<ComparableByteArray> keys =  new ArrayList<ComparableByteArray>(sortMap.keySet());
+        List<ByteKey> keys =  new ArrayList<ByteKey>(sortMap.keySet());
         Collections.sort(keys);
         if (sortOrder.equals(SortOrder.DESC)) {
             Collections.reverse(keys);
         }
-        for(ComparableByteArray key: keys) {
-            ByteArrayOutputStream bucket = sortMap.get(key);
-            ByteArrayInputStream reader = new ByteArrayInputStream(bucket.toByteArray());
-            try {
-                while(true) {
-                    int col= 0; for(AimType type: schema.def()) {
-                        byte[] value = Pipe.read(reader, type.getDataType());
-                        try {
-                            AimUtils.write(type.getDataType(), value, writers.get(col++));
-                        } catch (Exception e) {
-                            System.err.println(type + " " + type.convert(value));
-                            throw e;
-                        }
-                    }
+        originalSize.set(0L);
+        for(ByteKey key: keys) {
+            List<ByteBuffer> bucket = sortMap.get(key);
+            for(ByteBuffer record: bucket) {
+                try {
+                    super.append(record);
+                } catch (EOFException e) {
+                    break;
                 }
-            } catch (EOFException e) {}
+            }
         }
         sortMap = null;
         super.close();
     }
 
-    //TODO create utils to deal with this case - there's too much copying of byte arrays
-    @Override public int write(int column, AimDataType type, byte[] value) throws IOException {
+    @Override public void append(ByteBuffer record) throws IOException {
         try {
             checkWritable(true);
+
+            ByteKey sortValue = null;
+            for(int col = 0; col < schema.size() ; col++) {
+                AimDataType type = schema.dataType(col);
+
+                if (col == sortColumn) {
+                    sortValue = new ByteKey(
+                        Arrays.copyOfRange(record.array()
+                        ,record.position()
+                        ,record.position() + AimUtils.size(record, type)
+                        )
+                    );
+                }
+
+                originalSize.addAndGet(
+                    AimUtils.skip(record, type)
+                );
+
+            }
+            //close record
+            if (sortValue != null)  {
+                if (!sortMap.containsKey(sortValue)) {
+                    sortMap.put(sortValue, new ArrayList<ByteBuffer>());
+                }
+                List<ByteBuffer> keyspace = sortMap.get(sortValue);
+                keyspace.add(ByteBuffer.wrap(Arrays.copyOfRange(record.array(),0,record.limit())));
+            }
+
         } catch (IllegalAccessException e) {
             throw new IOException(e); 
         }
-        if (recordedColumns++ == requiredColumns) {
-            closeRecord();
-        }
-        if (column == sortColumn) {
-            sortValue = new ComparableByteArray(value,0);
-        }
-        return AimUtils.write(type, value, recordBuffer);
     }
-
-    private void closeRecord() throws IOException {
-        if (sortValue != null)  {
-            recordedColumns = 1;
-            if (!sortMap.containsKey(sortValue)) {
-                sortMap.put(sortValue, new ByteArrayOutputStream());
-            }
-            ByteArrayOutputStream keyspace = sortMap.get(sortValue);
-            keyspace.write(recordBuffer.toByteArray());
-            sortValue = null;
-            recordBuffer.reset();
-        }
-    }
-*/
 }

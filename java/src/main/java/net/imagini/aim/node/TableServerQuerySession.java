@@ -14,7 +14,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import joptsimple.internal.Strings;
 import net.imagini.aim.AimFilter;
 import net.imagini.aim.AimQuery;
 import net.imagini.aim.AimSchema;
@@ -36,7 +35,7 @@ public class TableServerQuerySession extends Thread {
     @Override
     public void run() {
         try {
-            AimSchema schema = table.schema.subset("user_uid", "timestamp","api_key","url");
+            AimSchema schema = table.schema.subset("user_uid","timestamp","api_key","url");
             AimQuery query = new AimQuery(table);
             Integer range = null;
             AimFilter filter = query.filter();
@@ -138,7 +137,7 @@ public class TableServerQuerySession extends Thread {
                                 if (value.equals(",")) value = cmd.poll();
                                 values.add(value);
                             }
-                            filter = filter.in(Strings.join(values, ","));
+                            filter = filter.in(values.toArray(new String[values.size()]));
                         }
                         break;
                     case "CONTAINS": filter = filter.contains(cmd.poll()); break;
@@ -193,9 +192,9 @@ public class TableServerQuerySession extends Thread {
         long t = System.currentTimeMillis();
         t = (System.currentTimeMillis()-t);
         query.range(range);
-        Long count = query.count(filter);
         pipe.write(true);
         pipe.write("COUNT");
+        Long count = query.count(filter);
         pipe.write(filter == null ? null : filter.toString());
         pipe.write(count);
         pipe.write((long)table.getCount());

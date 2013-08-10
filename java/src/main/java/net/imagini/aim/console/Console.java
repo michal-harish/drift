@@ -10,8 +10,8 @@ import joptsimple.internal.Strings;
 import net.imagini.aim.Aim.SortOrder;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimUtils;
+import net.imagini.aim.loaders.CSVLoader;
 import net.imagini.aim.loaders.EventsSchema;
-import net.imagini.aim.loaders.TestEventsLoader;
 import net.imagini.aim.node.AimTable;
 import net.imagini.aim.node.TableServer;
 import net.imagini.aim.pipes.Pipe;
@@ -28,14 +28,14 @@ public class Console extends Thread {
     public static void main(String[] args) throws IOException {
         System.out.println("\nAIM/CASSPAR Test Console\n");
 
-        AimTable table = new AimTable("events", 10485760, new EventsSchema(), "user_uid", SortOrder.DESC);
+        AimTable table = new AimTable("events", 10485760, new EventsSchema(), "user_uid", SortOrder.ASC);
         server = new TableServer(table, 4000);
         server.start();
 
-        long limit = 1000000L;
+        long limit = 10000000L;
 
-        loader = new TestEventsLoader(table, limit);
-        /**
+        //loader = new TestEventsLoader(table, limit);
+        /**/
         loader = new CSVLoader(new String[]{
                 "--gzip", 
                 "--limit", String.valueOf(limit),

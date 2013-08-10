@@ -30,11 +30,10 @@ import net.imagini.aim.LZ4Buffer.LZ4Scanner;
 public class Segment implements AimSegment {
 
     final protected AimSchema schema;
-    final protected LinkedHashMap<Integer,LZ4Buffer> columnar = new LinkedHashMap<>();
-    //FIXME move writers into the loader session context
-    protected LinkedHashMap<Integer,ByteBuffer> writers = null;
-    protected AtomicLong count = new AtomicLong(0);
     protected AtomicLong originalSize = new AtomicLong(0);
+    private LinkedHashMap<Integer,LZ4Buffer> columnar = new LinkedHashMap<>();
+    private LinkedHashMap<Integer,ByteBuffer> writers = null;
+    private AtomicLong count = new AtomicLong(0);
     private boolean writable;
     private AtomicLong size = new AtomicLong(0);
 
@@ -60,31 +59,26 @@ public class Segment implements AimSegment {
 
     /**
      * ByteBuffer input is a horizontal buffer where columns of a single record 
-     * follow in precise order before moving onto another record.
+     * follow in precise order.
      * @param buffer
      * @throws IOException
      */
-    @Override public void append(ByteBuffer block) throws IOException {
+    @Override public void append(ByteBuffer record) throws IOException {
         try {
             checkWritable(true);
             for(int col = 0; col < schema.size() ; col++) {
-                writers.get(col).clear();
-            }
-            while(block.position() < block.limit()) {
-                for(int col = 0; col < schema.size() ; col++) {
-                    AimDataType type = schema.dataType(col);
-                    originalSize.addAndGet(
-                        AimUtils.copy(block, type, writers.get(col))
-                    );
+                AimDataType type = schema.dataType(col);
+                ByteBuffer block = writers.get(col);
+                if (block.position() + record.limit() > Aim.LZ4_BLOCK_SIZE) {
+                    block.flip();
+                    size.addAndGet(columnar.get(col).addBlock(block));
+                    block.clear();
                 }
-                count.incrementAndGet();
+                originalSize.addAndGet(
+                    AimUtils.copy(record, type, block)
+                );
             }
-            for(int col = 0; col < schema.size() ; col++) {
-                ByteBuffer writer = writers.get(col);
-                writer.flip();
-                size.addAndGet(columnar.get(col).addBlock(writer));
-                writer.clear();
-            }
+            count.incrementAndGet();
         } catch (IllegalAccessException e1) {
             throw new IOException(e1);
         }
@@ -92,6 +86,15 @@ public class Segment implements AimSegment {
 
     @Override public void close() throws IOException, IllegalAccessException {
         checkWritable(true);
+        //check open writer blocks and add them if available
+        for(int col = 0; col < schema.size() ; col++) {
+            ByteBuffer block = writers.get(col);
+            if (block.position() > 0) {
+                block.flip();
+                size.addAndGet(columnar.get(col).addBlock(block));
+                block.clear();
+            }
+        }
         this.writers = null;
         this.writable = false;
     }
@@ -109,9 +112,13 @@ public class Segment implements AimSegment {
     }
 
     @Override public Long count(AimFilter filter) throws IOException {
-        final AimSchema subSchema = schema.subset(filter.getColumns());
-
-        if (filter != null) filter.updateFormula(subSchema.names());
+        final AimSchema subSchema;
+        if (filter != null) {
+            subSchema = schema.subset(filter.getColumns());
+            filter.updateFormula(subSchema.names());
+        } else {
+            subSchema = schema.subset(schema.name(0));
+        }
 
         final LZ4Scanner[] scanners = new LZ4Scanner[subSchema.size()];
         int i = 0; for(String colName: subSchema.names()) {
@@ -165,7 +172,8 @@ public class Segment implements AimSegment {
             throw new IOException(e); 
         }
         Set<String> totalColumnSet = new HashSet<String>(Arrays.asList(columns));
-        totalColumnSet.addAll(Arrays.asList(filter.getColumns()));
+        if (filter != null) totalColumnSet.addAll(Arrays.asList(filter.getColumns()));
+
         totalColumnSet.add(sortColumn);
         final AimSchema subSchema = schema.subset(totalColumnSet.toArray(new String[totalColumnSet.size()]));
         final List<Integer> allColumns = new LinkedList<Integer>(); 
@@ -173,7 +181,7 @@ public class Segment implements AimSegment {
         final List<Integer> selectColumns = new LinkedList<Integer>();
         for(String colName: columns) selectColumns.add(subSchema.get(colName));
         final List<Integer> hiddenColumns = new LinkedList<Integer>(allColumns); hiddenColumns.removeAll(selectColumns);
- 
+
         if (filter != null) filter.updateFormula(subSchema.names());
 
         final LZ4Scanner[] scanners = new LZ4Scanner[subSchema.size()];

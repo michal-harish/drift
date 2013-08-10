@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 
 public interface AimSegment {
 
-    void append(ByteBuffer records) throws IOException;
+    void append(ByteBuffer record) throws IOException;
 
     void close() throws IllegalAccessException, IOException;
 

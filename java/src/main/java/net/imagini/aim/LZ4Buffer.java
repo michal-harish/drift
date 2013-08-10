@@ -36,41 +36,6 @@ public class LZ4Buffer {
     static private LZ4Compressor compressor = LZ4Factory.fastestInstance().highCompressor();
     static protected LZ4Decompressor decompressor = LZ4Factory.fastestInstance().decompressor();
 
-    static public void main(String[] args) {
-
-        //TODO move lz4buffer static main to a test class
-        LZ4Buffer instance = new LZ4Buffer();
-        instance.addBlock(ByteBuffer.wrap((
-            "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-            "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-            "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-            "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-            "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-            "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-            "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-            "\n"
-        ).getBytes()));
-
-        instance.addBlock(ByteBuffer.wrap((
-            "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-            "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-            "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-            "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-            "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-            "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-            "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-            "\n"
-        ).getBytes()));
-
-        LZ4Scanner scanner = new LZ4Scanner(instance);
-        byte[] b = new byte[1];
-        while (!scanner.eof()) {
-            b[0] = scanner.read();
-            System.out.print(new String(b));
-        }
-    }
-
-
     public int addBlock(ByteBuffer block) {
 
         int blockLength = block.limit();

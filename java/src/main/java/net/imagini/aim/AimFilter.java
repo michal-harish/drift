@@ -45,8 +45,6 @@ public class AimFilter {
     }
 
     private AimTable table; //TODO remove table and use schema only
-//    private Integer startSegment;
-//    private Integer endSegment;
     protected AimFilter root;
     protected AimType type;
     protected AimFilter next;
@@ -240,48 +238,4 @@ public class AimFilter {
         abstract protected boolean compare(boolean a, boolean b);
 
     }
-
-    /**
-     * Experimental multi-threaded filter executor.
-     * 
-     * filters run for each segment in parallel thread and should be sending 
-     * the serialized filter over the pipe "to" the segment.
-
-    final public AimFilterSet go() throws IOException {
-        final AimFilterSet result = new AimFilterSet();
-        final List<Integer> segments = new LinkedList<Integer>();
-        for(int s = root.startSegment; s <= root.endSegment; s++) segments.add(s);
-        if (segments.size() == 0) return result;
-        final ExecutorService collector = Executors.newFixedThreadPool(segments.size());
-
-        for(final Integer s : segments) {
-            final AimSegment segment = root.table.open(s);
-            if (segment == null) return result;
-            collector.submit(new Runnable() {
-                @Override
-                public void run() {
-                    BitSet segmentResult = new BitSet();
-                    try {
-                        int length = segment.filter(root, segmentResult);
-                        result.put(s, segmentResult);
-                        result.length(s, length);
-                    } catch (IOException e) {
-                        result.put(s, null);
-                        e.printStackTrace();
-                        collector.shutdownNow();
-                    }
-                }
-            });
-        }
-        collector.shutdown();
-        try {
-            collector.awaitTermination(1, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {
-            throw new IOException(e);
-        }
-
-        return result;
-    }
-*/
-
 }

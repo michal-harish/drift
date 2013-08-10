@@ -19,8 +19,7 @@ public class TableServerLoaderSession extends Thread  {
     private Pipe pipe;
     private AimTable table;
     private Integer count = 0;
-    private ByteBuffer recordBuffer;
-    private ByteBuffer currentSegmentBlock = ByteBuffer.allocate(Aim.LZ4_BLOCK_SIZE);
+    private ByteBuffer record;
     private AimSegment currentSegment;
 
     public TableServerLoaderSession(AimTable table, Pipe pipe) throws IOException {
@@ -31,7 +30,8 @@ public class TableServerLoaderSession extends Thread  {
         if (!actualSchema.equals(expectSchema)) {
             throw new IOException("Invalid loader schema for table '"+ table.name +"', \nexpecting: " + expectSchema +"\nreceived:  " + actualSchema);
         }
-        recordBuffer = ByteBuffer.allocate(Aim.COLUMN_BUFFER_SIZE * table.schema.size());
+        record = ByteBuffer.allocate(Aim.COLUMN_BUFFER_SIZE * table.schema.size());
+        record.order(Aim.endian);
     }
 
     @Override public void run() {
@@ -39,21 +39,22 @@ public class TableServerLoaderSession extends Thread  {
         try {
             long t = System.currentTimeMillis();
             try {
+                createNewSegmentIfNull();
                 while (true) {
                     if (interrupted())  break;
                     try {
                         //TODO read full record and check if it will fit withing the buffer
-                        recordBuffer.clear();
+                        record.clear();
                         for(AimType type: table.schema.def()) {
-                            pipe.read(type.getDataType(), recordBuffer);
+                            pipe.read(type.getDataType(), record);
                         }
-                        recordBuffer.flip();
-                        if (currentSegmentBlock.position() + recordBuffer.limit() > Aim.LZ4_BLOCK_SIZE ) {
-                            compressCurrentBuffer(false);
+                        record.flip();
+                        if (currentSegment.getOriginalSize() + record.limit() > table.segmentSizeBytes) {
+                            addCurrentSegment();
                         }
-                        currentSegmentBlock.put(recordBuffer);
+                        currentSegment.append(record);
                     } catch (EOFException e) {
-                        compressCurrentBuffer(true);
+                        addCurrentSegment();
                         throw e;
                     }
                 }
@@ -70,26 +71,13 @@ public class TableServerLoaderSession extends Thread  {
         }
     }
 
-    private void compressCurrentBuffer(boolean force) throws IOException {
-        currentSegmentBlock.flip();
-        if (currentSegmentBlock.limit() > 0) {
-            createNewSegmentIfNull();
-            if (force || currentSegment.getOriginalSize() + currentSegmentBlock.limit() > table.segmentSizeBytes) {
-                addCurrentSegment();
-            }
-            currentSegment.append(currentSegmentBlock);
-            if (force) {
-                addCurrentSegment();
-            }
-            currentSegmentBlock.clear();
-        }
-    }
-
     private void addCurrentSegment() throws IOException {
         try {
             currentSegment.close();
-            table.add(currentSegment);
-            currentSegment = null;
+            if (currentSegment.getOriginalSize()>0) {
+                table.add(currentSegment);
+                currentSegment = null;
+            }
             createNewSegmentIfNull();
         } catch (IllegalAccessException e) {
             throw new IOException(e);
@@ -98,9 +86,11 @@ public class TableServerLoaderSession extends Thread  {
 
     private void createNewSegmentIfNull() throws IOException {
         if (currentSegment == null) {
-            //TODO add sortColumn to schema and if set instantiate sorted
-            currentSegment = new Segment(table.schema);
-            //currentSegment = new SegmentSorted(table.schema, table.sortColumn, table.sortOrder);
+            if (table.sortColumn == null) {
+                currentSegment = new Segment(table.schema);
+            } else {
+                currentSegment = new SegmentSorted(table.schema, table.sortColumn, table.sortOrder);
+            }
         }
     }
 

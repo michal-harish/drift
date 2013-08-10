@@ -81,6 +81,22 @@ public class AimUtils {
         return in.skip(size);
     }
 
+    public static long skip(ByteBuffer in, AimDataType type) {
+        int size = size(in, type);
+        in.position(in.position() + size);
+        return size;
+    }
+
+    public static int size(ByteBuffer in, AimDataType type) {
+        int size;
+        if (type.equals(Aim.STRING)) {
+            size = getIntegerValue(in) + 4;
+        } else {
+            size = type.getSize();
+        }
+        return size;
+    }
+
     public static String read(InputStream in) throws IOException {
         byte[] buf = new byte[Aim.COLUMN_BUFFER_SIZE];
         read(in,Aim.STRING,buf);
