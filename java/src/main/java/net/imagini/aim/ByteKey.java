@@ -21,11 +21,12 @@ public class ByteKey implements Comparable<ByteKey> {
         if (!(other instanceof ByteKey)) {
             return false;
         }
-        return Arrays.equals(bytes, ((ByteKey)other).bytes) && ((ByteKey)other).classifier == classifier;
+        ByteKey otherKey = ((ByteKey)other);
+        return otherKey.classifier == classifier  && Arrays.equals(bytes, otherKey.bytes);
     }
 
     @Override public int hashCode() {
-        return Arrays.hashCode(bytes);
+        return Arrays.hashCode(bytes) + classifier;
     }
 
     @Override
