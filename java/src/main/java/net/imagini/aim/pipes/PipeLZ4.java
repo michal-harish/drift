@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
+import net.imagini.aim.Aim;
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
 import net.jpountz.lz4.LZ4Factory;
@@ -32,7 +33,7 @@ public class PipeLZ4 extends Pipe {
     @Override protected OutputStream getOutputPipe(OutputStream out) throws IOException {
          lz4OutputStream = new LZ4BlockOutputStream(
              out, 
-             65535, 
+             Aim.LZ4_BLOCK_SIZE, 
              LZ4Factory.fastestInstance().highCompressor(),
              XXHashFactory.fastestInstance().newStreamingHash32(0x9747b28c).asChecksum(), 
              true

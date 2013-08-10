@@ -21,22 +21,24 @@ import net.imagini.aim.pipes.PipeLZ4;
 public class Console extends Thread {
 
     final private Pipe pipe;
-    
+
     static private TableServer server;
     static private Thread loader;
 
     public static void main(String[] args) throws IOException {
         System.out.println("\nAIM/CASSPAR Test Console\n");
 
-        AimTable table = new AimTable("events", 4194304, new EventsSchema(), "user_uid", SortOrder.DESC);
+        AimTable table = new AimTable("events", 10485760, new EventsSchema(), "user_uid", SortOrder.DESC);
         server = new TableServer(table, 4000);
         server.start();
 
-        loader = new TestEventsLoader(table);
+        long limit = 1000000L;
+
+        loader = new TestEventsLoader(table, limit);
         /**
         loader = new CSVLoader(new String[]{
                 "--gzip", 
-                "--limit","1000000",
+                "--limit", String.valueOf(limit),
                 "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(BYTEARRAY[2]),region_code(BYTEARRAY[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:BYTEARRAY[16]),user_quizzed(BOOL)",
                 "/Users/mharis/events-2013-07-23.csv.gz"
         });

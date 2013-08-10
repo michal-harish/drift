@@ -33,9 +33,9 @@ public class Segment implements AimSegment {
     final protected LinkedHashMap<Integer,LZ4Buffer> columnar = new LinkedHashMap<>();
     //FIXME move writers into the loader session context
     protected LinkedHashMap<Integer,ByteBuffer> writers = null;
+    protected AtomicLong count = new AtomicLong(0);
+    protected AtomicLong originalSize = new AtomicLong(0);
     private boolean writable;
-    private AtomicLong count = new AtomicLong(0);
-    private AtomicLong originalSize = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
 
     /**
@@ -48,7 +48,7 @@ public class Segment implements AimSegment {
         writers = new LinkedHashMap<>();
         for(int col=0; col < schema.size(); col++) {
             columnar.put(col, new LZ4Buffer());
-            writers.put(col, ByteBuffer.allocate(65535));
+            writers.put(col, ByteBuffer.allocate(Aim.LZ4_BLOCK_SIZE));
         }
     }
 
@@ -64,17 +64,17 @@ public class Segment implements AimSegment {
      * @param buffer
      * @throws IOException
      */
-    final public void append(ByteBuffer input) throws IOException {
+    @Override public void append(ByteBuffer block) throws IOException {
         try {
             checkWritable(true);
             for(int col = 0; col < schema.size() ; col++) {
                 writers.get(col).clear();
             }
-            while(input.position() < input.limit()) {
+            while(block.position() < block.limit()) {
                 for(int col = 0; col < schema.size() ; col++) {
                     AimDataType type = schema.dataType(col);
                     originalSize.addAndGet(
-                        AimUtils.copy(input, type, writers.get(col))
+                        AimUtils.copy(block, type, writers.get(col))
                     );
                 }
                 count.incrementAndGet();

@@ -132,6 +132,19 @@ public class AimUtils {
         return size;
     }
 
+    public static int write(AimDataType type, byte[] value, ByteBuffer out) throws IOException {
+        int size = 0;
+        if (type.equals(Aim.STRING)) {
+            size = getIntegerValue(value);
+            out.put(value,0, size+4);
+            return size + 4;
+        } else {
+            size = type.getSize();
+        }
+        out.put(value,0,size);
+        return size;
+    }
+
     static public void read(InputStream in, ByteBuffer buf, int len) throws IOException {
         int totalRead = 0;
         while (totalRead < len) {

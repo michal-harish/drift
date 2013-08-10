@@ -8,37 +8,40 @@ import java.util.UUID;
 import net.imagini.aim.Aim;
 import net.imagini.aim.node.AimTable;
 import net.imagini.aim.node.Segment;
+import net.imagini.aim.node.SegmentSorted;
 
 public class TestEventsLoader extends Thread{
 
     private AimTable table;
     private Segment currentSegment; 
-    private ByteBuffer buffer = ByteBuffer.allocate(1000000);
+    private ByteBuffer currentBlock = ByteBuffer.allocate(1000000);
+    private long limit;
 
-    public TestEventsLoader(AimTable table) {
+    public TestEventsLoader(AimTable table, long limit) {
         this.table = table;
+        this.limit = limit;
     }
 
     public void run() {
         try {
-            buffer.order(ByteOrder.BIG_ENDIAN);
-            for (long i = 1; i <=10000000; i++) {
+            currentBlock.order(ByteOrder.BIG_ENDIAN);
+            for (long i = 1; i <= limit; i++) {
                 if (currentSegment == null) {
-                    currentSegment = new Segment(table.schema);
+                    currentSegment = new SegmentSorted(table.schema,table.sortColumn, table.sortOrder);
                 }
                 try {
                     UUID userUid  = UUID.randomUUID();
-                    buffer.putLong(i); 
-                    buffer.put(Aim.IPV4(Aim.INT).convert("173.194.41.99"));
-                    buffer.put(Aim.STRING.convert("VDNAUserTestEvent"));
-                    buffer.put(Aim.STRING.convert("user agent info .."));
-                    buffer.put(Aim.BYTEARRAY(2).convert("GB"));
-                    buffer.put(Aim.BYTEARRAY(3).convert("LDN"));
-                    buffer.put(Aim.STRING.convert("EC2 A"+ i));
-                    buffer.put(Aim.STRING.convert("test"));
-                    buffer.put(Aim.STRING.convert("http://"));
-                    buffer.put(Aim.BYTEARRAY(16).convert(userUid.toString()));
-                    buffer.put(Aim.BOOL.convert(userUid.hashCode() % 100 == 0 ? "true" : "false"));
+                    currentBlock.putLong(i); 
+                    currentBlock.put(Aim.IPV4(Aim.INT).convert("173.194.41.99"));
+                    currentBlock.put(Aim.STRING.convert("VDNAUserTestEvent"));
+                    currentBlock.put(Aim.STRING.convert("user agent info .."));
+                    currentBlock.put(Aim.BYTEARRAY(2).convert("GB"));
+                    currentBlock.put(Aim.BYTEARRAY(3).convert("LDN"));
+                    currentBlock.put(Aim.STRING.convert("EC2 A"+ i));
+                    currentBlock.put(Aim.STRING.convert("test"));
+                    currentBlock.put(Aim.STRING.convert("http://"));
+                    currentBlock.put(Aim.BYTEARRAY(16).convert(userUid.toString()));
+                    currentBlock.put(Aim.BOOL.convert(userUid.hashCode() % 100 == 0 ? "true" : "false"));
                     commitCurrentSegment(false);
                 } catch(Exception e) {
                     e.printStackTrace();
@@ -54,11 +57,11 @@ public class TestEventsLoader extends Thread{
 
     private void commitCurrentSegment(boolean force) throws IOException {
         if (currentSegment != null) {
-            boolean commit = force || currentSegment.getSize() > 2097152L;
-            if (commit || buffer.position() > 65535) {
-                buffer.flip();
-                currentSegment.append(buffer);
-                buffer.clear();
+            boolean commit = force || currentSegment.getOriginalSize() + currentBlock.limit() > table.segmentSizeBytes;
+            if (commit || currentBlock.position() > Aim.LZ4_BLOCK_SIZE) {
+                currentBlock.flip();
+                currentSegment.append(currentBlock);
+                currentBlock.clear();
             }
             if (commit) {
                 try {

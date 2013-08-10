@@ -80,11 +80,14 @@ public class CSVLoader extends Thread {
             Socket socket = new Socket(InetAddress.getByName("localhost"), 4000);
             final Pipe out = new PipeLZ4(socket.getOutputStream(),Pipe.Protocol.LOADER);
             out.write(schema.toString());
+            int count = 0;
             try {
                 BufferedReader lineReader = new BufferedReader(reader);
-                int count = 0;
-                while(limit == null || count++<limit) {
-                    String line = lineReader.readLine();
+                String line;
+                while(count++<limit || limit == 0L ) {
+                    if (null == (line = lineReader.readLine())) {
+                        break;
+                    }
                     String[] values= line.split("\t");
                     try {
                         byte[][] record = new byte[schema.size()][];
@@ -104,11 +107,12 @@ public class CSVLoader extends Thread {
                         out.flush();
                         break;
                     } catch (Exception e) {
-                        System.out.println(line);
-                        e.printStackTrace();
+                        System.err.println(e);
+                        System.err.println(count + ":" + line);
                     }
                 }
             } finally {
+                System.out.println(count);
                 out.close();
                 socket.close();
             }
