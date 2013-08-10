@@ -99,8 +99,8 @@ public class TableServerLoaderSession extends Thread  {
     private void createNewSegmentIfNull() throws IOException {
         if (currentSegment == null) {
             //TODO add sortColumn to schema and if set instantiate sorted
-            //currentSegment = new Segment(table.schema);
-            currentSegment = new SegmentSorted(table.schema, table.sortColumn, table.sortOrder);
+            currentSegment = new Segment(table.schema);
+            //currentSegment = new SegmentSorted(table.schema, table.sortColumn, table.sortOrder);
         }
     }
 

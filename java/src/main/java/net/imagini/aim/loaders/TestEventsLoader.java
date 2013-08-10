@@ -8,7 +8,6 @@ import java.util.UUID;
 import net.imagini.aim.Aim;
 import net.imagini.aim.node.AimTable;
 import net.imagini.aim.node.Segment;
-import net.imagini.aim.node.SegmentSorted;
 
 public class TestEventsLoader extends Thread{
 
@@ -27,7 +26,8 @@ public class TestEventsLoader extends Thread{
             currentBlock.order(ByteOrder.BIG_ENDIAN);
             for (long i = 1; i <= limit; i++) {
                 if (currentSegment == null) {
-                    currentSegment = new SegmentSorted(table.schema,table.sortColumn, table.sortOrder);
+                    //currentSegment = new SegmentSorted(table.schema,table.sortColumn, table.sortOrder);
+                    currentSegment = new Segment(table.schema);
                 }
                 try {
                     UUID userUid  = UUID.randomUUID();
