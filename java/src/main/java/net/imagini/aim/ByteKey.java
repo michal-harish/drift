@@ -3,8 +3,8 @@ package net.imagini.aim;
 import java.util.Arrays;
 
 public class ByteKey implements Comparable<ByteKey> {
-    public final byte[] bytes;
-    private int classifier;
+    final public byte[] bytes;
+    final public int classifier;
 
     public ByteKey(byte[] data) {
         this(data,0);
@@ -21,7 +21,7 @@ public class ByteKey implements Comparable<ByteKey> {
         if (!(other instanceof ByteKey)) {
             return false;
         }
-        return Arrays.equals(bytes, ((ByteKey)other).bytes);
+        return Arrays.equals(bytes, ((ByteKey)other).bytes) && ((ByteKey)other).classifier == classifier;
     }
 
     @Override public int hashCode() {

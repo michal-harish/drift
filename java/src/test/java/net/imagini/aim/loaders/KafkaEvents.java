@@ -1,4 +1,4 @@
-package net.imagini.aim;
+package net.imagini.aim.loaders;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -16,6 +16,7 @@ import kafka.consumer.Whitelist;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.Message;
 import kafka.message.MessageAndMetadata;
+import net.imagini.aim.AimSchema;
 import net.imagini.aim.loaders.EventsSchema;
 import net.imagini.aim.pipes.Pipe;
 import net.imagini.aim.pipes.PipeLZ4;

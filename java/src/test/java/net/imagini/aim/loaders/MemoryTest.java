@@ -1,6 +1,8 @@
-package net.imagini.aim;
+package net.imagini.aim.loaders;
 
 import java.nio.ByteBuffer;
+
+import net.imagini.aim.LZ4Buffer;
 
 public class MemoryTest {
 
