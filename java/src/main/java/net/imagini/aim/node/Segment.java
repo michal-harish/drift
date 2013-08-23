@@ -84,6 +84,29 @@ public class Segment implements AimSegment {
         }
     }
 
+//    @Override public void append(InputStream in) throws IOException {
+//        try {
+//            checkWritable(true);
+//            for(int col = 0; col < schema.size() ; col++) {
+//                AimDataType type = schema.dataType(col);
+//                ByteBuffer block = writers.get(col);
+//                int valueSize = AimUtils.sizeOf(in, type);
+//                if (block.position() + valueSize > Aim.LZ4_BLOCK_SIZE) {
+//                    block.flip();
+//                    size.addAndGet(columnar.get(col).addBlock(block));
+//                    block.clear();
+//                }
+//                if (type.equals(Aim.STRING)) {
+//                    block.putInt(valueSize);
+//                }
+//                AimUtils.read(in, block, valueSize);
+//            }
+//            count.incrementAndGet();
+//        } catch (IllegalAccessException e1) {
+//            throw new IOException(e1);
+//        }
+//    }
+
     @Override public void close() throws IOException, IllegalAccessException {
         checkWritable(true);
         //check open writer blocks and add them if available
@@ -111,7 +134,7 @@ public class Segment implements AimSegment {
         return originalSize.get();
     }
 
-    @Override public Long count(AimFilter filter) throws IOException {
+    @Override final public Long count(AimFilter filter) throws IOException {
         final AimSchema subSchema;
         if (filter != null) {
             subSchema = schema.subset(filter.getColumns());
@@ -165,7 +188,7 @@ public class Segment implements AimSegment {
      * Not Thread-safe 
      * Filtered, Aggregate Input stream for all the selected columns in this segment.
      */
-    @Override public InputStream select(final AimFilter filter, final String sortColumn, final String[] columns) throws IOException {
+    @Override final public InputStream select(final AimFilter filter, final String sortColumn, final String[] columns) throws IOException {
         try {
             checkWritable(false);
         } catch (IllegalAccessException e) {

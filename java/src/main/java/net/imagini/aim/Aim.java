@@ -9,8 +9,8 @@ import java.util.UUID;
 
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 
-
 public enum Aim implements AimDataType {
+
     BOOL(1),
     BYTE(1),
     INT(4),
@@ -36,16 +36,21 @@ public enum Aim implements AimDataType {
     final public static ByteOrder endian = ByteOrder.BIG_ENDIAN;
 
     /**
-     * This is for ZeroCopy routines when they allocate mulit-dimensional buffers
+     * This is for ZeroCopy routines using pre-allocated buffers
+     * FIXME COLUMN_BUFFER_SIZE should be configurable for different schemas
      */
-    final public static Integer COLUMN_BUFFER_SIZE = 2048; //FIXME COLUMN_BUFFER_SIZE = 2048 !
-    final public static Integer LZ4_BLOCK_SIZE = 524280;
+    final public static Integer COLUMN_BUFFER_SIZE = 2048; 
 
-    final public int size;
+    /**
+     * lz4 block size for all lz4 compressor routines
+     */
+    final public static Integer LZ4_BLOCK_SIZE = 524280;
 
     private Aim(int size) {
         this.size = size;
     }
+
+    final public int size;
 
     @Override public int getSize() {
         return size;

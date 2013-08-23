@@ -8,8 +8,7 @@ import java.util.Set;
 
 import joptsimple.internal.Strings;
 import net.imagini.aim.LZ4Buffer.LZ4Scanner;
-import net.imagini.aim.node.AimTable;
-import net.imagini.aim.pipes.Pipe;
+import net.imagini.aim.table.AimTable;
 
 /**
  * AimFilter objects can be chained into a filter chain that is evaulated from left to right.

@@ -14,8 +14,8 @@ import java.util.zip.GZIPInputStream;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimType;
 import net.imagini.aim.AimUtils;
-import net.imagini.aim.pipes.Pipe;
-import net.imagini.aim.pipes.PipeLZ4;
+import net.imagini.aim.Pipe;
+import net.imagini.aim.PipeLZ4;
 
 
 /**
@@ -25,13 +25,12 @@ import net.imagini.aim.pipes.PipeLZ4;
  * mvn package
  * 
  * ## AND THEN
- * hive -e "select \`timestamp\`,client_ip,\`type\`,useragent,country_code,region_code,post_code,campaignid,url,userUid,userQuizzed from ${env:USER}_events_rc;" \
- *  | gzip > ~/events-2013-07-23.csv.gz 
- * cat ~/events-2013-07-23.csv.gz | ./load-csv --gzip --schema timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(STRING[2]),region_code(STRING[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:STRING[16]),user_quizzed(BOOL)
+ * hive -e "select \`timestamp\`,client_ip,\`type\`,action,useragent,country_code,region_code,post_code,campaignid,url,userUid,userQuizzed from ${env:USER}_events_rc;" | gzip > ~/events-2013-07-23.csv.gz 
+ * cat ~/events-2013-07-23.csv.gz | ./load-csv --gzip --schema timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),action(STRING),user_agent(STRING),country_code(STRING[2]),region_code(STRING[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:STRING[16]),user_quizzed(BOOL)
  *
  * ## OR
  * 
- * hive -e "..." | ./load-csv --schema timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(STRING[2]),region_code(STRING[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:STRING[16]),user_quizzed(BOOL)
+ * hive -e "..." | ./load-csv --schema timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),action(STRING),user_agent(STRING),country_code(STRING[2]),region_code(STRING[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:STRING[16]),user_quizzed(BOOL)
  */
 public class CSVLoader extends Thread {
     public static void main(String[] args) {
@@ -112,7 +111,6 @@ public class CSVLoader extends Thread {
                     }
                 }
             } finally {
-                System.out.println(count);
                 out.close();
                 socket.close();
             }

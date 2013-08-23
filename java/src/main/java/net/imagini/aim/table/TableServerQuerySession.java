@@ -1,4 +1,4 @@
-package net.imagini.aim.node;
+package net.imagini.aim.table;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -18,9 +18,9 @@ import net.imagini.aim.AimFilter;
 import net.imagini.aim.AimQuery;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimType;
+import net.imagini.aim.Pipe;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.AimUtils;
-import net.imagini.aim.pipes.Pipe;
 
 public class TableServerQuerySession extends Thread {
 
@@ -35,12 +35,13 @@ public class TableServerQuerySession extends Thread {
     @Override
     public void run() {
         try {
-            AimSchema schema = table.schema.subset("user_uid","timestamp","api_key","url");
+            AimSchema schema = table.schema.subset("user_uid","action","timestamp","api_key","url");
             AimQuery query = new AimQuery(table);
             Integer range = null;
             AimFilter filter = query.filter();
             filter.where("user_quizzed").equals("true")
-                .and("api_key").contains("mirror")
+                .and("user_uid").equals("fde89f74-f6cd-4783-a8e0-c90e56f4ca0a")
+                //.and("api_key").contains("mirror")
                 //.and("timestamp").equals("1374541507")
                 ;
             while(true) {

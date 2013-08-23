@@ -1,4 +1,4 @@
-package net.imagini.aim.pipes;
+package net.imagini.aim;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,11 +26,11 @@ public class PipeGZIP extends Pipe {
     public PipeGZIP(Socket socket, Protocol protocol) throws IOException {
         super(socket, protocol);
     }
-    @Override protected OutputStream getOutputPipe(OutputStream out) throws IOException {
+    @Override protected OutputStream createOutputStreamWrapper(OutputStream out) throws IOException {
         return new GZIPOutputStream(out, true);
     }
 
-    @Override protected InputStream getInputPipe(InputStream in) throws IOException {
+    @Override protected InputStream createInputStreamWrapper(InputStream in) throws IOException {
         return new GZIPInputStream(in);
     }
 

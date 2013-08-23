@@ -1,4 +1,4 @@
-package net.imagini.aim.pipes;
+package net.imagini.aim;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -8,9 +8,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import net.imagini.aim.Aim;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
-import net.imagini.aim.AimUtils;
 
 import org.apache.commons.io.EndianUtils;
 
@@ -33,11 +31,11 @@ public class Pipe {
     }
     public Pipe(Socket socket, Protocol protocol) throws IOException {
         this(socket.getOutputStream(), protocol);
-        inputPipe = getInputPipe(socket.getInputStream());
+        inputPipe = createInputStreamWrapper(socket.getInputStream());
     }
 
     public Pipe(OutputStream out) throws IOException {
-        outputPipe = getOutputPipe(out);
+        outputPipe = createOutputStreamWrapper(out);
         this.protocol = Pipe.Protocol.BINARY;
     }
     public Pipe(OutputStream out, Protocol protocol) throws IOException {
@@ -50,21 +48,21 @@ public class Pipe {
         out.write(pipe_type);
         write(out, protocol.id);
         this.protocol = protocol;
-        outputPipe = getOutputPipe(out);
+        outputPipe = createOutputStreamWrapper(out);
     }
 
     public Pipe(InputStream in) throws IOException {
-        inputPipe = getInputPipe(in);
+        inputPipe = createInputStreamWrapper(in);
         this.protocol = Pipe.Protocol.BINARY;
     }
 
     public Pipe(InputStream in, Protocol protocol) throws IOException {
-        inputPipe = getInputPipe(in);
+        inputPipe = createInputStreamWrapper(in);
         this.protocol = protocol;
     }
     static public Pipe open(Socket socket) throws IOException {
         Pipe pipe = open(socket.getInputStream());
-        pipe.outputPipe = pipe.getOutputPipe(socket.getOutputStream());
+        pipe.outputPipe = pipe.createOutputStreamWrapper(socket.getOutputStream());
         return pipe;
     }
     static public Pipe open(InputStream in) throws IOException {
@@ -87,11 +85,15 @@ public class Pipe {
             default: throw new IOException("Invalid pipe header type");
         }
     }
-    protected InputStream getInputPipe(InputStream in) throws IOException {
+    protected InputStream createInputStreamWrapper(InputStream in) throws IOException {
         return in;
     }
 
-    protected OutputStream getOutputPipe(OutputStream out) throws IOException {
+    public InputStream getInputStream() {
+        return inputPipe;
+    }
+
+    protected OutputStream createOutputStreamWrapper(OutputStream out) throws IOException {
         return new DataOutputStream(out);
     }
 

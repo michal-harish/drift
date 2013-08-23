@@ -17,9 +17,9 @@ import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.Message;
 import kafka.message.MessageAndMetadata;
 import net.imagini.aim.AimSchema;
+import net.imagini.aim.Pipe;
+import net.imagini.aim.PipeLZ4;
 import net.imagini.aim.loaders.EventsSchema;
-import net.imagini.aim.pipes.Pipe;
-import net.imagini.aim.pipes.PipeLZ4;
 
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;

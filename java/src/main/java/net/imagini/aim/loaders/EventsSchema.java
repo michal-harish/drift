@@ -14,6 +14,7 @@ public class EventsSchema extends AimSchema {
                 put("timestamp", Aim.LONG);
                 put("client_ip", Aim.IPV4(Aim.INT));
                 put("event_type", Aim.STRING);
+                put("action", Aim.STRING);
                 put("user_agent", Aim.STRING);
                 put("country_code", Aim.BYTEARRAY(2));
                 put("region_code", Aim.BYTEARRAY(3));

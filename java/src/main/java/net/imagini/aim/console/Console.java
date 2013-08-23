@@ -10,13 +10,13 @@ import joptsimple.internal.Strings;
 import net.imagini.aim.Aim.SortOrder;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimUtils;
+import net.imagini.aim.Pipe;
+import net.imagini.aim.Pipe.Protocol;
+import net.imagini.aim.PipeLZ4;
 import net.imagini.aim.loaders.CSVLoader;
 import net.imagini.aim.loaders.EventsSchema;
-import net.imagini.aim.node.AimTable;
-import net.imagini.aim.node.TableServer;
-import net.imagini.aim.pipes.Pipe;
-import net.imagini.aim.pipes.Pipe.Protocol;
-import net.imagini.aim.pipes.PipeLZ4;
+import net.imagini.aim.table.AimTable;
+import net.imagini.aim.table.TableServer;
 
 public class Console extends Thread {
 
@@ -32,14 +32,14 @@ public class Console extends Thread {
         server = new TableServer(table, 4000);
         server.start();
 
-        long limit = 10000000L;
+        long limit = 40000000L;
 
         //loader = new TestEventsLoader(table, limit);
         /**/
         loader = new CSVLoader(new String[]{
                 "--gzip", 
                 "--limit", String.valueOf(limit),
-                "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),user_agent(STRING),country_code(BYTEARRAY[2]),region_code(BYTEARRAY[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:BYTEARRAY[16]),user_quizzed(BOOL)",
+                "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),action(STRING),user_agent(STRING),country_code(BYTEARRAY[2]),region_code(BYTEARRAY[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:BYTEARRAY[16]),user_quizzed(BOOL)",
                 "/Users/mharis/events-2013-07-23.csv.gz"
         });
         /**/
@@ -128,7 +128,7 @@ public class Console extends Thread {
                     filter = pipe.read();
                     //long count = 0;
                     while (pipe.readBool()) {
-                        print(Strings.join(AimUtils.collect(schema, pipe), ", "));
+                        print(Strings.join(AimUtils.fetchRecord(schema, pipe), ", "));
                         //count++;
                     }
                     long filteredCount = pipe.readLong();

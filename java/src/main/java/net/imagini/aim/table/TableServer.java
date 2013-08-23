@@ -1,10 +1,10 @@
-package net.imagini.aim.node;
+package net.imagini.aim.table;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import net.imagini.aim.pipes.Pipe;
+import net.imagini.aim.Pipe;
 
 
 public class TableServer extends Thread {

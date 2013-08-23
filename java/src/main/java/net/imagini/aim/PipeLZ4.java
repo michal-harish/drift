@@ -1,11 +1,10 @@
-package net.imagini.aim.pipes;
+package net.imagini.aim;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
-import net.imagini.aim.Aim;
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
 import net.jpountz.lz4.LZ4Factory;
@@ -30,7 +29,7 @@ public class PipeLZ4 extends Pipe {
     public PipeLZ4(Socket socket, Protocol protocol) throws IOException {
         super(socket, protocol);
     }
-    @Override protected OutputStream getOutputPipe(OutputStream out) throws IOException {
+    @Override protected OutputStream createOutputStreamWrapper(OutputStream out) throws IOException {
          lz4OutputStream = new LZ4BlockOutputStream(
              out, 
              Aim.LZ4_BLOCK_SIZE, 
@@ -41,7 +40,7 @@ public class PipeLZ4 extends Pipe {
          return lz4OutputStream;
      }
 
-     @Override protected InputStream getInputPipe(InputStream in) throws IOException {
+     @Override protected InputStream createInputStreamWrapper(InputStream in) throws IOException {
          return new LZ4BlockInputStream(in);
      }
 

@@ -1,4 +1,4 @@
-package net.imagini.aim.node;
+package net.imagini.aim.table;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -7,7 +7,9 @@ import java.nio.ByteBuffer;
 import net.imagini.aim.Aim;
 import net.imagini.aim.AimSegment;
 import net.imagini.aim.AimType;
-import net.imagini.aim.pipes.Pipe;
+import net.imagini.aim.Pipe;
+import net.imagini.aim.node.Segment;
+import net.imagini.aim.node.SegmentSorted;
 
 /**
  * Non-Thread safe, the session is a single-threaded context
@@ -43,16 +45,18 @@ public class TableServerLoaderSession extends Thread  {
                 while (true) {
                     if (interrupted())  break;
                     try {
-                        //TODO read full record and check if it will fit withing the buffer
+//                        currentSegment.append(pipe.getInputStream());
+                        //TODO read full record and check if it will fit within the buffer
                         record.clear();
                         for(AimType type: table.schema.def()) {
                             pipe.read(type.getDataType(), record);
                         }
                         record.flip();
-                        if (currentSegment.getOriginalSize() + record.limit() > table.segmentSizeBytes) {
+                        currentSegment.append(record);
+                        count++;
+                        if (currentSegment.getOriginalSize() > table.segmentSizeBytes) {
                             addCurrentSegment();
                         }
-                        currentSegment.append(record);
                     } catch (EOFException e) {
                         addCurrentSegment();
                         throw e;

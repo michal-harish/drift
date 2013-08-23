@@ -11,7 +11,6 @@ import java.util.LinkedHashMap;
 import joptsimple.internal.Strings;
 
 import net.imagini.aim.AimTypeAbstract.AimDataType;
-import net.imagini.aim.pipes.Pipe;
 
 import org.apache.commons.io.EndianUtils;
 
@@ -59,7 +58,13 @@ public class AimUtils {
         return new AimSchema(result);
     }
 
-    public static String[] collect(final AimSchema schema, final Pipe in) throws IOException {
+    public static String exceptionAsString(Exception e) {
+        String[] trace = new String[e.getStackTrace().length];
+        int i = 0; for(StackTraceElement t:e.getStackTrace()) trace[i++] = t.toString();
+        return e.toString() + "\n"  + Strings.join(trace,"\n");
+    }
+
+    public static String[] fetchRecord(final AimSchema schema, final Pipe in) throws IOException {
         if (in == null) return null;
         String[] result = new String[schema.size()];
         int i = 0; for(AimType type: schema.def()) {
@@ -82,12 +87,12 @@ public class AimUtils {
     }
 
     public static long skip(ByteBuffer in, AimDataType type) {
-        int size = size(in, type);
+        int size = sizeOf(in, type);
         in.position(in.position() + size);
         return size;
     }
 
-    public static int size(ByteBuffer in, AimDataType type) {
+    public static int sizeOf(ByteBuffer in, AimDataType type) {
         int size;
         if (type.equals(Aim.STRING)) {
             size = getIntegerValue(in) + 4;
@@ -97,10 +102,17 @@ public class AimUtils {
         return size;
     }
 
-    public static String read(InputStream in) throws IOException {
-        byte[] buf = new byte[Aim.COLUMN_BUFFER_SIZE];
-        read(in,Aim.STRING,buf);
-        return Aim.STRING.convert(buf);
+    private static byte[] intBuffer = new byte[4];
+    //FIXME sizeOf is non-thread-safe because of intBuffer;
+    public static int sizeOf(InputStream in, AimDataType type) throws IOException {
+        int size;
+        if (type.equals(Aim.STRING)) {
+            read(in, intBuffer, 0, 4);
+            size = getIntegerValue(intBuffer);
+        } else {
+            size = type.getSize();
+        }
+        return size;
     }
 
     static public int read(InputStream in,AimDataType type, byte[] buf) throws IOException {
@@ -126,7 +138,7 @@ public class AimUtils {
         } else {
             size = type.getSize();
         }
-        //TODO array buffer specific code should be done with slice instead
+        //FIXME array buffer specific code should be done with slice instead
         int o = dest.arrayOffset();
         o += dest.position();
         src.get(dest.array(),o,size);
@@ -148,7 +160,7 @@ public class AimUtils {
         return size;
     }
 
-    public static int write(AimDataType type, byte[] value, ByteBuffer out) throws IOException {
+    static public int write(AimDataType type, byte[] value, ByteBuffer out) throws IOException {
         int size = 0;
         if (type.equals(Aim.STRING)) {
             size = getIntegerValue(value);
@@ -242,12 +254,6 @@ public class AimUtils {
             result[offset+2] = (byte)((value >>>  8) & 0xFF);
             result[offset+3] = (byte)((value >>>  0) & 0xFF);
         }
-    }
-
-    public static String exceptionAsString(Exception e) {
-        String[] trace = new String[e.getStackTrace().length];
-        int i = 0; for(StackTraceElement t:e.getStackTrace()) trace[i++] = t.toString();
-        return e.toString() + "\n"  + Strings.join(trace,"\n");
     }
 
 }

@@ -1,4 +1,4 @@
-package net.imagini.aim.node;
+package net.imagini.aim.table;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -22,10 +22,10 @@ import net.imagini.aim.AimFilter;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimSegment;
 import net.imagini.aim.AimType;
+import net.imagini.aim.Pipe;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.AimUtils;
 import net.imagini.aim.ByteKey;
-import net.imagini.aim.pipes.Pipe;
 
 /**
  * @author mharis

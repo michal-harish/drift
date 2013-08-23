@@ -6,9 +6,9 @@ import java.util.UUID;
 
 import net.imagini.aim.Aim;
 import net.imagini.aim.AimSegment;
-import net.imagini.aim.node.AimTable;
 import net.imagini.aim.node.Segment;
 import net.imagini.aim.node.SegmentSorted;
+import net.imagini.aim.table.AimTable;
 
 public class TestEventsLoader extends Thread{
 
@@ -24,8 +24,9 @@ public class TestEventsLoader extends Thread{
 
     public void run() {
         try {
-            record = ByteBuffer.allocate(table.schema.size() * Aim.COLUMN_BUFFER_SIZE);
+            record = ByteBuffer.allocate(65535);
             record.order(Aim.endian);
+//            InputStream stream = new ByteBufferInputStream(record);
 
             for (long i = 1; i <= limit; i++) {
                 createNewSegmentIfNull();
@@ -36,6 +37,7 @@ public class TestEventsLoader extends Thread{
                     record.putLong(i); 
                     record.put(Aim.IPV4(Aim.INT).convert("173.194.41.99"));
                     record.put(Aim.STRING.convert("VDNAUserTestEvent"));
+                    record.put(Aim.STRING.convert("PAGE_VIEW"));
                     record.put(Aim.STRING.convert("user agent info .."));
                     record.put(Aim.BYTEARRAY(2).convert("GB"));
                     record.put(Aim.BYTEARRAY(3).convert("LDN"));
@@ -46,9 +48,11 @@ public class TestEventsLoader extends Thread{
                     record.put(Aim.BOOL.convert(userUid.hashCode() % 100 == 0 ? "true" : "false"));
 
                     record.flip();
+
                     if (currentSegment.getOriginalSize() + record.limit() > table.segmentSizeBytes) {
                         addCurrentSegment();
                     }
+//                    currentSegment.append(stream);
                     currentSegment.append(record);
 
                 } catch(Exception e) {
