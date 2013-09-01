@@ -81,5 +81,3 @@ Filter BitSet
 Select Stream
 -------------
 
-
- 

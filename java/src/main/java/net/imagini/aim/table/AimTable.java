@@ -44,9 +44,7 @@ public class AimTable {
     private AtomicLong size = new AtomicLong(0);
 
     //TODO configure executor per table server
-    //FIXME there's some thread-unsafe bahviour between LZ4Scanners so for now 1 thread only
-    //it manifests when using more than 1 thread by occasional zoom buffer getting IndexOutOfBounds
-    final ExecutorService executor = Executors.newFixedThreadPool(1);
+    final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     public AimTable(String name, Integer segmentSizeBytes, AimSchema schema, String sortField, SortOrder order) throws IOException {
         this.name = name;

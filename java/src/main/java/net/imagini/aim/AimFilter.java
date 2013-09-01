@@ -58,7 +58,12 @@ public class AimFilter {
         this.next = next;
     }
 
-    final public void updateFormula(String[] usedColumns) {
+    /**
+     * This has to be synchronized as it can be called from multiple
+     * segments at the same time and changes some internal data.
+     * It is not called frequently so it should be ok.
+     */
+    final synchronized public void updateFormula(String[] usedColumns) {
         root.update(usedColumns);
     }
 
@@ -87,6 +92,10 @@ public class AimFilter {
         if (next != null) next.update(usedColumns);
     }
 
+    /**
+     * This is thread-safe and called in parallel for 
+     * multiple segments.
+     */
     public boolean match(LZ4Scanner[] record) {
         return root.match(true, record);
     }
