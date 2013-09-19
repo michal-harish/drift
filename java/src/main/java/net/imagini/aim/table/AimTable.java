@@ -22,10 +22,10 @@ import net.imagini.aim.AimFilter;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimSegment;
 import net.imagini.aim.AimType;
-import net.imagini.aim.Pipe;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.imagini.aim.AimUtils;
 import net.imagini.aim.ByteKey;
+import net.imagini.aim.Pipe;
 
 /**
  * @author mharis
@@ -156,20 +156,154 @@ public class AimTable {
     }
 
     /**
-     * ZeroCopy 
+     * ZeroCopy buffered multi-threaded implementation of select stream. 
      * Open multiple segments - this is where streaming-merge-sort happens
      * Note: merge sort is combined with TreeMap O=log(n) indexing so
      * that for large number of segments it still performs well.
-     * 
-     * @param startSegment
-     * @param endSegment
-     * @param columnNames
-     * @return
-     * @throws IOException
      */
-    public long loadRecordsMs = 0;
-    public long readMs = 0;
-    public long mergeSortMs = 0;
+    public Pipe select(
+        int startSegment, 
+        int endSegment,
+        final AimFilter filter, 
+        final String... columnNames
+    ) throws IOException {
+        final int numSegments = endSegment-startSegment+1;
+        final AimSchema subSchema = schema.subset(columnNames);
+        final int sortSubColumn = subSchema.get(schema.name(sortColumn));
+
+        final int[] seg = new int[numSegments];
+        for(int i=startSegment; i<= endSegment; i++) seg[i-startSegment] = i;
+
+        final Fetcher[] fetchers = new Fetcher[numSegments];
+        Future<?>[] x = new Future<?>[numSegments];
+        for(int s = 0; s <seg.length; s++) {
+            fetchers[s] = new Fetcher(
+                segments.get(seg[s]).select(filter, schema.name(sortColumn), columnNames),
+                subSchema
+            );
+            x[s] = executor.submit(fetchers[s]);
+        }
+        //FIXME this is just a temporary hack to get the buffers rolling before reading from the pipe:
+        for(Future<?> f: x) try { f.get(); } catch (Exception e) { }
+
+        return new Pipe() {
+            private int currentSegment = -1;
+            private int currentColumn = columnNames.length-1;
+            private TreeMap<ByteKey,Integer> sortIndex = new TreeMap<>();
+            final private Boolean[] hasData = new Boolean[numSegments];
+
+            @Override
+            public void skip(AimDataType type) throws IOException {
+                if (++currentColumn == columnNames.length) {
+                    currentColumn = 0;
+                    readNextRecord();
+                }
+            }
+            @Override public byte[] read(AimDataType type) throws IOException {
+                if (++currentColumn == columnNames.length) {
+                    currentColumn = 0;
+                    readNextRecord();
+                }
+                int p = (int)(fetchers[currentSegment].position % rollingBufferSize);
+                return fetchers[currentSegment].buffer[currentColumn][p];
+            }
+            private void readNextRecord() throws IOException {
+                if (currentSegment ==-1 ) {
+                    for(int s = 0; s <seg.length; s++) {
+                        sortNextRecordFromSegment(s);
+                    }
+                } else if (hasData[currentSegment]) {
+                    sortNextRecordFromSegment(currentSegment);
+                }
+                if (sortIndex.size() == 0) {
+                    throw new EOFException();
+                }
+                Entry<ByteKey,Integer> next;
+                switch(sortOrder) {
+                    case DESC: next = sortIndex.pollLastEntry();break;
+                    default: case ASC: next = sortIndex.pollFirstEntry();break;
+                }
+                currentSegment = next.getValue();
+            }
+            private void sortNextRecordFromSegment(int s) throws IOException {
+                if (!fetchers[s].next()) {
+                    hasData[s] = false;
+                    return;
+                }
+                int p = (int)(fetchers[s].position % rollingBufferSize);
+                sortIndex.put(new ByteKey(fetchers[s].buffer[sortSubColumn][p],s), s);
+                hasData[s] = true;
+            }
+        };
+    }
+
+    private static int rollingBufferSize = 8;
+
+    private class Fetcher implements Runnable {
+
+        private long position = -1;
+        private long limit = 0;
+        public boolean eof = false;
+        final private Object lock = new Object();
+        final public byte[][][] buffer;
+        final private AimSchema schema;
+        final private InputStream stream;
+        public Fetcher(InputStream stream, AimSchema schema) {
+            this.schema = schema;
+            this.stream = stream;
+            buffer = new byte[schema.size()][rollingBufferSize][Aim.COLUMN_BUFFER_SIZE];
+        }
+        public boolean next() {
+            position++;
+            while (position == limit) {
+                if (position == limit) {
+                    if (eof) {
+                        return false;
+                    }
+                    synchronized(lock) {
+                        try { lock.wait(); } catch (InterruptedException e) {}
+                    }
+                }
+            }
+            if (!eof && position + 1 == limit) {
+                synchronized(lock) {
+                    if (!eof && position + 1 == limit) {
+                        AimTable.this.executor.execute(this);
+                    }
+                }
+            }
+            return true;
+        }
+        @Override public void run() {
+            synchronized(lock) {
+                try {
+                    while (limit - (Math.max(0,position)) < rollingBufferSize) {
+                        int l = (int)(limit % rollingBufferSize);
+                        for(String colName: schema.names()) {
+                            int c = schema.get(colName);
+                            AimType type = schema.get(c);
+                            AimUtils.read(stream,type.getDataType(), buffer[c][l]);
+                        }
+                        limit++;
+                    }
+                    lock.notify();
+                } catch (EOFException e) {
+                    eof = true;
+                    lock.notify();
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
+     * ZeroCopy single-threaded implementation of select stream. 
+     * Open multiple segments - this is where streaming-merge-sort happens
+     * Note: merge sort is combined with TreeMap O=log(n) indexing so
+     * that for large number of segments it still performs well.
+     *
     public Pipe select(
         int startSegment, 
         int endSegment,
@@ -185,12 +319,8 @@ public class AimTable {
         }
 
         final int sortSubColumn = subSchema.get(schema.name(sortColumn));
-        loadRecordsMs = 0;
 
         return new Pipe() {
-            //TODO Create internal executor thread pool that fetches next record in the background
-            //like in the count() .. whenever the previous one is polled from the tree map.
-
             private int currentSegment = -1;
             private int currentColumn = columnNames.length-1;
             private TreeMap<ByteKey,Integer> sortIndex = new TreeMap<>();
@@ -218,7 +348,6 @@ public class AimTable {
                 } else if (hasData[currentSegment]) {
                     loadRecordFromSegment(currentSegment);
                 }
-                long t = System.currentTimeMillis();
                 if (sortIndex.size() == 0) {
                     throw new EOFException();
                 }
@@ -228,28 +357,21 @@ public class AimTable {
                     default: case ASC: next = sortIndex.pollFirstEntry();break;
                 }
                 currentSegment = next.getValue();
-                mergeSortMs += System.currentTimeMillis() - t;
             }
             private void loadRecordFromSegment(int s) throws IOException {
-                long t = System.currentTimeMillis();
                 try {
                     for(String colName: columnNames) {
                         int c = subSchema.get(colName);
                         AimType type = subSchema.get(c);
-                        long t2 = System.currentTimeMillis();
                         AimUtils.read(str[s],type.getDataType(), buffer[s][c]);
-                        readMs += System.currentTimeMillis() - t2;
                     }
-                    long t2 = System.currentTimeMillis();
                     sortIndex.put(new ByteKey(buffer[s][sortSubColumn],s), s);
                     hasData[s] = true;
-                    mergeSortMs += System.currentTimeMillis() - t2;
                 } catch (EOFException e) {
                     hasData[s] = false;
                 }
-                loadRecordsMs += System.currentTimeMillis() - t;
             }
         };
     }
-
+    */
 }

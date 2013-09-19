@@ -32,7 +32,7 @@ public class Console extends Thread {
         server = new TableServer(table, 4000);
         server.start();
 
-        long limit = 4000000L;
+        long limit = 10000000L;
 
         //loader = new TestEventsLoader(table, limit);
         /**/

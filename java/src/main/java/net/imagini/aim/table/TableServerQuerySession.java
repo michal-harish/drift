@@ -40,7 +40,8 @@ public class TableServerQuerySession extends Thread {
             Integer range = null;
             AimFilter filter = query.filter();
             filter.where("user_quizzed").equals("true")
-                .and("user_uid").equals("fde89f74-f6cd-4783-a8e0-c90e56f4ca0a")
+                .and("user_uid").equals("ef056180-22a8-48aa-a164-ba64f6bfda13")
+                //.and("user_uid").equals("fde89f74-f6cd-4783-a8e0-c90e56f4ca0a")
                 //.and("api_key").contains("mirror")
                 //.and("timestamp").equals("1374541507")
                 ;
@@ -167,9 +168,6 @@ public class TableServerQuerySession extends Thread {
         Pipe scanner = table.select(0, n-1, null, schema.names());
         System.out.println("Open ms: " + (System.currentTimeMillis()-t));
         long count = 0;
-        table.loadRecordsMs = 0;
-        table.readMs = 0;
-        table.mergeSortMs = 0;
         try {
             while(true) {
                 for (AimType type : schema.def()) {
@@ -179,9 +177,6 @@ public class TableServerQuerySession extends Thread {
             }
         } catch (EOFException e) {
             System.out.println("Segment scanned records: "+count);
-            System.out.println("-nextRecord ms: " + table.loadRecordsMs);
-            System.out.println("--table.mergeSortMs ms: " + table.mergeSortMs);
-            System.out.println("--table.readMs ms: " + table.readMs);
         }
     }
 
