@@ -8,8 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import joptsimple.internal.Strings;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
+
+import org.apache.commons.lang3.StringUtils;
 
 public class AimSchema {
     private final LinkedList<AimType> def = new LinkedList<>();
@@ -51,7 +52,7 @@ public class AimSchema {
     }
 
     public String describe() {
-        return Strings.join(colIndex.keySet().toArray(new String[def.size()-1]), ",");
+        return StringUtils.join(colIndex.keySet().toArray(new String[def.size()-1]), ",");
     }
     public int size() {
         return def.size();

@@ -6,9 +6,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import joptsimple.internal.Strings;
 import net.imagini.aim.LZ4Buffer.LZ4Scanner;
 import net.imagini.aim.table.AimTable;
+
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * AimFilter objects can be chained into a filter chain that is evaulated from left to right.
@@ -191,7 +192,7 @@ public class AimFilter {
             vals[i++] = ByteBuffer.wrap(type.convert(value));
         }
         return next = new AimFilter(root,type) {
-            @Override public String toString() { return "IN (" + Strings.join(values, ",") +")" + super.toString(); }
+            @Override public String toString() { return "IN (" + StringUtils.join(values, ",") +")" + super.toString(); }
             @Override protected boolean match(LZ4Scanner value, LZ4Scanner[] data) {
                 boolean localResult = false;
                 for(ByteBuffer val: vals) {

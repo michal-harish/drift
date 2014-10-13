@@ -6,17 +6,18 @@ import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.Socket;
 
-import joptsimple.internal.Strings;
 import net.imagini.aim.Aim.SortOrder;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimUtils;
 import net.imagini.aim.Pipe;
 import net.imagini.aim.Pipe.Protocol;
 import net.imagini.aim.PipeLZ4;
-import net.imagini.aim.loaders.CSVLoader;
 import net.imagini.aim.loaders.EventsSchema;
+import net.imagini.aim.loaders.TestEventsLoader;
 import net.imagini.aim.table.AimTable;
 import net.imagini.aim.table.TableServer;
+
+import org.apache.commons.lang3.StringUtils;
 
 public class Console extends Thread {
 
@@ -26,7 +27,7 @@ public class Console extends Thread {
     static private Thread loader;
 
     public static void main(String[] args) throws IOException {
-        System.out.println("\nAIM/CASSPAR Test Console\n");
+        System.out.println("\nAIM Test Console\n");
 
         AimTable table = new AimTable("events", 10485760, new EventsSchema(), "user_uid", SortOrder.ASC);
         server = new TableServer(table, 4000);
@@ -34,8 +35,8 @@ public class Console extends Thread {
 
         long limit = 10000000L;
 
-        //loader = new TestEventsLoader(table, limit);
-        /**/
+        loader = new TestEventsLoader(table, limit);
+        /**
         loader = new CSVLoader(new String[]{
                 "--gzip", 
                 "--limit", String.valueOf(limit),
@@ -128,7 +129,7 @@ public class Console extends Thread {
                     filter = pipe.read();
                     //long count = 0;
                     while (pipe.readBool()) {
-                        print(Strings.join(AimUtils.fetchRecord(schema, pipe), ", "));
+                        StringUtils.join(AimUtils.fetchRecord(schema, pipe),", ");
                         //count++;
                     }
                     long filteredCount = pipe.readLong();
@@ -136,7 +137,7 @@ public class Console extends Thread {
                     String error = pipe.read();
                     print("Schema: " + schema);
                     print("Filter: " + filter);
-                    print((Strings.isNullOrEmpty(error) ? "OK" : "SERVER-SIDE EXCEPTION: " + error) +" Num.records: " + filteredCount + "/" + count);
+                    print((error ==null || error.isEmpty()? "OK" : "SERVER-SIDE EXCEPTION: " + error) +" Num.records: " + filteredCount + "/" + count);
                     break;
                 case "ERROR":
                    print("Error: " + pipe.read());

@@ -8,18 +8,17 @@ import java.util.Arrays;
 import java.util.Properties;
 
 import joptsimple.internal.Strings;
-import kafka.consumer.Consumer;
-import kafka.consumer.ConsumerConfig;
-import kafka.consumer.ConsumerIterator;
-import kafka.consumer.KafkaStream;
-import kafka.consumer.Whitelist;
-import kafka.javaapi.consumer.ConsumerConnector;
-import kafka.message.Message;
-import kafka.message.MessageAndMetadata;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.Pipe;
 import net.imagini.aim.PipeLZ4;
-import net.imagini.aim.loaders.EventsSchema;
+import net.imagini.kafka07.consumer.Consumer;
+import net.imagini.kafka07.consumer.ConsumerConfig;
+import net.imagini.kafka07.javaapi.consumer.ConsumerConnector;
+import net.imagini.kafka07.consumer.ConsumerIterator;
+import net.imagini.kafka07.consumer.KafkaStream;
+import net.imagini.kafka07.consumer.Whitelist;
+import net.imagini.kafka07.message.Message;
+import net.imagini.kafka07.message.MessageAndMetadata;
 
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;

@@ -7,12 +7,11 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 
 import org.apache.commons.io.EndianUtils;
-
-import scala.actors.threadpool.Arrays;
 
 public class Pipe {
 

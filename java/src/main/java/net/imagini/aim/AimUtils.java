@@ -8,11 +8,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.LinkedHashMap;
 
-import joptsimple.internal.Strings;
-
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 
 import org.apache.commons.io.EndianUtils;
+import org.apache.commons.lang3.StringUtils;
 
 
 public class AimUtils {
@@ -61,7 +60,7 @@ public class AimUtils {
     public static String exceptionAsString(Exception e) {
         String[] trace = new String[e.getStackTrace().length];
         int i = 0; for(StackTraceElement t:e.getStackTrace()) trace[i++] = t.toString();
-        return e.toString() + "\n"  + Strings.join(trace,"\n");
+        return e.toString() + "\n"  + StringUtils.join(trace,"\n");
     }
 
     public static String[] fetchRecord(final AimSchema schema, final Pipe in) throws IOException {

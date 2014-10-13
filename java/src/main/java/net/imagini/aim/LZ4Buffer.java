@@ -1,9 +1,8 @@
 package net.imagini.aim;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.LinkedList;
-
-import scala.actors.threadpool.Arrays;
 
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 import net.jpountz.lz4.LZ4Compressor;
