@@ -19,8 +19,7 @@ Motivation
   -> sending the mappers to the data rather then loading the data and then mapping like in Hadoop or Spark 
   -> reducing will be limited but can be compensated with a Large HashTable format
 
-<img src='https://raw.githubusercontent.com/michal-harish/aim/master/aim.svg'/>
-![alt text](https://raw.githubusercontent.com/michal-harish/aim/master/aim.svg "Design Overview")
+<img src='https://www.dropbox.com/s/4xh54sertzb15je/aim.svg?dl=0'/>
 
 
 Architecture Decisions Overview
