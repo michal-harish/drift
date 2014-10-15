@@ -19,6 +19,7 @@ public enum Aim implements AimDataType {
     public static AimDataType BYTEARRAY(int size) {  return new BYTEARRAY(size); }
     public static AimType IPV4(AimDataType dataType) { return new AimTypeIPv4(dataType); }
     public static AimType UUID(AimDataType dataType) { return new AimTypeUUID(dataType); }
+    public static AimType Time(AimDataType dataType) { return new AimTypeTime(dataType); }
     //TODO AimType UTF8(4) extends AimTypeAbstract implements AimDataType
 
     public static enum SortOrder {
@@ -172,6 +173,37 @@ public enum Aim implements AimDataType {
             return new UUID(AimUtils.getLongValue(value,0) , AimUtils.getLongValue(value,8)).toString();
         }
 
+    }
+
+
+    public static class AimTypeTime extends AimTypeAbstract {
+
+        private AimDataType dataType;
+        public AimTypeTime(AimDataType dataType) {
+            if (!dataType.equals(Aim.LONG)) {
+                throw new IllegalArgumentException("Unsupported data type `"+dataType+"` for type AimTypeTime");
+            }
+            this.dataType = dataType;
+        }
+        @Override
+        public AimDataType getDataType() {
+            return dataType;
+        }
+
+        @Override public String toString() { return "TIME:"+dataType.toString(); }
+
+        @Override
+        public byte[] convert(String value) {
+            //TODO parse timestamp and return long bytes
+            return null;
+        }
+
+        @Override
+        public String convert(byte[] value) {
+            //formatter.format()
+            return null;
+        }
+        
     }
 
     public static class AimTypeIPv4 extends AimTypeAbstract {

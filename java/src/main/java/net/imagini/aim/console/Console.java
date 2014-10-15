@@ -12,8 +12,8 @@ import net.imagini.aim.AimUtils;
 import net.imagini.aim.Pipe;
 import net.imagini.aim.Pipe.Protocol;
 import net.imagini.aim.PipeLZ4;
-import net.imagini.aim.loaders.EventsSchema;
-import net.imagini.aim.loaders.TestEventsLoader;
+import net.imagini.aim.loaders.CSVLoader;
+import net.imagini.aim.loaders.IdentitySchema;
 import net.imagini.aim.table.AimTable;
 import net.imagini.aim.table.TableServer;
 
@@ -29,13 +29,22 @@ public class Console extends Thread {
     public static void main(String[] args) throws IOException {
         System.out.println("\nAIM Test Console\n");
 
-        AimTable table = new AimTable("events", 10485760, new EventsSchema(), "user_uid", SortOrder.ASC);
-        server = new TableServer(table, 4000);
+//        AimTable table1 = new AimTable("events", 10485760, new EventsSchema(), "user_uid", SortOrder.ASC);
+//        server = new TableServer(table1, 4000);
+        AimTable table2 = new AimTable("ids", 10485760, new IdentitySchema(), "user_uid", SortOrder.ASC);
+        server = new TableServer(table2, 4000);
+
         server.start();
 
-        long limit = 10000000L;
+        long limit = 10;
 
-        loader = new TestEventsLoader(table, limit);
+        loader = new CSVLoader(new String[]{
+                //"--gzip",
+                "--separator", ",",
+                "--limit", String.valueOf(limit),
+                "--schema", table2.schema.toString(),
+                Console.class.getResource("identities.csv").getPath().toString()
+        });
         /**
         loader = new CSVLoader(new String[]{
                 "--gzip", 
@@ -46,7 +55,7 @@ public class Console extends Thread {
         /**/
         loader.start();
 
-        new Console("localhost", 4000).run();
+        new Console("localhost", server.port).run();
 
     }
 
@@ -129,7 +138,7 @@ public class Console extends Thread {
                     filter = pipe.read();
                     //long count = 0;
                     while (pipe.readBool()) {
-                        StringUtils.join(AimUtils.fetchRecord(schema, pipe),", ");
+                        System.out.println(StringUtils.join(AimUtils.fetchRecord(schema, pipe),", "));
                         //count++;
                     }
                     long filteredCount = pipe.readLong();
@@ -143,7 +152,7 @@ public class Console extends Thread {
                    print("Error: " + pipe.read());
                    break;
                 default:
-                    throw new IOException("Stream is curroupt, clsing..");
+                    throw new IOException("Stream is curroupt, closing..");
             }
         }
     }

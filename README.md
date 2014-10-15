@@ -1,4 +1,4 @@
-AIM - analytics in memory or CASSPAR - a mixutre of Cassandra, Spark and Kafka
+AIM - crossing large data sets in memeroy - a conceptual child of Cassandra, Spark and Kafka
 
 Quick-Start
 ===========
@@ -9,12 +9,12 @@ mvn clean package
 
 Motivation
 ==========
-* Hadoop suffers from extensive I/O and although Map-Reduce is a good paradigm, data location must be exploited 
+* Hadoop suffers from extensive I/O and although Map-Reduce is a good paradigm, data location must be exploited better 
 * Cassandra is difficult to process sequentially and is slow to read anyway
 * Streaming approach is important as data grows but the most valuable computations are derived from larger data windows
   -> "continuous" filtering / mapping / hashing is necessary to avoid costly reductions
 * All data in real-world applications have TTL which can span months so Kafka segmentation approach seems reasonable 
-  instead of cassandra row-level ttl but very fast querying must be possible 
+  instead of cassandra row-level ttl but very fast sequential querying must be possible 
   -> so segments must have a columnar format allow for high speed filtering without re-streaming the data to a remote process 
   -> sending the mappers to the data rather then loading the data and then mapping like in Hadoop or Spark 
   -> reducing will be limited but can be compensated with a Large HashTable format
@@ -22,7 +22,7 @@ Motivation
 Architecture Decisions Overview
 ===============================
  
-* Table is a virtual entity which has strictly-typed structure of columns, however individual records are not directly accessible
+* Table is a virtual entity which has a strictly-typed structure of columns, however individual records are not randomly accessible
 * Multiple records are stored together in an Segment, which can be distributed across different nodes
 * All columns must be present in each segment for sophisticated mapping, i.e. columns cannot be stored across multiple locations
 * Each segment is stored as an LZ4-compressed in-memory buffer, therefore records cannot be addressed individually but can be 

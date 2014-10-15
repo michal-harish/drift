@@ -11,9 +11,11 @@ public class TableServer extends Thread {
     ServerSocket controllerListener;
     private Thread controllerAcceptor;
     private AimTable table;
+    public final int port;
 
     public TableServer(AimTable table, int port) throws IOException {
         this.table = table;
+        this.port = port;
 
         controllerListener = new ServerSocket(port);
         controllerAcceptor = new Thread() {

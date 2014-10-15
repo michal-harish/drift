@@ -35,11 +35,11 @@ public class TableServerQuerySession extends Thread {
     @Override
     public void run() {
         try {
-            AimSchema schema = table.schema.subset("user_uid","action","timestamp","api_key","url");
+            AimSchema schema = table.schema;
             AimQuery query = new AimQuery(table);
             Integer range = null;
             AimFilter filter = query.filter();
-            filter.where("user_quizzed").equals("true")
+            filter.where("column").in("event","cc_urn");
                 //.and("user_uid").equals("ef056180-22a8-48aa-a164-ba64f6bfda13")
                 //.and("user_uid").equals("fde89f74-f6cd-4783-a8e0-c90e56f4ca0a")
                 //.and("api_key").contains("mirror")
@@ -210,6 +210,7 @@ public class TableServerQuerySession extends Thread {
         pipe.write("RESULT");
         pipe.write(schema.toString());
         pipe.write(filter == null ? null : filter.toString());
+
         long count = 0; 
         try {
             boolean written;
@@ -224,6 +225,7 @@ public class TableServerQuerySession extends Thread {
                         if (!written) pipe.write(written = true);
                         pipe.write(dataType.getDataType(), val);
                     }
+
                 }
                 count++;
             }

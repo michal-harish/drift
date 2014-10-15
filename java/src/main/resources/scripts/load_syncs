@@ -1,0 +1,1 @@
+stream -t datasync | jq -r 'select(.userUid!=null and .partnerUserId!=null).userUid,.timestamp,.idSpace,.partnerUserId' | csv-loader --separator \n

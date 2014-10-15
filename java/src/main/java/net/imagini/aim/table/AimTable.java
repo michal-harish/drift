@@ -160,7 +160,7 @@ public class AimTable {
      * Open multiple segments - this is where streaming-merge-sort happens
      * Note: merge sort is combined with TreeMap O=log(n) indexing so
      * that for large number of segments it still performs well.
-     */
+     *
     public Pipe select(
         int startSegment, 
         int endSegment,
@@ -184,7 +184,9 @@ public class AimTable {
             x[s] = executor.submit(fetchers[s]);
         }
         //FIXME this is just a temporary hack to get the buffers rolling before reading from the pipe:
-        for(Future<?> f: x) try { f.get(); } catch (Exception e) { }
+        for(Future<?> f: x) try { f.get(); } catch (Exception e) { 
+            e.printStackTrace();
+        }
 
         return new Pipe() {
             private int currentSegment = -1;
@@ -297,13 +299,14 @@ public class AimTable {
             }
         }
     }
+    /**/
 
     /**
      * ZeroCopy single-threaded implementation of select stream. 
      * Open multiple segments - this is where streaming-merge-sort happens
      * Note: merge sort is combined with TreeMap O=log(n) indexing so
      * that for large number of segments it still performs well.
-     *
+     */
     public Pipe select(
         int startSegment, 
         int endSegment,
@@ -373,5 +376,5 @@ public class AimTable {
             }
         };
     }
-    */
+    /**/
 }

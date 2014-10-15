@@ -44,7 +44,7 @@ public class KafkaEvents {
             consumerProps.put("groupid", "aim-kafka-loader-dev");
             System.out.println("Connecting to Kafka " + consumerProps.getProperty("zk.connect") +"..");
             consumer = Consumer.createJavaConsumerConnector(new ConsumerConfig(consumerProps));
-            KafkaStream<Message> stream = consumer.createMessageStreamsByFilter(new Whitelist("prod_conversions,prod_pageviews,prod_interactions"),1).get(0);
+            KafkaStream<Message> stream = consumer.createMessageStreamsByFilter(new Whitelist("conversions,datasync"),1).get(0);
             ConsumerIterator<Message> it = stream.iterator();
             ObjectMapper jsonMapper = new ObjectMapper();
             boolean started = false;

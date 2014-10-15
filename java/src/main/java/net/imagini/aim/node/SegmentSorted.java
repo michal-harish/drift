@@ -93,40 +93,4 @@ public class SegmentSorted extends Segment {
         }
     }
 
-//    @Override public void append(InputStream record) throws IOException {
-//        try {
-//            checkWritable(true);
-//
-//            ByteKey sortValue = null;
-//            for(int col = 0; col < schema.size() ; col++) {
-//                AimDataType type = schema.dataType(col);
-//
-//                if (col == sortColumn) {
-//                    sortValue = new ByteKey(
-//                        Arrays.copyOfRange(record.array()
-//                        ,record.position()
-//                        ,record.position() + AimUtils.sizeOf(record, type)
-//                        )
-//                    );
-//                }
-//
-//                originalSize.addAndGet(
-//                    AimUtils.skip(record, type)
-//                );
-//
-//            }
-//            //close record
-//            if (sortValue != null)  {
-//                if (!sortMap.containsKey(sortValue)) {
-//                    sortMap.put(sortValue, new ArrayList<ByteBuffer>());
-//                }
-//                List<ByteBuffer> keyspace = sortMap.get(sortValue);
-//                keyspace.add(ByteBuffer.wrap(Arrays.copyOfRange(record.array(),0,record.limit())));
-//            }
-//
-//        } catch (IllegalAccessException e) {
-//            throw new IOException(e); 
-//        }
-//    }
-
 }

@@ -33,7 +33,7 @@ public class TestEventsLoader extends Thread{
                 try {
                     record.clear();
 
-                    UUID userUid  = UUID.randomUUID();
+                    UUID userUid  = UUID.nameUUIDFromBytes(String.valueOf(i+1000000).getBytes());
                     record.putLong(i); 
                     record.put(Aim.IPV4(Aim.INT).convert("173.194.41.99"));
                     record.put(Aim.STRING.convert("VDNAUserTestEvent"));
@@ -45,7 +45,7 @@ public class TestEventsLoader extends Thread{
                     record.put(Aim.STRING.convert("test"));
                     record.put(Aim.STRING.convert("http://"));
                     record.put(Aim.BYTEARRAY(16).convert(userUid.toString()));
-                    record.put(Aim.BOOL.convert(userUid.hashCode() % 100 == 0 ? "true" : "false"));
+                    record.put(Aim.BOOL.convert(userUid.hashCode() % 1000 == 0 ? "true" : "false"));
 
                     record.flip();
 
