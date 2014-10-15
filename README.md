@@ -16,7 +16,7 @@ Motivation
 Design Overview and Decisions
 ===============================
 
-![https://dl.dropboxusercontent.com/u/15048579/aim.svg]
+!(https://dl.dropboxusercontent.com/u/15048579/aim.svg)
 
  
 * Table is a virtual entity which has a strictly-typed structure of columns, however individual records are not randomly accessible
