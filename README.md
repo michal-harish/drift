@@ -6,7 +6,6 @@ cd java
 mvn clean package
 ./test.sh
 
-https://github.com/michal-harish/aim/blob/master/aim.svg
 
 Motivation
 ==========
@@ -19,6 +18,9 @@ Motivation
   -> so segments must have a columnar format allow for high speed filtering without re-streaming the data to a remote process 
   -> sending the mappers to the data rather then loading the data and then mapping like in Hadoop or Spark 
   -> reducing will be limited but can be compensated with a Large HashTable format
+
+![alt text](https://raw.githubusercontent.com/michal-harish/aim/master/aim.svg "Design Overview")
+
 
 Architecture Decisions Overview
 ===============================
@@ -51,7 +53,6 @@ Architecture Decisions Overview
     6   STRING[N]       N               fixed length string of bytes
     7-20   -            -               reserved
 
-![alt text](https://github.com/michal-harish/aim/blob/master/aim.svg "Design Overview")
 
 Architecture TODOs and NOTEs
 ============================
