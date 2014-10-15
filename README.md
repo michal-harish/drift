@@ -6,6 +6,7 @@ cd java
 mvn clean package
 ./test.sh
 
+https://github.com/michal-harish/aim/blob/master/aim.svg
 
 Motivation
 ==========
@@ -49,7 +50,9 @@ Architecture Decisions Overview
     5   STRING          4 + ?           string of bytes with dynamic length stored as first 32-bits
     6   STRING[N]       N               fixed length string of bytes
     7-20   -            -               reserved
-å
+
+![alt text](https://github.com/michal-harish/aim/blob/master/aim.svg "Design Overview")
+
 Architecture TODOs and NOTEs
 ============================
 - We should try to wrap segement processing units into cpu-bound threads (may require C programming) 
