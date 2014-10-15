@@ -6,10 +6,10 @@ import net.imagini.aim.Aim;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimType;
 
-public class IdentitySchema extends AimSchema {
+public class GenericSchema extends AimSchema {
 
     @SuppressWarnings("serial")
-    public IdentitySchema() {
+    public GenericSchema() {
         super(new LinkedHashMap<String,AimType>() {{
             put("user_uid", Aim.UUID(Aim.BYTEARRAY(16)));
             put("timestamp", Aim.LONG);

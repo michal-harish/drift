@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.zip.GZIPInputStream;
 
+import joptsimple.internal.Strings;
 import net.imagini.aim.AimType;
 import net.imagini.aim.AimUtils;
 
@@ -80,6 +81,7 @@ public class CSVLoader extends Loader {
             System.exit(1);
         }
         connectTable("localhost", 4000, schema);
+        System.out.println(schema);
     }
 
     @Override
@@ -104,10 +106,19 @@ public class CSVLoader extends Loader {
                 BufferedReader lineReader = new BufferedReader(reader);
                 String line;
                 while (count++ < limit || limit == 0L) {
-                    if (null == (line = lineReader.readLine())) {
+                    int fields = 0;
+                    String[] values = new String[schema.size()];
+                    while(fields <schema.size()) {
+                        if (null == (line = lineReader.readLine())) {
+                            break;
+                        }
+                        for(String value: line.split(separator)) {
+                            values[fields++] = value;
+                        }
+                    }
+                    if (fields <schema.size()) {
                         break;
                     }
-                    String[] values = line.split(separator);
                     try {
                         byte[][] record = createEmptyRecord();
                         int i = 0;
@@ -118,8 +129,8 @@ public class CSVLoader extends Loader {
                         }
                         storeLoadedRecord(record);
                     } catch (Exception e) {
-                        System.err.println(e);
-                        System.err.println(count + ":" + line);
+                        System.err.println(count + ":" + Strings.join(values, separator));
+                        e.printStackTrace();
                     }
                 }
             } finally {

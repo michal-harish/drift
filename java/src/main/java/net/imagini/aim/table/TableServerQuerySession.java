@@ -38,8 +38,9 @@ public class TableServerQuerySession extends Thread {
             AimSchema schema = table.schema;
             AimQuery query = new AimQuery(table);
             Integer range = null;
-            AimFilter filter = query.filter();
-            filter.where("column").in("event","cc_urn");
+            AimFilter filter = null;
+            //filter = query.filter();
+            //filter.where("column").in("event","cc_urn");
                 //.and("user_uid").equals("ef056180-22a8-48aa-a164-ba64f6bfda13")
                 //.and("user_uid").equals("fde89f74-f6cd-4783-a8e0-c90e56f4ca0a")
                 //.and("api_key").contains("mirror")

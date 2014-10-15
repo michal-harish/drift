@@ -89,7 +89,7 @@
                   <finalName>load-csv</finalName>
                   <archive> 
                       <manifest>
-                          <mainClass>net.imagini.aim.CSVLoader</mainClass>
+                          <mainClass>net.imagini.aim.loaders.CSVLoader</mainClass>
                       </manifest>
                   </archive>
                   <descriptorRefs>

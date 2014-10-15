@@ -1,0 +1,1280 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="1052.3622"
+   height="744.09448"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.2 r9819"
+   sodipodi:docname="aim.svg">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.88160847"
+     inkscape:cx="593.6614"
+     inkscape:cy="444.33777"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1440"
+     inkscape:window-height="852"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-308.2677)">
+    <rect
+       style="fill:#e7f6c4;fill-opacity:1;stroke:none"
+       id="rect4236"
+       width="322.13846"
+       height="334.6156"
+       x="728.21442"
+       y="716.61224" />
+    <rect
+       y="351.37073"
+       x="275.63251"
+       height="487.74484"
+       width="423.0903"
+       id="rect3889"
+       style="fill:none;stroke:#aea322;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <rect
+       style="fill:#fbfc00;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2985"
+       width="283.57254"
+       height="408.3446"
+       x="307.39267"
+       y="395.60806" />
+    <text
+       xml:space="preserve"
+       style="font-size:32px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="321.00415"
+       y="433.03961"
+       id="text2987"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         x="321.00415"
+         y="433.03961"
+         id="tspan2991">Aim Table</tspan></text>
+    <rect
+       style="fill:#feffd8;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2995"
+       width="144.05487"
+       height="97.548973"
+       x="338.01852"
+       y="462.53116" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3765"
+       y="484.08267"
+       x="347.09286"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         id="tspan3767"
+         y="484.08267"
+         x="347.09286"
+         sodipodi:role="line"
+         style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">LZ4 Segment</tspan></text>
+    <rect
+       style="fill:#feffd8;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect3771"
+       width="144.05487"
+       height="97.548973"
+       x="340.28711"
+       y="570.28876" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="348.22717"
+       y="596.37738"
+       id="text3777"
+       sodipodi:linespacing="125%"><tspan
+         style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="348.22717"
+         y="596.37738"
+         id="tspan3779">LZ4 Segment</tspan><tspan
+         style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="348.22717"
+         y="618.87738"
+         id="tspan3837">(pre-sorted)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="347.09286"
+       y="484.08267"
+       id="text3785"
+       sodipodi:linespacing="125%"><tspan
+         style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="347.09286"
+         y="484.08267"
+         id="tspan3787">LZ4 Segment</tspan><tspan
+         style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="347.09286"
+         y="506.58267"
+         id="tspan3835">(pre-sorted)</tspan></text>
+    <path
+       style="fill:#feffd8;fill-opacity:1;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 343.68998,767.65529 0,-82.80319 135.63765,0 0,83.93748 c -45.7998,34.17966 -87.00713,-46.87201 -135.63765,-1.13429 z"
+       id="path3793"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccc" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3789"
+       y="706.40356"
+       x="348.22714"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="706.40356"
+         x="348.22714"
+         sodipodi:role="line"
+         style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan3795">Open Segment</tspan><tspan
+         y="728.90356"
+         x="348.22714"
+         sodipodi:role="line"
+         style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan3843">(unsorted)</tspan><tspan
+         y="751.40356"
+         x="348.22714"
+         sodipodi:role="line"
+         style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan3841" /></text>
+    <rect
+       style="fill:#ff9d6c;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect3797"
+       width="150.86061"
+       height="79.400307"
+       x="58.983097"
+       y="524.91718" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3799"
+       y="554.40869"
+       x="66.923141"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         id="tspan3801"
+         y="554.40869"
+         x="66.923141"
+         sodipodi:role="line"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">Aim Loader</tspan><tspan
+         y="571.90869"
+         x="66.923141"
+         sodipodi:role="line"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan3815">(datasync stream)</tspan></text>
+    <rect
+       y="650.82336"
+       x="58.983097"
+       height="79.400307"
+       width="150.86061"
+       id="rect3803"
+       style="fill:#ff9d6c;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <path
+       style="fill:none;stroke:#ff0000;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 215.61252,601.61318 123.71443,90.54646 0,0 -4.59766,-16.21176 4.73042,15.7835 -17.1223,1.78058"
+       id="path3809"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccccc" />
+    <path
+       sodipodi:nodetypes="cccccc"
+       inkscape:connector-curvature="0"
+       id="path3813"
+       d="m 220.84598,722.3738 120.96056,25.39593 0,0 -10.31522,-13.32501 10.27858,12.87814 -15.22103,8.04141"
+       style="fill:none;stroke:#ff0000;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="68.057434"
+       y="679.18066"
+       id="text3817"
+       sodipodi:linespacing="125%"><tspan
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="68.057434"
+         y="679.18066"
+         id="tspan3819">Aim Loader</tspan><tspan
+         id="tspan3821"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="68.057434"
+         y="696.68066">(pageviews stream)</tspan></text>
+    <rect
+       style="fill:#d8ffdb;fill-opacity:1;fill-rule:evenodd;stroke:#93ae22;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect3823"
+       width="197.36652"
+       height="60.117397"
+       x="820.09186"
+       y="402.41382" />
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="862.06061"
+       y="425.09961"
+       id="text3825"
+       sodipodi:linespacing="125%"><tspan
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="862.06061"
+         y="425.09961"
+         id="tspan3827">Aim Console</tspan><tspan
+         id="tspan3829"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="862.06061"
+         y="442.59961">(datasync stream)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#ff001b;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans Bold"
+       x="526.08887"
+       y="353.79239"
+       id="text3853"
+       sodipodi:linespacing="125%"
+       transform="matrix(0.81006174,0.58634459,-0.58634459,0.81006174,0,0)"><tspan
+         id="tspan3855"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#ff001b;fill-opacity:1;font-family:Sans;-inkscape-font-specification:Sans Bold"
+         sodipodi:role="line"
+         x="526.08887"
+         y="353.79239">LoaderSession</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3857"
+       y="451.18826"
+       x="353.89856"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         id="tspan3859"
+         y="451.18826"
+         x="353.89856"
+         sodipodi:role="line">(Aim Schema)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3861"
+       y="366.11649"
+       x="17.014339"
+       style="font-size:32px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         id="tspan3863"
+         y="366.11649"
+         x="17.014339"
+         sodipodi:role="line">Aim Project</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="9.0742941"
+       y="327.55063"
+       id="text3865"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         x="9.0742941"
+         y="327.55063"
+         id="tspan3867">https://github.com/michal-harish/aim</tspan></text>
+    <path
+       inkscape:transform-center-y="-14.616238"
+       inkscape:transform-center-x="-23.5565"
+       style="fill:none;stroke:#44b35f;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       d="m 809.63125,501.3142 -114.46448,-0.13385 0,0 12.21101,10.08853 -12.10222,-9.66115 13.48297,-12.26318"
+       id="path3869"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccccc" />
+    <rect
+       y="473.87415"
+       x="818.95764"
+       height="60.117397"
+       width="197.36652"
+       id="rect3871"
+       style="fill:#d8fdff;fill-opacity:1;fill-rule:evenodd;stroke:#93ae22;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3873"
+       y="509.03717"
+       x="834.83777"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         y="509.03717"
+         x="834.83777"
+         sodipodi:role="line"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan3877">A Program</tspan></text>
+    <path
+       sodipodi:nodetypes="cccccc"
+       inkscape:connector-curvature="0"
+       id="path3891"
+       d="m 808.53521,437.97926 -111.06089,-0.37109 0,0 12.1824,10.12305 -12.07482,-9.69536 13.51761,-12.22498"
+       style="fill:none;stroke:#44b35f;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+       inkscape:transform-center-x="-23.59511"
+       inkscape:transform-center-y="-14.631633" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3893"
+       y="384.26514"
+       x="307.39264"
+       style="font-size:26px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         id="tspan3895"
+         y="384.26514"
+         x="307.39264"
+         sodipodi:role="line">Aim Table Node Server</tspan></text>
+    <rect
+       y="472.73981"
+       x="624.9939"
+       height="56.7145"
+       width="62.385963"
+       id="rect3897"
+       style="fill:#d8ffdb;fill-opacity:1;fill-rule:evenodd;stroke:#93ae22;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <text
+       inkscape:transform-center-y="95.280391"
+       inkscape:transform-center-x="-71.460293"
+       sodipodi:linespacing="125%"
+       id="text3885"
+       y="494.29132"
+       x="627.26251"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#258c28;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans Bold"
+       xml:space="preserve"><tspan
+         y="494.29132"
+         x="627.26251"
+         sodipodi:role="line"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#258c28;fill-opacity:1;font-family:Sans;-inkscape-font-specification:Sans Bold"
+         id="tspan3887">Query</tspan><tspan
+         y="511.79132"
+         x="627.26251"
+         sodipodi:role="line"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#258c28;fill-opacity:1;font-family:Sans;-inkscape-font-specification:Sans Bold"
+         id="tspan3899">Session</tspan></text>
+    <rect
+       style="fill:#d8ffdb;fill-opacity:1;fill-rule:evenodd;stroke:#93ae22;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect3901"
+       width="62.385963"
+       height="56.7145"
+       x="624.99396"
+       y="402.41379" />
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#258c28;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans Bold"
+       x="627.26257"
+       y="423.9653"
+       id="text3903"
+       sodipodi:linespacing="125%"
+       inkscape:transform-center-x="-71.460293"
+       inkscape:transform-center-y="95.280391"><tspan
+         id="tspan3905"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#258c28;fill-opacity:1;font-family:Sans;-inkscape-font-specification:Sans Bold"
+         sodipodi:role="line"
+         x="627.26257"
+         y="423.9653">Query</tspan><tspan
+         id="tspan3907"
+         style="font-size:14px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#258c28;fill-opacity:1;font-family:Sans;-inkscape-font-specification:Sans Bold"
+         sodipodi:role="line"
+         x="627.26257"
+         y="441.4653">Session</tspan></text>
+    <rect
+       style="fill:none;stroke:#152017;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect3909"
+       width="77.131744"
+       height="198.50081"
+       x="499.08777"
+       y="461.39688" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 336.88424,513.57425 142.92059,0"
+       id="path3913"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 339.15282,533.99148 140.65201,-1.13429"
+       id="path3915"
+       inkscape:connector-curvature="0" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3917"
+       y="529.45428"
+       x="368.64435"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         id="tspan3919"
+         y="529.45428"
+         x="368.64435"
+         sodipodi:role="line">LZ4 Block</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="513.8335"
+       y="586.16876"
+       id="text3925"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         x="513.8335"
+         y="586.16876"
+         id="tspan3927">Merge</tspan><tspan
+         sodipodi:role="line"
+         x="513.8335"
+         y="606.16876"
+         id="tspan3929">Sort</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 338.01853,544.20009 142.92059,0"
+       id="path3931"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 341.4214,625.869 140.65201,0"
+       id="path3933"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 340.28711,644.01764 141.7863,0"
+       id="path3935"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 476.40196,513.57425 32.89442,58.9831"
+       id="path3937"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 477.53625,627.00329 30.62584,-23.8201"
+       id="path3939"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3945"
+       y="433.03961"
+       x="321.00415"
+       style="font-size:32px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         id="tspan3947"
+         y="433.03961"
+         x="321.00415"
+         sodipodi:role="line">Aim Table</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="512.69922"
+       y="480.67978"
+       id="text3949"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         x="512.69922"
+         y="480.67978"
+         id="tspan3951">Aim</tspan><tspan
+         sodipodi:role="line"
+         x="512.69922"
+         y="500.67978"
+         id="tspan3953">Query</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 501.35634,511.30567 68.05743,-1.13429"
+       id="path3955"
+       inkscape:connector-curvature="0" />
+    <rect
+       y="779.3999"
+       x="780.8089"
+       height="102.41709"
+       width="85.371696"
+       id="rect3976"
+       style="fill:#fbfc00;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:0.54957587;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3978"
+       y="864.19629"
+       x="716.41724"
+       style="font-size:8.79321384px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         id="tspan3980"
+         y="864.19629"
+         x="716.41724"
+         sodipodi:role="line">Aim Table</tspan></text>
+    <rect
+       y="796.18494"
+       x="790.02905"
+       height="24.466301"
+       width="43.368828"
+       id="rect3982"
+       style="fill:#feffd8;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:0.54957587;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <text
+       xml:space="preserve"
+       style="font-size:10.99151802px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="723.58606"
+       y="878.22229"
+       id="text3984"
+       sodipodi:linespacing="125%"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="723.58606"
+         y="878.22229"
+         id="tspan3986">LZ4 Segment</tspan></text>
+    <rect
+       y="823.21167"
+       x="790.71204"
+       height="24.466301"
+       width="43.368828"
+       id="rect3988"
+       style="fill:#feffd8;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:0.54957587;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3990"
+       y="909.07959"
+       x="723.89777"
+       style="font-size:10.99151802px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         id="tspan3992"
+         y="909.07959"
+         x="723.89777"
+         sodipodi:role="line"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">LZ4 Segment</tspan><tspan
+         id="tspan3994"
+         y="915.26233"
+         x="723.89777"
+         sodipodi:role="line"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">(pre-sorted)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text3996"
+       y="878.22229"
+       x="723.58606"
+       style="font-size:10.99151802px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         id="tspan3998"
+         y="878.22229"
+         x="723.58606"
+         sodipodi:role="line"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">LZ4 Segment</tspan><tspan
+         id="tspan4000"
+         y="884.40503"
+         x="723.58606"
+         sodipodi:role="line"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">(pre-sorted)</tspan></text>
+    <path
+       sodipodi:nodetypes="ccccc"
+       inkscape:connector-curvature="0"
+       id="path4002"
+       d="m 791.73651,872.71322 0,-20.7679 40.83475,0 0,21.0524 c -13.78838,8.5726 -26.19416,-11.756 -40.83475,-0.2845 z"
+       style="fill:#feffd8;fill-opacity:1;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <text
+       xml:space="preserve"
+       style="font-size:10.99151802px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="723.89777"
+       y="939.31348"
+       id="text4004"
+       sodipodi:linespacing="125%"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         id="tspan4006"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="723.89777"
+         y="939.31348">Segment</tspan><tspan
+         id="tspan4008"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="723.89777"
+         y="945.49622">(semi-sorted)</tspan><tspan
+         id="tspan4010"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="723.89777"
+         y="951.67896" /></text>
+    <text
+       xml:space="preserve"
+       style="font-size:4.39660692px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="725.45624"
+       y="869.18335"
+       id="text4012"
+       sodipodi:linespacing="125%"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         sodipodi:role="line"
+         x="725.45624"
+         y="869.18335"
+         id="tspan4014">(Aim Schema)</tspan></text>
+    <rect
+       y="795.90045"
+       x="838.5202"
+       height="75.959343"
+       width="20.830694"
+       id="rect4016"
+       style="fill:none;stroke:#152017;stroke-width:0.82436383;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4018"
+       d="m 789.68759,808.98702 43.02733,0"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4020"
+       d="m 790.37056,814.10792 42.34436,-0.2845"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <text
+       xml:space="preserve"
+       style="font-size:4.39660692px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="729.50818"
+       y="890.68994"
+       id="text4022"
+       sodipodi:linespacing="125%"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         sodipodi:role="line"
+         x="729.50818"
+         y="890.68994"
+         id="tspan4024">LZ4 Block</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4026"
+       y="906.27441"
+       x="769.40442"
+       style="font-size:4.39660692px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         id="tspan4028"
+         y="906.27441"
+         x="769.40442"
+         sodipodi:role="line">Merge</tspan><tspan
+         id="tspan4030"
+         y="911.7702"
+         x="769.40442"
+         sodipodi:role="line">Sort</tspan></text>
+    <path
+       inkscape:connector-curvature="0"
+       id="path4032"
+       d="m 790.02907,816.66832 43.02734,0"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4034"
+       d="m 791.05353,837.15172 42.34437,0"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4036"
+       d="m 790.71205,841.70362 42.68585,0"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4038"
+       d="m 831.69046,808.98702 9.90312,14.7936"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <path
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       id="path4040"
+       d="m 832.03195,837.43622 9.22015,-5.9743"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <text
+       xml:space="preserve"
+       style="font-size:8.79321384px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="716.41724"
+       y="864.19629"
+       id="text4042"
+       sodipodi:linespacing="125%"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         sodipodi:role="line"
+         x="716.41724"
+         y="864.19629"
+         id="tspan4044">Aim Table Node</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4046"
+       y="877.28723"
+       x="769.09271"
+       style="font-size:4.39660692px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         id="tspan4048"
+         y="877.28723"
+         x="769.09271"
+         sodipodi:role="line">Aim</tspan><tspan
+         id="tspan4050"
+         y="882.78302"
+         x="769.09271"
+         sodipodi:role="line">Query</tspan></text>
+    <path
+       inkscape:connector-curvature="0"
+       id="path4052"
+       d="m 839.20317,808.41812 20.48922,-0.2845"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <rect
+       style="fill:#fbfc00;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:0.54957587;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect4054"
+       width="85.371696"
+       height="102.41709"
+       x="764.92883"
+       y="891.69464" />
+    <text
+       transform="scale(1.0956001,0.9127418)"
+       xml:space="preserve"
+       style="font-size:8.79321384px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="701.92279"
+       y="987.22644"
+       id="text4056"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         x="701.92279"
+         y="987.22644"
+         id="tspan4058">Aim Table</tspan></text>
+    <rect
+       style="fill:#feffd8;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:0.54957587;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect4060"
+       width="43.368828"
+       height="24.466301"
+       x="774.14899"
+       y="908.47968" />
+    <text
+       transform="scale(1.0956001,0.9127418)"
+       sodipodi:linespacing="125%"
+       id="text4062"
+       y="1001.2524"
+       x="709.09167"
+       style="font-size:10.99151802px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         id="tspan4064"
+         y="1001.2524"
+         x="709.09167"
+         sodipodi:role="line"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">LZ4 Segment</tspan></text>
+    <rect
+       style="fill:#feffd8;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:0.54957587;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect4066"
+       width="43.368828"
+       height="24.466301"
+       x="774.83197"
+       y="935.50641" />
+    <text
+       transform="scale(1.0956001,0.9127418)"
+       xml:space="preserve"
+       style="font-size:10.99151802px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="709.40338"
+       y="1032.1097"
+       id="text4068"
+       sodipodi:linespacing="125%"><tspan
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="709.40338"
+         y="1032.1097"
+         id="tspan4070">LZ4 Segment</tspan><tspan
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="709.40338"
+         y="1038.2925"
+         id="tspan4072">(pre-sorted)</tspan></text>
+    <text
+       transform="scale(1.0956001,0.9127418)"
+       xml:space="preserve"
+       style="font-size:10.99151802px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="709.09167"
+       y="1001.2524"
+       id="text4074"
+       sodipodi:linespacing="125%"><tspan
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="709.09167"
+         y="1001.2524"
+         id="tspan4076">LZ4 Segment</tspan><tspan
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="709.09167"
+         y="1007.4352"
+         id="tspan4078">(pre-sorted)</tspan></text>
+    <path
+       style="fill:#feffd8;fill-opacity:1;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 775.85644,985.00799 0,-20.76792 40.83475,0 0,21.05242 c -13.78837,8.5726 -26.19416,-11.756 -40.83475,-0.2845 z"
+       id="path4080"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccc" />
+    <text
+       transform="scale(1.0956001,0.9127418)"
+       sodipodi:linespacing="125%"
+       id="text4082"
+       y="1062.3436"
+       x="709.40338"
+       style="font-size:10.99151802px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"><tspan
+         y="1062.3436"
+         x="709.40338"
+         sodipodi:role="line"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan4084">Segment</tspan><tspan
+         y="1068.5264"
+         x="709.40338"
+         sodipodi:role="line"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan4086">(semi-sorted)</tspan><tspan
+         y="1074.7091"
+         x="709.40338"
+         sodipodi:role="line"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan4088" /></text>
+    <text
+       transform="scale(1.0956001,0.9127418)"
+       sodipodi:linespacing="125%"
+       id="text4090"
+       y="992.2135"
+       x="710.96179"
+       style="font-size:4.39660692px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         id="tspan4092"
+         y="992.2135"
+         x="710.96179"
+         sodipodi:role="line">(Aim Schema)</tspan></text>
+    <rect
+       style="fill:none;stroke:#152017;stroke-width:0.82436383;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect4094"
+       width="20.830694"
+       height="75.959343"
+       x="822.64014"
+       y="908.19519" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 773.80752,921.28177 43.02733,0"
+       id="path4096"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 774.49049,926.40267 42.34436,-0.2845"
+       id="path4098"
+       inkscape:connector-curvature="0" />
+    <text
+       transform="scale(1.0956001,0.9127418)"
+       sodipodi:linespacing="125%"
+       id="text4100"
+       y="1013.7201"
+       x="715.01379"
+       style="font-size:4.39660692px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         id="tspan4102"
+         y="1013.7201"
+         x="715.01379"
+         sodipodi:role="line">LZ4 Block</tspan></text>
+    <text
+       transform="scale(1.0956001,0.9127418)"
+       xml:space="preserve"
+       style="font-size:4.39660692px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="754.90997"
+       y="1029.3046"
+       id="text4104"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         x="754.90997"
+         y="1029.3046"
+         id="tspan4106">Merge</tspan><tspan
+         sodipodi:role="line"
+         x="754.90997"
+         y="1034.8003"
+         id="tspan4108">Sort</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 774.14901,928.96307 43.02733,0"
+       id="path4110"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 775.17347,949.44647 42.34436,0"
+       id="path4112"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 774.83198,953.99837 42.68585,0"
+       id="path4114"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 815.81039,921.28177 9.90312,14.7936"
+       id="path4116"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 816.15188,949.73097 9.22015,-5.9743"
+       id="path4118"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <text
+       transform="scale(1.0956001,0.9127418)"
+       sodipodi:linespacing="125%"
+       id="text4120"
+       y="987.22644"
+       x="701.92279"
+       style="font-size:8.79321384px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         id="tspan4122"
+         y="987.22644"
+         x="701.92279"
+         sodipodi:role="line">Aim Table Node</tspan></text>
+    <text
+       transform="scale(1.0956001,0.9127418)"
+       xml:space="preserve"
+       style="font-size:4.39660692px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="754.59833"
+       y="1000.3174"
+       id="text4124"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         x="754.59833"
+         y="1000.3174"
+         id="tspan4126">Aim</tspan><tspan
+         sodipodi:role="line"
+         x="754.59833"
+         y="1005.8131"
+         id="tspan4128">Query</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 823.3231,920.71287 20.48922,-0.2845"
+       id="path4130"
+       inkscape:connector-curvature="0" />
+    <rect
+       y="752.17694"
+       x="876.08929"
+       height="102.41709"
+       width="85.371696"
+       id="rect4132"
+       style="fill:#fbfc00;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:0.54957587;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text4134"
+       y="834.37085"
+       x="803.38361"
+       style="font-size:8.79321384px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         id="tspan4136"
+         y="834.37085"
+         x="803.38361"
+         sodipodi:role="line">Aim Table</tspan></text>
+    <rect
+       y="768.96198"
+       x="885.30945"
+       height="24.466301"
+       width="43.368828"
+       id="rect4138"
+       style="fill:#feffd8;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:0.54957587;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <text
+       xml:space="preserve"
+       style="font-size:10.99151802px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="810.55249"
+       y="848.39685"
+       id="text4140"
+       sodipodi:linespacing="125%"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="810.55249"
+         y="848.39685"
+         id="tspan4142">LZ4 Segment</tspan></text>
+    <rect
+       y="795.98871"
+       x="885.99243"
+       height="24.466301"
+       width="43.368828"
+       id="rect4144"
+       style="fill:#feffd8;fill-opacity:1;fill-rule:evenodd;stroke:#aea322;stroke-width:0.54957587;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text4146"
+       y="879.25415"
+       x="810.8642"
+       style="font-size:10.99151802px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         id="tspan4148"
+         y="879.25415"
+         x="810.8642"
+         sodipodi:role="line"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">LZ4 Segment</tspan><tspan
+         id="tspan4150"
+         y="885.43689"
+         x="810.8642"
+         sodipodi:role="line"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">(pre-sorted)</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4152"
+       y="848.39685"
+       x="810.55249"
+       style="font-size:10.99151802px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       xml:space="preserve"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         id="tspan4154"
+         y="848.39685"
+         x="810.55249"
+         sodipodi:role="line"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">LZ4 Segment</tspan><tspan
+         id="tspan4156"
+         y="854.57959"
+         x="810.55249"
+         sodipodi:role="line"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">(pre-sorted)</tspan></text>
+    <path
+       sodipodi:nodetypes="ccccc"
+       inkscape:connector-curvature="0"
+       id="path4158"
+       d="m 887.0169,845.49027 0,-20.76792 40.83475,0 0,21.05242 c -13.78838,8.5726 -26.19416,-11.756 -40.83475,-0.2845 z"
+       style="fill:#feffd8;fill-opacity:1;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <text
+       xml:space="preserve"
+       style="font-size:10.99151802px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="810.86414"
+       y="909.48804"
+       id="text4160"
+       sodipodi:linespacing="125%"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         id="tspan4162"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="810.86414"
+         y="909.48804">Segment</tspan><tspan
+         id="tspan4164"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="810.86414"
+         y="915.67078">(semi-sorted)</tspan><tspan
+         id="tspan4166"
+         style="font-size:4.9461832px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         sodipodi:role="line"
+         x="810.86414"
+         y="921.85352" /></text>
+    <text
+       xml:space="preserve"
+       style="font-size:4.39660692px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="812.42261"
+       y="839.35791"
+       id="text4168"
+       sodipodi:linespacing="125%"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         sodipodi:role="line"
+         x="812.42261"
+         y="839.35791"
+         id="tspan4170">(Aim Schema)</tspan></text>
+    <rect
+       y="768.67749"
+       x="933.8006"
+       height="75.959343"
+       width="20.830694"
+       id="rect4172"
+       style="fill:none;stroke:#152017;stroke-width:0.82436383;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4174"
+       d="m 884.96798,781.76405 43.02733,0"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4176"
+       d="m 885.65095,786.88495 42.34436,-0.2845"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <text
+       xml:space="preserve"
+       style="font-size:4.39660692px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="816.47455"
+       y="860.8645"
+       id="text4178"
+       sodipodi:linespacing="125%"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         sodipodi:role="line"
+         x="816.47455"
+         y="860.8645"
+         id="tspan4180">LZ4 Block</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4182"
+       y="876.44897"
+       x="856.37079"
+       style="font-size:4.39660692px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         id="tspan4184"
+         y="876.44897"
+         x="856.37079"
+         sodipodi:role="line">Merge</tspan><tspan
+         id="tspan4186"
+         y="881.94476"
+         x="856.37079"
+         sodipodi:role="line">Sort</tspan></text>
+    <path
+       inkscape:connector-curvature="0"
+       id="path4188"
+       d="m 885.30946,789.44535 43.02734,0"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4190"
+       d="m 886.33392,809.92875 42.34437,0"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4192"
+       d="m 885.99244,814.48065 42.68585,0"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <path
+       inkscape:connector-curvature="0"
+       id="path4194"
+       d="m 926.97085,781.76405 9.90312,14.7936"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <path
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       id="path4196"
+       d="m 927.31234,810.21325 9.22015,-5.9743"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <text
+       xml:space="preserve"
+       style="font-size:8.79321384px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="803.38361"
+       y="834.37085"
+       id="text4198"
+       sodipodi:linespacing="125%"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         sodipodi:role="line"
+         x="803.38361"
+         y="834.37085"
+         id="tspan4200">Aim Table Node</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4202"
+       y="847.46179"
+       x="856.05908"
+       style="font-size:4.39660692px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"
+       transform="scale(1.0956001,0.9127418)"><tspan
+         id="tspan4204"
+         y="847.46179"
+         x="856.05908"
+         sodipodi:role="line">Aim</tspan><tspan
+         id="tspan4206"
+         y="852.95758"
+         x="856.05908"
+         sodipodi:role="line">Query</tspan></text>
+    <path
+       inkscape:connector-curvature="0"
+       id="path4208"
+       d="m 934.48356,781.19515 20.48922,-0.2845"
+       style="fill:none;stroke:#000000;stroke-width:0.27478793px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    <rect
+       y="904.90442"
+       x="898.35797"
+       height="99.817574"
+       width="128.17479"
+       id="rect4210"
+       style="fill:none;stroke:#152017;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text4212"
+       y="968.42474"
+       x="901.7608"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         id="tspan4214"
+         y="968.42474"
+         x="901.7608"
+         sodipodi:role="line">Distriguted</tspan><tspan
+         id="tspan4216"
+         y="988.42474"
+         x="901.7608"
+         sodipodi:role="line">Merge Sort</tspan></text>
+    <text
+       sodipodi:linespacing="125%"
+       id="text4218"
+       y="923.05298"
+       x="901.7608"
+       style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         id="tspan4220"
+         y="923.05298"
+         x="901.7608"
+         sodipodi:role="line">Aim</tspan><tspan
+         id="tspan4222"
+         y="943.05298"
+         x="901.7608"
+         sodipodi:role="line">Query</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 938.05814,851.59279 0,52.17736"
+       id="path4226"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 863.19497,869.74143 40.83446,34.02871"
+       id="path4228"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 846.18062,949.14176 48.77448,0"
+       id="path4230"
+       inkscape:connector-curvature="0" />
+    <text
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
+       x="61.251678"
+       y="825.50409"
+       id="text4238"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan4240"
+         x="61.251678"
+         y="825.50409"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">Next steps:</tspan><tspan
+         sodipodi:role="line"
+         x="61.251678"
+         y="845.50409"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan4252" /><tspan
+         sodipodi:role="line"
+         x="61.251678"
+         y="865.50409"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan4248">1) try semi-sorted open segment</tspan><tspan
+         sodipodi:role="line"
+         x="61.251678"
+         y="885.50409"
+         id="tspan4242"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans">using Timsort, Smoothsort or Heapsort </tspan><tspan
+         sodipodi:role="line"
+         x="61.251678"
+         y="905.50409"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan4250">(currently QuickSort is used the segment is closed)</tspan><tspan
+         sodipodi:role="line"
+         x="61.251678"
+         y="925.50409"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan4254" /><tspan
+         sodipodi:role="line"
+         x="61.251678"
+         y="945.50409"
+         style="font-size:16px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;font-family:Sans;-inkscape-font-specification:Sans"
+         id="tspan4256">2) clean-up the prototype codebase</tspan></text>
+  </g>
+</svg>

@@ -13,7 +13,7 @@ import net.imagini.aim.Pipe;
 import net.imagini.aim.Pipe.Protocol;
 import net.imagini.aim.PipeLZ4;
 import net.imagini.aim.loaders.CSVLoader;
-import net.imagini.aim.loaders.IdentitySchema;
+import net.imagini.aim.loaders.GenericSchema;
 import net.imagini.aim.table.AimTable;
 import net.imagini.aim.table.TableServer;
 
@@ -28,32 +28,44 @@ public class Console extends Thread {
 
     public static void main(String[] args) throws IOException {
         System.out.println("\nAIM Test Console\n");
+        
 
 //        AimTable table1 = new AimTable("events", 10485760, new EventsSchema(), "user_uid", SortOrder.ASC);
 //        server = new TableServer(table1, 4000);
-        AimTable table2 = new AimTable("ids", 10485760, new IdentitySchema(), "user_uid", SortOrder.ASC);
+        AimTable table2 = new AimTable(
+            "example", 
+            10485760, 
+            AimUtils.parseSchema("user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)"), 
+            "user_uid", 
+            SortOrder.ASC
+        );
         server = new TableServer(table2, 4000);
 
         server.start();
 
         long limit = 10;
-
-        loader = new CSVLoader(new String[]{
-                //"--gzip",
-                "--separator", ",",
-                "--limit", String.valueOf(limit),
-                "--schema", table2.schema.toString(),
-                Console.class.getResource("identities.csv").getPath().toString()
-        });
+//        new CSVLoader(new String[]{
+//                //"--gzip",
+//                "--separator", ",",
+//                "--limit", String.valueOf(limit),
+//                "--schema", table2.schema.toString(),
+//                Console.class.getResource("identities.csv").getPath().toString()
+//        }).start();
+//        new CSVLoader(new String[]{
+//                //"--gzip",
+//                "--separator", "\n",
+//                "--limit", String.valueOf(limit),
+//                "--schema", table2.schema.toString(),
+//                Console.class.getResource("syncs.jq").getPath().toString()
+//        }).start();
         /**
-        loader = new CSVLoader(new String[]{
+        new CSVLoader(new String[]{
                 "--gzip", 
                 "--limit", String.valueOf(limit),
                 "--schema","timestamp(LONG),client_ip(IPV4:INT),event_type(STRING),action(STRING),user_agent(STRING),country_code(BYTEARRAY[2]),region_code(BYTEARRAY[3]),post_code(STRING),api_key(STRING),url(STRING),user_uid(UUID:BYTEARRAY[16]),user_quizzed(BOOL)",
                 "/Users/mharis/events-2013-07-23.csv.gz"
-        });
+        }).start()
         /**/
-        loader.start();
 
         new Console("localhost", server.port).run();
 
