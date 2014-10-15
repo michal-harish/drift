@@ -1,11 +1,5 @@
 AIM - crossing large data sets in memory - a conceptual child of Cassandra, Spark and Kafka
 
-Quick-Start
-===========
-cd java
-mvn clean package
-./test.sh
-
 
 Motivation
 ==========
@@ -16,14 +10,14 @@ Motivation
 * All data in real-world applications have TTL which can span months so Kafka segmentation approach seems reasonable 
   instead of cassandra row-level ttl but very fast sequential querying must be possible 
   -> so segments must have a columnar format allow for high speed filtering without re-streaming the data to a remote process 
-  -> sending the mappers to the data rather then loading the data and then mapping like in Hadoop or Spark 
-  -> reducing will be limited but can be compensated with a Large HashTable format
-
-<img src='https://dl.dropboxusercontent.com/u/15048579/aim.svg'/>
+  -> sending the mappers to the data rather then loading the data and then mapping like in Hadoop or Spark
 
 
-Architecture Decisions Overview
+Design Overview and Decisions
 ===============================
+
+![https://dl.dropboxusercontent.com/u/15048579/aim.svg]
+
  
 * Table is a virtual entity which has a strictly-typed structure of columns, however individual records are not randomly accessible
 * Multiple records are stored together in an Segment, which can be distributed across different nodes
@@ -54,7 +48,14 @@ Architecture Decisions Overview
     7-20   -            -               reserved
 
 
-Architecture TODOs and NOTEs
+Quick-Start
+===========
+cd java
+mvn clean package
+...TODO add quickstart for loading test json data
+
+
+TODOs and NOTEs
 ============================
 - We should try to wrap segement processing units into cpu-bound threads (may require C programming) 
     -> https://github.com/peter-lawrey/Java-Thread-Affinity
