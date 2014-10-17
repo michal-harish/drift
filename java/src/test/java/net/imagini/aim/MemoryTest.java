@@ -1,4 +1,4 @@
-package net.imagini.aim.loaders;
+package net.imagini.aim;
 
 import java.nio.ByteBuffer;
 

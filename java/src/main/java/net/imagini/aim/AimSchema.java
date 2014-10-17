@@ -13,16 +13,20 @@ import net.imagini.aim.AimTypeAbstract.AimDataType;
 import org.apache.commons.lang3.StringUtils;
 
 public class AimSchema {
+    public final String name;
     private final LinkedList<AimType> def = new LinkedList<>();
-    private final Map<String,Integer> colIndex = new LinkedHashMap<>();
-    private final Map<Integer,String> nameIndex = new LinkedHashMap<>();
-    public AimSchema(LinkedHashMap<String,AimType> columnDefs) {
-        for(Entry<String,AimType> columnDef: columnDefs.entrySet()) {
+    private final Map<String, Integer> colIndex = new LinkedHashMap<>();
+    private final Map<Integer, String> nameIndex = new LinkedHashMap<>();
+
+    public AimSchema(String name, LinkedHashMap<String, AimType> columnDefs) {
+        this.name = name;
+        for (Entry<String, AimType> columnDef : columnDefs.entrySet()) {
             def.add(columnDef.getValue());
-            colIndex.put(columnDef.getKey(), def.size()-1);
-            nameIndex.put(def.size()-1, columnDef.getKey());
+            colIndex.put(columnDef.getKey(), def.size() - 1);
+            nameIndex.put(def.size() - 1, columnDef.getKey());
         }
     }
+
     public int get(String colName) {
         return colIndex.get(colName);
     }
@@ -52,39 +56,49 @@ public class AimSchema {
     }
 
     public String describe() {
-        return StringUtils.join(colIndex.keySet().toArray(new String[def.size()-1]), ",");
+        return StringUtils.join(
+                colIndex.keySet().toArray(new String[def.size() - 1]), ",");
     }
+
     public int size() {
         return def.size();
     }
 
-    @Override public String toString() {
-        String result = "";
-        for(Entry<String,Integer> c: colIndex.entrySet()) {
+    @Override
+    public String toString() {
+        String result = name + "=";
+        for (Entry<String, Integer> c : colIndex.entrySet()) {
             String name = c.getKey();
             AimType type = def.get(c.getValue());
-            result += (result != "" ? "," : "") + name + "(" + type.toString() + ")";
+            result += (result != "" ? "," : "") + name + "(" + type.toString()
+                    + ")";
         }
         return result;
     }
+
     public String[] names() {
-        return new ArrayList<String>(colIndex.keySet()).toArray(new String[colIndex.size()]);
+        return new ArrayList<String>(colIndex.keySet())
+                .toArray(new String[colIndex.size()]);
     }
 
-    
     public AimSchema subset(final String... columns) {
         return subset(Arrays.asList(columns));
     }
+
     public String name(int c) {
         return nameIndex.get(c);
     }
+
     @SuppressWarnings("serial")
     public AimSchema subset(final List<String> columns) {
-        final AimSchema subSchema = new AimSchema(new LinkedHashMap<String,AimType>() {{
-            for(String colName: columns) {
-                put(colName, def.get(colIndex.get(colName)));
-            }
-        }});
+        final AimSchema subSchema = new AimSchema(
+                name, new LinkedHashMap<String, AimType>() {
+                    {
+                        for (String colName : columns) {
+                            put(colName, def.get(colIndex.get(colName)));
+                        }
+                    }
+                });
         return subSchema;
     }
 }

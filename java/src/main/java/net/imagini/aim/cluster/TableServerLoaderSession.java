@@ -1,4 +1,4 @@
-package net.imagini.aim.table;
+package net.imagini.aim.cluster;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -8,8 +8,8 @@ import net.imagini.aim.Aim;
 import net.imagini.aim.AimSegment;
 import net.imagini.aim.AimType;
 import net.imagini.aim.Pipe;
-import net.imagini.aim.node.Segment;
-import net.imagini.aim.node.SegmentSorted;
+import net.imagini.aim.Segment;
+import net.imagini.aim.SegmentSorted;
 
 /**
  * Non-Thread safe, the session is a single-threaded context
@@ -30,14 +30,14 @@ public class TableServerLoaderSession extends Thread  {
         String expectSchema = table.schema.toString();
         String actualSchema = pipe.read();
         if (!actualSchema.equals(expectSchema)) {
-            throw new IOException("Invalid loader schema for table '"+ table.name +"', \nexpecting: " + expectSchema +"\nreceived:  " + actualSchema);
+            throw new IOException("Invalid loader schema, \nexpecting: " + expectSchema +"\nreceived:  " + actualSchema);
         }
         record = ByteBuffer.allocate(Aim.COLUMN_BUFFER_SIZE * table.schema.size());
         record.order(Aim.endian);
     }
 
     @Override public void run() {
-        System.out.println("Loading into " + table.name);
+        System.out.println("Loading into " + table.schema);
         try {
             long t = System.currentTimeMillis();
             try {
@@ -70,7 +70,7 @@ public class TableServerLoaderSession extends Thread  {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            System.out.println("Loading into " + table.name + " finished");
+            System.out.println("Loading into " + table.schema.name + " finished");
             try { pipe.close(); } catch (IOException e) { }
         }
     }

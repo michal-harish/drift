@@ -3,7 +3,7 @@ package net.imagini.aim;
 import java.io.IOException;
 
 import net.imagini.aim.AimTypeAbstract.AimDataType;
-import net.imagini.aim.table.AimTable;
+import net.imagini.aim.cluster.AimTable;
 
 /**
  * @author mharis

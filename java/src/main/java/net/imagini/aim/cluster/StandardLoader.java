@@ -1,15 +1,21 @@
-package net.imagini.aim.loaders;
+package net.imagini.aim.cluster;
 
 import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.util.zip.GZIPInputStream;
 
 import joptsimple.internal.Strings;
+import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimType;
-import net.imagini.aim.AimUtils;
+import net.imagini.aim.Pipe;
+import net.imagini.aim.PipeLZ4;
+import net.imagini.aim.Protocol;
 
 /**
  * 
@@ -40,48 +46,86 @@ import net.imagini.aim.AimUtils;
  *         (STRING),api_key(STRING),url(STRING
  *         ),user_uid(UUID:STRING[16]),user_quizzed(BOOL)
  */
-public class CSVLoader extends Loader {
+public class StandardLoader extends Thread {
 
-    public static void main(String[] args) throws IOException {
-        CSVLoader loader = new CSVLoader(args);
-        loader.start();
+    private Socket socket;
+    private Pipe out;
+    protected AimSchema schema;
+
+    protected void connectTable(String host, int port, AimSchema schema) throws IOException {
+        socket = new Socket(InetAddress.getByName(host), port);
+        out = new PipeLZ4(socket.getOutputStream(), Protocol.LOADER);
+        out.write(schema.toString());
+        this.schema = schema;
+    }
+    protected void close() throws IOException {
+        out.close();
+        socket.close();
+    }
+
+    protected byte[][] createEmptyRecord() {
+        return new byte[schema.size()][];
+    }
+
+    protected void storeLoadedRecord(byte[][] record) throws IOException {
         try {
-            loader.join();
-        } catch (InterruptedException e) {
-
+            int i = 0;
+            for (AimType type : schema.def()) {
+                out.write(type.getDataType(), record[i]);
+                i++;
+            }
+        } catch (EOFException e) {
+            out.flush();
+            throw e;
         }
     }
 
+//    public static void main(String[] args) throws IOException {
+//        for (int a = 0; a < args.length; a++)
+//            switch (args[a]) {
+//            case "--separator":
+//                separator = args[++a];
+//                break;
+//            case "--gzip":
+//                gzip = true;
+//                break;
+//            case "--schema":
+//                schema = AimUtils.parseSchema(args[++a]);
+//                break;
+//            case "--limit":
+//                limit = Long.valueOf(args[++a]);
+//                break;
+//            default:
+//                filename = args[a];
+//                break;
+//            }
+//        CSVLoader loader = new CSVLoader(args);
+//        loader.start();
+//        try {
+//            loader.join();
+//        } catch (InterruptedException e) {
+//
+//        }
+//    }
+//    private static void printHelp() {
+//        System.out
+//                .println("Usage: aim-loader [--gzip] [--limit <limit>] --schema <...>\n");
+//    }
+
+
     private Boolean gzip = false;
     private String filename = null;
-    private String separator = "\t";
-    private Long limit = 0L;
+    private String separator = null;
 
-    public CSVLoader(String[] args) throws IOException {
-        for (int a = 0; a < args.length; a++)
-            switch (args[a]) {
-            case "--separator":
-                separator = args[++a];
-                break;
-            case "--gzip":
-                gzip = true;
-                break;
-            case "--schema":
-                schema = AimUtils.parseSchema(args[++a]);
-                break;
-            case "--limit":
-                limit = Long.valueOf(args[++a]);
-                break;
-            default:
-                filename = args[a];
-                break;
-            }
+    public StandardLoader(AimSchema schema, String host, Integer port, String separator, String filename, Boolean gzip) 
+        throws Exception {
         if (schema == null) {
-            printHelp();
-            System.exit(1);
+            throw new Exception("No schema given");
         }
-        connectTable("localhost", 4000, schema);
-        System.out.println(schema);
+        this.gzip = gzip;
+        this.filename = filename;
+        this.separator = separator;
+        connectTable(host, port, schema);
     }
 
     @Override
@@ -105,7 +149,7 @@ public class CSVLoader extends Loader {
             try {
                 BufferedReader lineReader = new BufferedReader(reader);
                 String line;
-                while (count++ < limit || limit == 0L) {
+                while (count++>=0) {
                     int fields = 0;
                     String[] values = new String[schema.size()];
                     while(fields <schema.size()) {
@@ -140,11 +184,6 @@ public class CSVLoader extends Loader {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private static void printHelp() {
-        System.out
-                .println("Usage: aim-loader [--gzip] [--limit <limit>] --schema <...>\n");
     }
 
 }

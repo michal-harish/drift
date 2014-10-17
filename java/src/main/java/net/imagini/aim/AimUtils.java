@@ -17,6 +17,11 @@ import org.apache.commons.lang3.StringUtils;
 public class AimUtils {
 
     public static AimSchema parseSchema(String declaration) {
+        String schemaName = "new_schema";
+        if (declaration.matches("^[a-z_A-Z0-9]=")) {
+            schemaName = declaration.substring(0,declaration.indexOf("=")-1);
+            declaration = declaration.substring(schemaName.length() + 1);
+        }
         final String[] dec = declaration.split(",");
         LinkedHashMap<String, AimType> result = new LinkedHashMap<String,AimType>();
         for(int f=0; f<dec.length; f++) {
@@ -54,7 +59,7 @@ public class AimUtils {
                 }
             }
         }
-        return new AimSchema(result);
+        return new AimSchema(schemaName, result);
     }
 
     public static String exceptionAsString(Exception e) {

@@ -1,4 +1,4 @@
-package net.imagini.aim.table;
+package net.imagini.aim.cluster;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -33,7 +33,6 @@ import net.imagini.aim.Pipe;
 public class AimTable {
 
     public final AimSchema schema;
-    public final String name;
     public final Integer segmentSizeBytes;
     public final Integer sortColumn;
     public final SortOrder sortOrder;
@@ -43,16 +42,14 @@ public class AimTable {
     private AtomicLong count = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
 
-    //TODO configure executor per table server
     final ExecutorService executor = Executors.newFixedThreadPool(4);
 
-    public AimTable(String name, Integer segmentSizeBytes, AimSchema schema, String sortField, SortOrder order) throws IOException {
-        this.name = name;
+    public AimTable(AimSchema schema, Integer segmentSizeBytes, String sortField, SortOrder order) throws IOException {
         this.sortColumn = schema.get(sortField);
         this.sortOrder = order;
         this.schema = schema;
         this.segmentSizeBytes = segmentSizeBytes;
-        System.out.println("Table " + name + " (" + schema.toString() + ")");
+        System.out.println("Table " + schema.toString() );
     }
 
     public int getSortColumn() {
@@ -93,10 +90,7 @@ public class AimTable {
 
     private void checkColumn(String colName) throws IllegalArgumentException {
         if (!schema.has(colName)) {
-            throw new IllegalArgumentException(
-                "Column `"+colName+"` is not defined for table `"+name+"`. Available columns are: " 
-                + schema.describe()
-            );
+            throw new IllegalArgumentException("Column `"+colName+"` is not defined in schema "+ schema);
         }
     }
 

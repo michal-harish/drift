@@ -1,4 +1,4 @@
-package net.imagini.aim.node;
+package net.imagini.aim;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -11,10 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.imagini.aim.Aim.SortOrder;
-import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
-import net.imagini.aim.AimUtils;
-import net.imagini.aim.ByteKey;
 
 
 /**

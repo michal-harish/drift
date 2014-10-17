@@ -1,4 +1,4 @@
-package net.imagini.aim.node;
+package net.imagini.aim;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -12,14 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.imagini.aim.Aim;
-import net.imagini.aim.AimFilter;
-import net.imagini.aim.AimSchema;
-import net.imagini.aim.AimSegment;
-import net.imagini.aim.AimType;
 import net.imagini.aim.AimTypeAbstract.AimDataType;
-import net.imagini.aim.AimUtils;
-import net.imagini.aim.LZ4Buffer;
 import net.imagini.aim.LZ4Buffer.LZ4Scanner;
 
 /**

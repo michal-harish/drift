@@ -15,18 +15,12 @@ import org.apache.commons.io.EndianUtils;
 
 public class Pipe {
 
-    public static enum Protocol {
-        BINARY(0),LOADER(1),QUERY(2);
-        public final int id;
-        private Protocol(int id) { this.id = id; }
-        static public Protocol get(int id) { for(Protocol p: Protocol.values()) if (p.id == id) return p; return null;}
-    }
     final public Protocol protocol;
     private OutputStream outputPipe;
     private InputStream inputPipe;
 
     public Pipe() { 
-        this.protocol = Pipe.Protocol.BINARY; 
+        this.protocol = Protocol.BINARY; 
     }
     public Pipe(Socket socket, Protocol protocol) throws IOException {
         this(socket.getOutputStream(), protocol);
@@ -35,7 +29,7 @@ public class Pipe {
 
     public Pipe(OutputStream out) throws IOException {
         outputPipe = createOutputStreamWrapper(out);
-        this.protocol = Pipe.Protocol.BINARY;
+        this.protocol = Protocol.BINARY;
     }
     public Pipe(OutputStream out, Protocol protocol) throws IOException {
         int pipe_type;
@@ -52,7 +46,7 @@ public class Pipe {
 
     public Pipe(InputStream in) throws IOException {
         inputPipe = createInputStreamWrapper(in);
-        this.protocol = Pipe.Protocol.BINARY;
+        this.protocol = Protocol.BINARY;
     }
 
     public Pipe(InputStream in, Protocol protocol) throws IOException {
@@ -102,7 +96,6 @@ public class Pipe {
     final public void close() throws IOException {
         if (inputPipe != null) inputPipe.close();
         inputPipe = null;
-        if (outputPipe != null) outputPipe.close();
         outputPipe = null;
     }
 

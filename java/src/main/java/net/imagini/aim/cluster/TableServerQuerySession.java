@@ -1,4 +1,4 @@
-package net.imagini.aim.table;
+package net.imagini.aim.cluster;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -107,7 +107,6 @@ public class TableServerQuerySession extends Thread {
     private void handleStats(Queue<String> cmd) throws IOException {
         pipe.write(true);
         pipe.write("STATS");
-        pipe.write(table.name);
         pipe.write(table.schema.toString());
         pipe.write(table.getCount());
         pipe.write(table.getNumSegments());

@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import net.imagini.aim.LZ4Buffer.LZ4Scanner;
-import net.imagini.aim.table.AimTable;
+import net.imagini.aim.cluster.AimTable;
 
 import org.apache.commons.lang3.StringUtils;
 
