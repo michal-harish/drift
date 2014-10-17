@@ -5,12 +5,13 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.net.InetAddress
 import java.net.Socket
-import org.apache.commons.lang3.StringUtils
+
 import net.imagini.aim.AimUtils
 import net.imagini.aim.PipeLZ4
 import net.imagini.aim.Protocol
+import net.imagini.aim.AimSchema
 
-object AimConsole extends AimConsole("localhost", 4001) with App {
+object AimConsole extends AimConsole("localhost", 4000) with App {
 
   println("\nAIM Test Console\n")
   start
@@ -79,10 +80,11 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
           println("Count: " + count + "/" + totalCount)
         }
         case "RESULT" ⇒ {
-          val schema = AimUtils.parseSchema(pipe.read)
+          val schema = AimSchema.parseSchema(pipe.read)
           val filter = pipe.read
           while (pipe.readBool) {
-            println(StringUtils.join(AimUtils.fetchRecord(schema, pipe), ", "))
+            val record = AimUtils.fetchRecord(schema, pipe)
+            println(record.foldLeft("")(_+_+","))
           }
           val filteredCount = pipe.readLong
           val count = pipe.readLong

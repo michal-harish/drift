@@ -10,43 +10,13 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.zip.GZIPInputStream;
 
-import joptsimple.internal.Strings;
 import net.imagini.aim.AimSchema;
 import net.imagini.aim.AimType;
 import net.imagini.aim.Pipe;
 import net.imagini.aim.PipeLZ4;
 import net.imagini.aim.Protocol;
 
-/**
- * 
- * @author mharis
- * 
- *         mvn package
- * 
- *         ## AND THEN hive -e "select
- *         \`timestamp\`,client_ip,\`type\`,action,useragent
- *         ,country_code,region_code
- *         ,post_code,campaignid,url,userUid,userQuizzed from
- *         ${env:USER}_events_rc;" | gzip > ~/events-2013-07-23.csv.gz cat
- *         ~/events-2013-07-23.csv.gz | ./load-csv --gzip --schema
- *         timestamp(LONG
- *         ),client_ip(IPV4:INT),event_type(STRING),action(STRING),
- *         user_agent(STRING
- *         ),country_code(STRING[2]),region_code(STRING[3]),post_code
- *         (STRING),api_key
- *         (STRING),url(STRING),user_uid(UUID:STRING[16]),user_quizzed(BOOL)
- * 
- *         ## OR
- * 
- *         hive -e "..." | ./load-csv --schema
- *         timestamp(LONG),client_ip(IPV4:INT
- *         ),event_type(STRING),action(STRING),
- *         user_agent(STRING),country_code(STRING
- *         [2]),region_code(STRING[3]),post_code
- *         (STRING),api_key(STRING),url(STRING
- *         ),user_uid(UUID:STRING[16]),user_quizzed(BOOL)
- */
-public class StandardLoader extends Thread {
+public class StandardLoader {
 
     private Socket socket;
     private Pipe out;
@@ -128,8 +98,7 @@ public class StandardLoader extends Thread {
         connectTable(host, port, schema);
     }
 
-    @Override
-    public void run() {
+    public void processStandardInput() {
         try {
 
             InputStream in;
@@ -173,11 +142,12 @@ public class StandardLoader extends Thread {
                         }
                         storeLoadedRecord(record);
                     } catch (Exception e) {
-                        System.err.println(count + ":" + Strings.join(values, separator));
+                        System.err.println(count + ":" + values);
                         e.printStackTrace();
                     }
                 }
             } finally {
+                out.flush();
                 close();
             }
             in.close();

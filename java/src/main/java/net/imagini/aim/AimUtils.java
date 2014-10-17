@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.LinkedHashMap;
 
 import net.imagini.aim.AimTypeAbstract.AimDataType;
 
@@ -15,53 +14,6 @@ import org.apache.commons.lang3.StringUtils;
 
 
 public class AimUtils {
-
-    public static AimSchema parseSchema(String declaration) {
-        String schemaName = "new_schema";
-        if (declaration.matches("^[a-z_A-Z0-9]=")) {
-            schemaName = declaration.substring(0,declaration.indexOf("=")-1);
-            declaration = declaration.substring(schemaName.length() + 1);
-        }
-        final String[] dec = declaration.split(",");
-        LinkedHashMap<String, AimType> result = new LinkedHashMap<String,AimType>();
-        for(int f=0; f<dec.length; f++) {
-            String name = String.valueOf(f+1);
-            String function = null;
-            Integer length = null;
-            String type = dec[f].trim();
-            if (type.contains("(")) {
-                name = type.substring(0, type.indexOf("("));
-                type = type.substring(type.indexOf("(")+1,type.indexOf(")"));
-            }
-            type = type.toUpperCase();
-            if (type.contains(":")) {
-                function = type.split(":")[0];
-                type = type.split(":")[1];
-            }
-            if (type.contains("[")) {
-                length = Integer.valueOf(type.substring(type.indexOf("[")+1,type.indexOf("]")));
-                type = type.substring(0, type.indexOf("["));
-            }
-            switch(type) {
-                case "BOOL": result.put(name,Aim.BOOL); break;
-                case "BYTE": result.put(name,Aim.BYTE); break;
-                case "INT": result.put(name,Aim.INT); break;
-                case "LONG": result.put(name,Aim.LONG); break;
-                case "BYTEARRAY": result.put(name,Aim.BYTEARRAY(length)); break;
-                case "STRING": result.put(name,Aim.STRING); break;
-                default: throw new IllegalArgumentException("Unknown data type " + type);
-            }
-            if (function != null) {
-                switch(function) {
-                    case "UUID": result.put(name, Aim.UUID(result.get(name).getDataType())); break;
-                    case "IPV4": result.put(name, Aim.IPV4(result.get(name).getDataType())); break;
-                    default: throw new IllegalArgumentException("Unknown type " + type);
-                }
-            }
-        }
-        return new AimSchema(schemaName, result);
-    }
-
     public static String exceptionAsString(Exception e) {
         String[] trace = new String[e.getStackTrace().length];
         int i = 0; for(StackTraceElement t:e.getStackTrace()) trace[i++] = t.toString();

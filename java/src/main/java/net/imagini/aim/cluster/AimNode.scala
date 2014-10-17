@@ -1,9 +1,8 @@
 package net.imagini.aim.cluster
 
-import net.imagini.aim.Aim.SortOrder
-import net.imagini.aim.AimSchema
-import net.imagini.aim.AimUtils
 import scala.collection.JavaConverters._
+import net.imagini.aim.AimSchema
+import net.imagini.aim.Aim.SortOrder
 
 object AimNode extends App {
 
@@ -21,16 +20,17 @@ object AimNode extends App {
       case "--port"         ⇒ port = argsIterator.next.toInt
       case "--separator"    ⇒ separator = argsIterator.next
       case "--gzip"         ⇒ gzip = true;
-      case "--schema"       ⇒ schema = Some(AimUtils.parseSchema(argsIterator.next))
+      case "--schema"       ⇒ schema = Some(AimSchema.parseSchema(argsIterator.next))
       case "--filename"     ⇒ filename = argsIterator.next
-      case arg:String                ⇒ println("Unknown argument " + arg)
+      case arg: String      ⇒ println("Unknown argument " + arg)
     }
   }
 
   val key = schema.get.name(0)
-  val table = new AimTable(schema.get, segmentSize, key, SortOrder.ASC)
+  val sortOrder = SortOrder.ASC
+  val table = new AimTable(schema.get, segmentSize, key, sortOrder)
   new AimServer(table, port).start
 
-  new StandardLoader(schema.get, "localhost", port, separator, filename, gzip).start
+  new StandardLoader(schema.get, "localhost", port, separator, filename, gzip).processStandardInput
 
 }

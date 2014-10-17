@@ -37,7 +37,7 @@ public class TableServerLoaderSession extends Thread  {
     }
 
     @Override public void run() {
-        System.out.println("Loading into " + table.schema);
+        System.out.println("Loading into " + table);
         try {
             long t = System.currentTimeMillis();
             try {
@@ -70,7 +70,7 @@ public class TableServerLoaderSession extends Thread  {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            System.out.println("Loading into " + table.schema.name + " finished");
+            System.out.println("Loading into " + table + " finished");
             try { pipe.close(); } catch (IOException e) { }
         }
     }
@@ -90,10 +90,10 @@ public class TableServerLoaderSession extends Thread  {
 
     private void createNewSegmentIfNull() throws IOException {
         if (currentSegment == null) {
-            if (table.sortColumn == null) {
+            if (table.keyColumn == null) {
                 currentSegment = new Segment(table.schema);
             } else {
-                currentSegment = new SegmentSorted(table.schema, table.sortColumn, table.sortOrder);
+                currentSegment = new SegmentSorted(table.schema, table.keyColumn, table.sortOrder);
             }
         }
     }

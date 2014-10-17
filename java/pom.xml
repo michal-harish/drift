@@ -27,11 +27,13 @@
         <artifactId>lz4</artifactId>
         <version>1.1.2</version>
     </dependency>
+    <!-- 
     <dependency>
        <groupId>net.java.dev.jna</groupId>
        <artifactId>jna</artifactId>
        <version>3.3.0</version>
     </dependency>
+     -->
     <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-io</artifactId>
@@ -42,24 +44,7 @@
         <artifactId>commons-lang3</artifactId>
         <version>3.0</version>
     </dependency>
-    <!-- this is app-specific for our kafka loader -->
-    <dependency>
-        <groupId>net.imagini.kafka07</groupId>
-        <artifactId>kafka-core</artifactId>
-        <version>0.7.5-2.10.4</version>
-    </dependency>
-    <dependency>
-        <groupId>org.codehaus.jackson</groupId>
-        <artifactId>jackson-mapper-asl</artifactId>
-        <version>1.9.12</version>
-    </dependency>
     <!-- testing -->
-    <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-all</artifactId>
-        <version>1.9.5</version>
-        <scope>test</scope>
-    </dependency>
     <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>

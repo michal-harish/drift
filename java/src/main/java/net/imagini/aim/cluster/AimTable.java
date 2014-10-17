@@ -27,14 +27,11 @@ import net.imagini.aim.AimUtils;
 import net.imagini.aim.ByteKey;
 import net.imagini.aim.Pipe;
 
-/**
- * @author mharis
- */
 public class AimTable {
 
     public final AimSchema schema;
     public final Integer segmentSizeBytes;
-    public final Integer sortColumn;
+    public final Integer keyColumn;
     public final SortOrder sortOrder;
     private LinkedList<AimSegment> segments = new LinkedList<>();
     private AtomicInteger numSegments = new AtomicInteger(0);
@@ -44,16 +41,15 @@ public class AimTable {
 
     final ExecutorService executor = Executors.newFixedThreadPool(4);
 
-    public AimTable(AimSchema schema, Integer segmentSizeBytes, String sortField, SortOrder order) throws IOException {
-        this.sortColumn = schema.get(sortField);
+    public AimTable(AimSchema schema, Integer segmentSizeBytes, String keyField, SortOrder order) throws IOException {
+        this.keyColumn = schema.get(keyField);
         this.sortOrder = order;
         this.schema = schema;
         this.segmentSizeBytes = segmentSizeBytes;
-        System.out.println("Table " + schema.toString() );
     }
 
-    public int getSortColumn() {
-        return sortColumn;
+    public int getKeyColumn() {
+        return keyColumn;
     }
 
     public void add(AimSegment segment) {
@@ -94,17 +90,17 @@ public class AimTable {
         }
     }
 
-    /**
-     * Open single segment.
-     * @param segmentId
-     * @return
-     * @throws IOException
-     */
-    public AimSegment open(int segmentId) throws IOException {
-        synchronized(segments) {
-            return segmentId >=0 && segmentId < segments.size() ? segments.get(segmentId) : null;
-        }
-    }
+//    /**
+//     * Open single segment.
+//     * @param segmentId
+//     * @return
+//     * @throws IOException
+//     */
+//    public AimSegment open(int segmentId) throws IOException {
+//        synchronized(segments) {
+//            return segmentId >=0 && segmentId < segments.size() ? segments.get(segmentId) : null;
+//        }
+//    }
 
     /**
      * Parallel count - currently hard-coded for 4-core processors, however once the table
@@ -312,10 +308,10 @@ public class AimTable {
         final InputStream[] str = new InputStream[segments.size()];
         final AimSchema subSchema = schema.subset(columnNames);
         for(int s = 0; s <seg.length; s++) {
-            str[s] = segments.get(seg[s]).select(filter, schema.name(sortColumn), columnNames);
+            str[s] = segments.get(seg[s]).select(filter, schema.name(keyColumn), columnNames);
         }
 
-        final int sortSubColumn = subSchema.get(schema.name(sortColumn));
+        final int sortSubColumn = subSchema.get(schema.name(keyColumn));
 
         return new Pipe() {
             private int currentSegment = -1;

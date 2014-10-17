@@ -6,7 +6,7 @@ import java.util.LinkedHashMap
 import net.imagini.aim.AimType
 import net.imagini.aim.Aim
 
-object VDNAEventsSchema extends AimSchema("events", new LinkedHashMap(Map[String, AimType](
+object VDNAEventsSchema extends AimSchema(new LinkedHashMap(Map[String, AimType](
 
   "timestamp" -> Aim.LONG,
   "client_ip" -> Aim.IPV4(Aim.INT),

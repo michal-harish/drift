@@ -13,6 +13,10 @@ import net.imagini.aim.AimTypeAbstract.AimDataType;
 
 import org.apache.commons.io.EndianUtils;
 
+/**
+ * Pipe is a bi-directional stream
+ * @author mharis
+ */
 public class Pipe {
 
     final public Protocol protocol;
