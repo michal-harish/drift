@@ -17,9 +17,9 @@ import java.util.regex.Pattern;
 import net.imagini.aim.AimFilter;
 import net.imagini.aim.AimPartition;
 import net.imagini.aim.AimQuery;
-import net.imagini.aim.AimSchema;
 import net.imagini.aim.Pipe;
 import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
 
 import org.apache.commons.lang3.StringUtils;

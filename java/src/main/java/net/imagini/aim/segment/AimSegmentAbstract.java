@@ -1,4 +1,4 @@
-package net.imagini.aim;
+package net.imagini.aim.segment;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -12,42 +12,50 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
+import net.imagini.aim.AimFilter;
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
 import net.imagini.aim.utils.AimUtils;
 import net.imagini.aim.utils.BlockStorage;
-import net.imagini.aim.utils.BlockStorageLZ4;
 import net.imagini.aim.utils.Scanner;
 
 /**
  * zero-copy open methods, i.e. multiple stream readers should be able to operate without 
  * doubling the memory foot-print.
- * @author mharis
  */
-public class AimSegmentLZ4 implements AimSegment {
+abstract public class AimSegmentAbstract implements AimSegment {
 
-    final public static Integer LZ4_BLOCK_SIZE = 524280;
     final protected AimSchema schema;
-    protected AtomicLong originalSize = new AtomicLong(0);
-    private LinkedHashMap<Integer,BlockStorage> columnar = new LinkedHashMap<>();
+    protected LinkedHashMap<Integer,BlockStorage> columnar = new LinkedHashMap<>();
+    private boolean writable;
     private LinkedHashMap<Integer,ByteBuffer> writers = null;
     private AtomicLong count = new AtomicLong(0);
-    private boolean writable;
     private AtomicLong size = new AtomicLong(0);
+    private AtomicLong originalSize = new AtomicLong(0);
 
-    /**
-     * Append-only segment
-     * @throws IOException 
-     */
-    public AimSegmentLZ4(AimSchema schema) throws IOException {
+    public AimSegmentAbstract(AimSchema schema, Class<? extends BlockStorage> storageType) throws InstantiationException, IllegalAccessException {
         this.schema = schema;
         this.writable = true;
         writers = new LinkedHashMap<>();
         for(int col=0; col < schema.size(); col++) {
-            columnar.put(col, new BlockStorageLZ4());
-            writers.put(col, ByteBuffer.allocate(LZ4_BLOCK_SIZE));
+            BlockStorage blockStorage = storageType.newInstance();
+            columnar.put(col, blockStorage);
+            writers.put(col, blockStorage.createWriterBuffer());
         }
+    }
+
+    @Override final public long getCount() {
+        return count.get();
+    }
+
+    @Override final public long getCompressedSize() {
+        return size.get();
+    }
+
+    @Override final public long getOriginalSize() {
+        return originalSize.get();
     }
 
     final protected void checkWritable(boolean canBe) throws IllegalAccessException {
@@ -57,18 +65,16 @@ public class AimSegmentLZ4 implements AimSegment {
     }
 
     /**
-     * ByteBuffer input is a horizontal buffer where columns of a single record 
+     * ByteBuffer record is a horizontal buffer where columns of a single record 
      * follow in precise order.
-     * @param buffer
-     * @throws IOException
      */
-    @Override public void append(ByteBuffer record) throws IOException {
+    final protected void appendRecord(ByteBuffer record) throws IOException {
         try {
             checkWritable(true);
             for(int col = 0; col < schema.size() ; col++) {
                 AimDataType type = schema.dataType(col);
                 ByteBuffer block = writers.get(col);
-                if (block.position() + record.limit() > LZ4_BLOCK_SIZE) {
+                if (block.position() + record.limit() > block.capacity()) {
                     block.flip();
                     size.addAndGet(columnar.get(col).addBlock(block));
                     block.clear();
@@ -83,29 +89,6 @@ public class AimSegmentLZ4 implements AimSegment {
         }
     }
 
-//    @Override public void append(InputStream in) throws IOException {
-//        try {
-//            checkWritable(true);
-//            for(int col = 0; col < schema.size() ; col++) {
-//                AimDataType type = schema.dataType(col);
-//                ByteBuffer block = writers.get(col);
-//                int valueSize = AimUtils.sizeOf(in, type);
-//                if (block.position() + valueSize > Aim.LZ4_BLOCK_SIZE) {
-//                    block.flip();
-//                    size.addAndGet(columnar.get(col).addBlock(block));
-//                    block.clear();
-//                }
-//                if (type.equals(Aim.STRING)) {
-//                    block.putInt(valueSize);
-//                }
-//                AimUtils.read(in, block, valueSize);
-//            }
-//            count.incrementAndGet();
-//        } catch (IllegalAccessException e1) {
-//            throw new IOException(e1);
-//        }
-//    }
-
     @Override public void close() throws IOException, IllegalAccessException {
         checkWritable(true);
         //check open writer blocks and add them if available
@@ -119,18 +102,6 @@ public class AimSegmentLZ4 implements AimSegment {
         }
         this.writers = null;
         this.writable = false;
-    }
-
-    @Override public long getCount() {
-        return count.get();
-    }
-
-    @Override public long getSize() {
-        return size.get();
-    }
-
-    @Override public long getOriginalSize() {
-        return originalSize.get();
     }
 
     @Override final public Long count(AimFilter filter) throws IOException {

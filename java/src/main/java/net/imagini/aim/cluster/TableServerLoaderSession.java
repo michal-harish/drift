@@ -5,12 +5,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import net.imagini.aim.AimPartition;
-import net.imagini.aim.AimSegment;
 import net.imagini.aim.Pipe;
-import net.imagini.aim.AimSegmentLZ4;
-import net.imagini.aim.AimSegmentLZ4QuickSort;
+import net.imagini.aim.segment.AimSegment;
+import net.imagini.aim.segment.AimSegmentQuickSort;
+import net.imagini.aim.segment.AimSegmentUnsorted;
 import net.imagini.aim.types.AimType;
 import net.imagini.aim.utils.AimUtils;
+import net.imagini.aim.utils.BlockStorageLZ4;
 
 /**
  * Non-Thread safe, the session is a single-threaded context
@@ -73,7 +74,7 @@ public class TableServerLoaderSession extends Thread  {
                     + " time(ms): " + (System.currentTimeMillis() - t)
                 );
             }
-        } catch (IOException e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         } finally {
             System.out.println("Loading into " + table + " finished");
@@ -89,17 +90,17 @@ public class TableServerLoaderSession extends Thread  {
                 currentSegment = null;
             }
             createNewSegmentIfNull();
-        } catch (IllegalAccessException e) {
+        } catch (Throwable e) {
             throw new IOException(e);
         }
     }
 
-    private void createNewSegmentIfNull() throws IOException {
+    private void createNewSegmentIfNull() throws IOException, InstantiationException, IllegalAccessException {
         if (currentSegment == null) {
             if (table.keyColumn == null) {
-                currentSegment = new AimSegmentLZ4(table.schema);
+                currentSegment = new AimSegmentUnsorted(table.schema, BlockStorageLZ4.class);
             } else {
-                currentSegment = new AimSegmentLZ4QuickSort(table.schema, table.keyColumn, table.sortOrder);
+                currentSegment = new AimSegmentQuickSort(table.schema, table.keyColumn, table.sortOrder, BlockStorageLZ4.class);
             }
         }
     }

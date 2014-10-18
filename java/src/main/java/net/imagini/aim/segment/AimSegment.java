@@ -1,8 +1,10 @@
-package net.imagini.aim;
+package net.imagini.aim.segment;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+
+import net.imagini.aim.AimFilter;
 
 public interface AimSegment {
 
@@ -12,7 +14,7 @@ public interface AimSegment {
 
     long getCount();
 
-    long getSize();
+    long getCompressedSize();
 
     long getOriginalSize();
 

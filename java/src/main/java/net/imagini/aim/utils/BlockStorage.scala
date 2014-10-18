@@ -8,4 +8,5 @@ trait BlockStorage {
   def numBlocks:Int
   def compressedSize:Long
   def decompress(block:Int):ByteBuffer
+  def createWriterBuffer:ByteBuffer
 }

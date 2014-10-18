@@ -3,7 +3,7 @@ package net.imagini.aim.cluster
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.AimPartition;
 import net.imagini.aim.AimPartition ;
-import net.imagini.aim.AimSchema
+import net.imagini.aim.types.AimSchema
 
 object AimNode extends App {
 
@@ -21,7 +21,7 @@ object AimNode extends App {
       case "--port"         ⇒ port = argsIterator.next.toInt
       case "--separator"    ⇒ separator = argsIterator.next
       case "--gzip"         ⇒ gzip = true;
-      case "--schema"       ⇒ schema = Some(AimSchema.parseSchema(argsIterator.next))
+      case "--schema"       ⇒ schema = Some(AimSchema.fromString(argsIterator.next))
       case "--filename"     ⇒ filename = argsIterator.next
       case arg: String      ⇒ println("Unknown argument " + arg)
     }
@@ -30,8 +30,9 @@ object AimNode extends App {
   val key = schema.get.name(0)
   val sortOrder = SortOrder.ASC
   val partition = new AimPartition(schema.get, segmentSize, key, sortOrder)
-  new AimServer(partition, port).start
+  val server = new AimServer(partition, port).start
 
-  new StandardLoader(schema.get, "localhost", port, separator, filename, gzip).processStandardInput
+  new StandardLoader(schema.get, "localhost", port, separator, filename, gzip).processInput
+
 
 }

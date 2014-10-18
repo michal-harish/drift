@@ -4,7 +4,7 @@ import java.util.LinkedHashMap
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
-import net.imagini.aim.AimSchema
+import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.Aim
 import net.imagini.aim.types.AimType
 

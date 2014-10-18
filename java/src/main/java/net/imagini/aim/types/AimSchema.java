@@ -1,4 +1,4 @@
-package net.imagini.aim;
+package net.imagini.aim.types;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,15 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import net.imagini.aim.types.Aim;
-import net.imagini.aim.types.AimDataType;
-import net.imagini.aim.types.AimType;
-
 import org.apache.commons.lang3.StringUtils;
 
 public class AimSchema {
 
-    public static AimSchema parseSchema(String declaration) {
+    public static AimSchema fromString(String declaration) {
 //        String schemaName = "new_schema";
 //        if (declaration.matches("^[a-z_A-Z0-9]=")) {
 //            schemaName = declaration.substring(0,declaration.indexOf("=")-1);

@@ -11,7 +11,7 @@ cat src/test/resources/datasync.json \
 | java -jar target/aim-node.jar --port 4000 --schema "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)"
 
 #test pageviews
-cat src/main/resources/pageviews.json | jq -r 'select(.userUid!=null) | .userUid,.timestamp,.type,.url'
+cat src/test/resources/pageviews.json | jq -r 'select(.userUid!=null) | .userUid,.timestamp,.type,.url'
 
 #stream of pageviews
 ~/kafka/bin/kafka8 --topic pageviews \

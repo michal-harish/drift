@@ -28,7 +28,7 @@ public class AimServer extends Thread {
                             socket = controllerListener.accept();
                             if (interrupted()) break;
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            System.out.println(e.getMessage());
                             break;
                         }
                         Pipe pipe;

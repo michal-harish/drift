@@ -16,7 +16,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import net.imagini.aim.segment.AimSegment;
 import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
 import net.imagini.aim.types.SortOrder;
 import net.imagini.aim.utils.AimUtils;
@@ -59,7 +61,7 @@ public class AimPartition {
 
         numSegments.incrementAndGet();
         count.addAndGet(segment.getCount());
-        size.addAndGet(segment.getSize());
+        size.addAndGet(segment.getCompressedSize());
         originalSize.addAndGet(segment.getOriginalSize());
     }
 
