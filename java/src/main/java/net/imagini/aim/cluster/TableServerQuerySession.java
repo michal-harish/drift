@@ -15,19 +15,21 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import net.imagini.aim.AimFilter;
+import net.imagini.aim.AimPartition;
 import net.imagini.aim.AimQuery;
 import net.imagini.aim.AimSchema;
-import net.imagini.aim.AimType;
 import net.imagini.aim.Pipe;
-import net.imagini.aim.AimTypeAbstract.AimDataType;
-import net.imagini.aim.AimUtils;
+import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.types.AimType;
+
+import org.apache.commons.lang3.StringUtils;
 
 public class TableServerQuerySession extends Thread {
 
     private Pipe pipe;
-    private AimTable table;
+    private AimPartition table;
 
-    public TableServerQuerySession(AimTable table, Pipe pipe) throws IOException {
+    public TableServerQuerySession(AimPartition table, Pipe pipe) throws IOException {
         this.pipe = pipe;
         this.table = table;
     }
@@ -87,7 +89,7 @@ public class TableServerQuerySession extends Thread {
                     try {
                         pipe.write(true);
                         pipe.write("ERROR");
-                        pipe.write(AimUtils.exceptionAsString(e));
+                        pipe.write(exceptionAsString(e));
                         pipe.write(false);
                         pipe.flush();
                     } catch (Exception e1) {
@@ -170,7 +172,7 @@ public class TableServerQuerySession extends Thread {
         long count = 0;
         try {
             while(true) {
-                for (AimType type : schema.def()) {
+                for (AimType type : schema.fields()) {
                     scanner.read(type.getDataType());
                 }
                 count++;
@@ -216,7 +218,7 @@ public class TableServerQuerySession extends Thread {
             boolean written;
             while(true) {
                 written = false;
-                for(AimType type: schema.def()) {
+                for(AimType type: schema.fields()) {
                     AimDataType dataType = type.getDataType();
                     if (!fetch) {
                         result.skip(dataType);
@@ -233,7 +235,7 @@ public class TableServerQuerySession extends Thread {
             pipe.write(false);
             pipe.write((long)count);
             pipe.write((long)table.getCount());
-            pipe.write((e instanceof EOFException ? "" : AimUtils.exceptionAsString(e))); //success flag
+            pipe.write((e instanceof EOFException ? "" : exceptionAsString(e))); //success flag
             pipe.flush();
         }
 
@@ -271,6 +273,12 @@ public class TableServerQuerySession extends Thread {
             throw new IllegalArgumentException("Invalid query near: " + s);
         }
         return result;
+    }
+
+    public static String exceptionAsString(Exception e) {
+        String[] trace = new String[e.getStackTrace().length];
+        int i = 0; for(StackTraceElement t:e.getStackTrace()) trace[i++] = t.toString();
+        return e.toString() + "\n"  + StringUtils.join(trace,"\n");
     }
 
 }

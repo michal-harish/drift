@@ -2,20 +2,19 @@ package net.imagini.aim;
 
 import java.io.IOException;
 
-import net.imagini.aim.AimTypeAbstract.AimDataType;
-import net.imagini.aim.cluster.AimTable;
+import net.imagini.aim.types.AimDataType;
 
 /**
  * @author mharis
  */
 public class AimQuery {
 
-    private AimTable table;
+    private AimPartition table;
     private int startSegment;
     private int endSegment;
 
 
-    public AimQuery(AimTable table) { 
+    public AimQuery(AimPartition table) { 
         this.table = table;
     }
 
@@ -33,7 +32,7 @@ public class AimQuery {
     }
 
     public AimFilter filter() {
-        return new AimFilter(table);
+        return new AimFilter(table.schema);
     }
 
     public Pipe select(final String... colNames) throws IOException {

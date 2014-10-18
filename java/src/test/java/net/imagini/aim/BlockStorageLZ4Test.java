@@ -3,11 +3,12 @@ package net.imagini.aim;
 import java.nio.ByteBuffer;
 
 import junit.framework.Assert;
-import net.imagini.aim.LZ4Buffer.LZ4Scanner;
+import net.imagini.aim.utils.BlockStorageLZ4;
+import net.imagini.aim.utils.Scanner;
 
 import org.junit.Test;
 
-public class LZ4BufferTest {
+public class BlockStorageLZ4Test {
 
     @Test
     public void testCompress2blocksAndDecompress() {
@@ -29,16 +30,16 @@ public class LZ4BufferTest {
                 "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
                 "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
                 "\n";
-        
-        LZ4Buffer instance = new LZ4Buffer();
+
+        BlockStorageLZ4 instance = new BlockStorageLZ4();
         instance.addBlock(ByteBuffer.wrap((value1).getBytes()));
         instance.addBlock(ByteBuffer.wrap((value2).getBytes()));
 
-        LZ4Scanner scanner = new LZ4Scanner(instance);
+        Scanner scanner = new Scanner(instance);
         byte b;
         String actualValue = "";
         while (!scanner.eof()) {
-            b = scanner.read();
+            b = scanner.readByte();
             actualValue += (char)b;
         }
         Assert.assertEquals(value1+value2, actualValue);

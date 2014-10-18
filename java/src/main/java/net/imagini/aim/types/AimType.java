@@ -1,6 +1,5 @@
-package net.imagini.aim;
+package net.imagini.aim.types;
 
-import net.imagini.aim.AimTypeAbstract.AimDataType;
 
 /**
  * AimType is any primitive or complex type while AimDataType is how it is represented

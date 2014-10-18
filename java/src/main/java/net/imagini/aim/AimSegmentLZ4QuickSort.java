@@ -10,8 +10,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.imagini.aim.Aim.SortOrder;
-import net.imagini.aim.AimTypeAbstract.AimDataType;
+import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.types.SortOrder;
+import net.imagini.aim.utils.AimUtils;
+import net.imagini.aim.utils.ByteKey;
 
 
 /**
@@ -20,13 +22,13 @@ import net.imagini.aim.AimTypeAbstract.AimDataType;
  * 
  * @author mharis
  */
-public class SegmentSorted extends Segment {
+public class AimSegmentLZ4QuickSort extends AimSegmentLZ4 {
 
     final private int sortColumn;
     private Map<ByteKey,List<ByteBuffer>> sortMap = new HashMap<>();
     private SortOrder sortOrder;
 
-    public SegmentSorted(AimSchema schema, int sortColumn, SortOrder sortOrder) throws IOException {
+    public AimSegmentLZ4QuickSort(AimSchema schema, int sortColumn, SortOrder sortOrder) throws IOException {
         super(schema);
         this.sortColumn = sortColumn;
         this.sortOrder = sortOrder;

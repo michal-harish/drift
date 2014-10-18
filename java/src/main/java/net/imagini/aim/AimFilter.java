@@ -6,8 +6,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import net.imagini.aim.LZ4Buffer.LZ4Scanner;
-import net.imagini.aim.cluster.AimTable;
+import net.imagini.aim.types.AimType;
+import net.imagini.aim.utils.Scanner;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -32,19 +32,19 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class AimFilter {
 
-    protected static AimFilter proxy(AimFilter root, AimTable table, String expression) {
-        AimFilter result = new AimFilterSimple(root, table, expression);
+    protected static AimFilter proxy(AimFilter root, AimSchema schema, String expression) {
+        AimFilter result = new AimFilterSimple(root, schema, expression);
         result.root = root;
         return result;
     }
 
-    public AimFilter(AimTable table) {
+    public AimFilter(AimSchema schema) {
         this(null, null);
         this.root = this;
-        this.table = table;
+        this.schema = schema;
     }
 
-    private AimTable table; //TODO remove table and use schema only
+    private AimSchema schema;
     protected AimFilter root;
     protected AimType type;
     protected AimFilter next;
@@ -97,20 +97,20 @@ public class AimFilter {
      * This is thread-safe and called in parallel for 
      * multiple segments.
      */
-    public boolean match(LZ4Scanner[] record) {
+    public boolean match(Scanner[] record) {
         return root.match(true, record);
     }
 
-    protected boolean match(boolean soFar, LZ4Scanner[] record) {
+    protected boolean match(boolean soFar, Scanner[] record) {
         return next == null ? soFar : next.match(soFar, record);
     }
 
-    protected boolean match( LZ4Scanner value, LZ4Scanner[] record) {
+    protected boolean match( Scanner value, Scanner[] record) {
         throw new IllegalAccessError(this.getClass().getSimpleName() + " cannot be matched against a value");
     }
 
     public AimFilter where(String expression) {
-        return next = AimFilter.proxy(root, root.table,expression);
+        return next = AimFilter.proxy(root, root.schema, expression);
     }
 
     public AimFilter equals(final String value) {
@@ -118,7 +118,7 @@ public class AimFilter {
         final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
         return next = new AimFilter(root,type) {
             @Override public String toString() { return "= " + type.wrap(value) + super.toString(); }
-            @Override protected boolean match(LZ4Scanner value, LZ4Scanner[] record) {
+            @Override protected boolean match(Scanner value, Scanner[] record) {
                 boolean match = super.match(value.compare(val,type.getDataType())==0, record);
                 return match;
             }
@@ -146,7 +146,7 @@ public class AimFilter {
     public AimFilter not() {
         return next = new AimFilter(root, type, next) {
             @Override public String toString() { return "NOT" + super.toString(); }
-            @Override protected boolean match(boolean soFar, LZ4Scanner[] record) {
+            @Override protected boolean match(boolean soFar, Scanner[] record) {
                 return !next.match(soFar, record);
             }
         };
@@ -157,7 +157,7 @@ public class AimFilter {
         final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
         return next = new AimFilter(root,type) {
             @Override public String toString() { return "CONTAINS " + type.wrap(value) + super.toString(); }
-            @Override protected boolean match(LZ4Scanner value,  LZ4Scanner[] record) {
+            @Override protected boolean match(Scanner value,  Scanner[] record) {
                 return super.match(value.contains(val,type.getDataType()), record);
             }
         };
@@ -168,7 +168,7 @@ public class AimFilter {
         final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
         return next = new AimFilter(root,type) {
             @Override public String toString() { return "> " + type.wrap(value) + super.toString(); }
-            @Override protected boolean match(LZ4Scanner value, LZ4Scanner[] data) {
+            @Override protected boolean match(Scanner value, Scanner[] data) {
                 return super.match(value.compare(val,type.getDataType()) > 0, data);
             }
         };
@@ -179,7 +179,7 @@ public class AimFilter {
         final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
         return next = new AimFilter(root,type) {
             @Override public String toString() { return "< " + type.wrap(value) +super.toString(); }
-            @Override protected boolean match(LZ4Scanner value, LZ4Scanner[] data) {
+            @Override protected boolean match(Scanner value, Scanner[] data) {
                 return super.match(value.compare(val,type.getDataType()) < 0, data);
             }
         };
@@ -193,7 +193,7 @@ public class AimFilter {
         }
         return next = new AimFilter(root,type) {
             @Override public String toString() { return "IN (" + StringUtils.join(values, ",") +")" + super.toString(); }
-            @Override protected boolean match(LZ4Scanner value, LZ4Scanner[] data) {
+            @Override protected boolean match(Scanner value, Scanner[] data) {
                 boolean localResult = false;
                 for(ByteBuffer val: vals) {
                     if (value.compare(val,type.getDataType())==0) {
@@ -209,8 +209,8 @@ public class AimFilter {
     public static class AimFilterSimple extends AimFilter {
         private int colIndex;
         private String colName;
-        public AimFilterSimple(AimFilter root, AimTable table, String field) {
-            super(root, table.def(field));
+        public AimFilterSimple(AimFilter root, AimSchema schema, String field) {
+            super(root, schema.field(field));
             this.colName = field;
         }
         @Override protected Set<String> getColumnSet(String... fields) {
@@ -226,7 +226,7 @@ public class AimFilter {
                 throw new IllegalArgumentException("Unknwon filter column " + colName);
             }
         }
-        @Override protected boolean match(boolean soFar, LZ4Scanner[] data) {
+        @Override protected boolean match(boolean soFar, Scanner[] data) {
             return next.match(data[colIndex], data);
         }
         @Override public String toString() {
@@ -238,10 +238,10 @@ public class AimFilter {
     abstract static public class AimFilterOp extends AimFilter {
         public AimFilterOp(AimFilter root, String expression) {
             super(root, null);
-            next = AimFilter.proxy(root, root.table,expression);
+            next = AimFilter.proxy(root, root.schema,expression);
         }
         @Override
-        protected boolean match(boolean soFar, LZ4Scanner[] data) {
+        protected boolean match(boolean soFar, Scanner[] data) {
             return compare(soFar, next.match(true, data));
         }
         abstract protected boolean compare(boolean a, boolean b);

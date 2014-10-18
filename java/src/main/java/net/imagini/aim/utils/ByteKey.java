@@ -1,4 +1,4 @@
-package net.imagini.aim;
+package net.imagini.aim.utils;
 
 import java.util.Arrays;
 

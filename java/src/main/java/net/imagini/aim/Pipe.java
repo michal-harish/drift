@@ -6,15 +6,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 
-import net.imagini.aim.AimTypeAbstract.AimDataType;
-
-import org.apache.commons.io.EndianUtils;
+import net.imagini.aim.types.Aim;
+import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.types.AimTypeBYTEARRAY;
+import net.imagini.aim.utils.AimUtils;
 
 /**
- * Pipe is a bi-directional stream
+ * Pipe is a bi-directional stream that is aimtype-aware
  * @author mharis
  */
 public class Pipe {
@@ -43,7 +43,7 @@ public class Pipe {
         else throw new IOException("Unsupported pipe type " + getClass().getSimpleName());
         out.write("AIM".getBytes());
         out.write(pipe_type);
-        write(out, protocol.id);
+        AimUtils.write(out, protocol.id);
         this.protocol = protocol;
         outputPipe = createOutputStreamWrapper(out);
     }
@@ -72,7 +72,7 @@ public class Pipe {
         AimUtils.read(in, pipe_type, 0, 1);
         byte[] proto = new byte[4];
         AimUtils.read(in, proto, 0, 4);
-        int pipe_protocol = AimUtils.getIntegerValue(proto);
+        int pipe_protocol = AimUtils.getIntValue(proto);
         Protocol protocol = Protocol.get(pipe_protocol);
         if (protocol == null) throw new IOException("Unknown protocol id " + pipe_protocol);
         switch(pipe_type[0]) {
@@ -103,6 +103,15 @@ public class Pipe {
         outputPipe = null;
     }
 
+//    public String[] fetchRecord(final AimSchema schema) throws IOException {
+//        String[] result = new String[schema.size()];
+//        int i = 0; for(AimType type: schema.def()) {
+//            byte[] value = this.read(type.getDataType());
+//            result[i++] = type.convert(value);
+//        }
+//        return result;
+//    }
+
     final public void write(boolean value) throws IOException {
         outputPipe.write(value ? 1 : 0);
     }
@@ -111,10 +120,10 @@ public class Pipe {
         outputPipe.write((int) value);
     }
     final public void write(int value) throws IOException {
-        write(outputPipe, value);
+        AimUtils.write(outputPipe, value);
     }
     final public void write(long value) throws IOException {
-        write(outputPipe, value);
+        AimUtils.write(outputPipe, value);
     }
 
     final public void write(byte[] bytes) throws IOException {
@@ -142,7 +151,7 @@ public class Pipe {
             buf.mark();
             AimUtils.read(inputPipe, buf, (offset  = 4));
             buf.reset();
-            size = AimUtils.getIntegerValue(buf);
+            size = AimUtils.getIntValue(buf);
             buf.position(buf.position()+4);
         } else {
             size = type.getSize();
@@ -161,7 +170,7 @@ public class Pipe {
         return (byte)read(Aim.BYTE)[0];
     }
     public Integer readInt() throws IOException {
-        return AimUtils.getIntegerValue(read(Aim.INT));
+        return AimUtils.getIntValue(read(Aim.INT));
     }
     public Long readLong() throws IOException {
         return AimUtils.getLongValue(read(Aim.LONG),0);
@@ -180,7 +189,7 @@ public class Pipe {
         byte[] result;
         if (type.equals(Aim.STRING)) {
             result = new byte[size + 4];
-            AimUtils.putIntegerValue(size,result,0);
+            AimUtils.putIntValue(size,result,0);
             AimUtils.read( in, result, 4 , size);
         } else {
             result = new byte[size];
@@ -188,39 +197,15 @@ public class Pipe {
         }
         return result;
     }
-    static public void write(OutputStream out, int v) throws IOException {
-        if (Aim.endian.equals(ByteOrder.LITTLE_ENDIAN)) {
-            EndianUtils.writeSwappedInteger(out,v);
-        } else {
-            out.write((v >>> 24) & 0xFF);
-            out.write((v >>> 16) & 0xFF);
-            out.write((v >>>  8) & 0xFF);
-            out.write((v >>>  0) & 0xFF);
-        }
-    }
 
-    static public void write(OutputStream out, long v) throws IOException {
-        if (Aim.endian.equals(ByteOrder.LITTLE_ENDIAN)) {
-            EndianUtils.writeSwappedLong(out,v);
-        } else {
-            out.write((byte)(v >>> 56));
-            out.write((byte)(v >>> 48));
-            out.write((byte)(v >>> 40));
-            out.write((byte)(v >>> 32));
-            out.write((byte)(v >>> 24));
-            out.write((byte)(v >>> 16));
-            out.write((byte)(v >>>  8));
-            out.write((byte)(v >>>  0));
-        }
-    }
 
     static private int readSize(InputStream in, AimDataType type) throws IOException {
         if (type.equals(Aim.STRING)) {
             byte[] b = new byte[4];
             AimUtils.read(in,b,0,4);
-            return AimUtils.getIntegerValue(b);
-        } else if (type instanceof Aim.BYTEARRAY) {
-            return ((Aim.BYTEARRAY)type).size;
+            return AimUtils.getIntValue(b);
+        } else if (type instanceof AimTypeBYTEARRAY) {
+            return ((AimTypeBYTEARRAY)type).size;
         } else {
             return type.getSize();
         }

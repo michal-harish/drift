@@ -11,6 +11,7 @@ import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.xxhash.XXHashFactory;
 
 public class PipeLZ4 extends Pipe {
+     final public static Integer LZ4_BLOCK_SIZE = 524280;
      private LZ4BlockOutputStream lz4OutputStream;
 
      public PipeLZ4(OutputStream out) throws IOException {
@@ -32,7 +33,7 @@ public class PipeLZ4 extends Pipe {
     @Override protected OutputStream createOutputStreamWrapper(OutputStream out) throws IOException {
          lz4OutputStream = new LZ4BlockOutputStream(
              out, 
-             Aim.LZ4_BLOCK_SIZE, 
+             LZ4_BLOCK_SIZE, 
              LZ4Factory.fastestInstance().highCompressor(),
              XXHashFactory.fastestInstance().newStreamingHash32(0x9747b28c).asChecksum(), 
              true

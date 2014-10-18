@@ -2,7 +2,7 @@ package net.imagini.aim;
 
 import java.nio.ByteBuffer;
 
-import net.imagini.aim.LZ4Buffer;
+import net.imagini.aim.utils.BlockStorageLZ4;
 
 public class MemoryTest {
 
@@ -10,14 +10,14 @@ public class MemoryTest {
         new MemoryTest();
     }
 
-    private LZ4Buffer[] buf = new LZ4Buffer[1000];
+    private BlockStorageLZ4[] buf = new BlockStorageLZ4[1000];
 
     public MemoryTest() throws InterruptedException {
         synchronized(this) {
             wait(10000);
         }
         for (int i=0; i< 100; i ++) {
-            LZ4Buffer l = new LZ4Buffer();
+            BlockStorageLZ4 l = new BlockStorageLZ4();
             l.addBlock(ByteBuffer.allocate(1000000));
             buf[i] = l;
         }

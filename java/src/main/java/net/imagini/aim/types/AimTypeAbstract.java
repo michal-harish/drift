@@ -1,11 +1,7 @@
-package net.imagini.aim;
+package net.imagini.aim.types;
 
 
 abstract public class AimTypeAbstract implements AimType {
-
-    public interface AimDataType extends AimType {
-        int getSize();
-    }
 
     @Override
     public boolean equals(Object object) {

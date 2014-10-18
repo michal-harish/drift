@@ -5,11 +5,11 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.net.InetAddress
 import java.net.Socket
-
-import net.imagini.aim.AimUtils
+import net.imagini.aim.utils.AimUtils
 import net.imagini.aim.PipeLZ4
 import net.imagini.aim.Protocol
 import net.imagini.aim.AimSchema
+import net.imagini.aim.Pipe
 
 object AimConsole extends AimConsole("localhost", 4000) with App {
 
@@ -56,6 +56,8 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
     }
   }
 
+  def fetchRecord(schema:AimSchema, pipe:Pipe): Array[String] = schema.fields.map(field => { field.convert(pipe.read(field.getDataType)) })
+
   private def processResponse = {
     while (pipe.readBool) {
       pipe.read match {
@@ -83,7 +85,7 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
           val schema = AimSchema.parseSchema(pipe.read)
           val filter = pipe.read
           while (pipe.readBool) {
-            val record = AimUtils.fetchRecord(schema, pipe)
+            val record = fetchRecord(schema, pipe)
             println(record.foldLeft("")(_+_+","))
           }
           val filteredCount = pipe.readLong
@@ -99,4 +101,5 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
       }
     }
   }
+
 }

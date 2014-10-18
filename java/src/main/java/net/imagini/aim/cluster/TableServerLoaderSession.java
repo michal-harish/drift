@@ -4,12 +4,13 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import net.imagini.aim.Aim;
+import net.imagini.aim.AimPartition;
 import net.imagini.aim.AimSegment;
-import net.imagini.aim.AimType;
 import net.imagini.aim.Pipe;
-import net.imagini.aim.Segment;
-import net.imagini.aim.SegmentSorted;
+import net.imagini.aim.AimSegmentLZ4;
+import net.imagini.aim.AimSegmentLZ4QuickSort;
+import net.imagini.aim.types.AimType;
+import net.imagini.aim.utils.AimUtils;
 
 /**
  * Non-Thread safe, the session is a single-threaded context
@@ -18,13 +19,18 @@ import net.imagini.aim.SegmentSorted;
  */
 public class TableServerLoaderSession extends Thread  {
 
+    /* Zero-copy support
+     * FIXME COLUMN_BUFFER_SIZE should be configurable for different schemas
+     */
+    final public static Integer COLUMN_BUFFER_SIZE = 2048; 
+
     private Pipe pipe;
-    private AimTable table;
+    private AimPartition table;
     private Integer count = 0;
     private ByteBuffer record;
     private AimSegment currentSegment;
 
-    public TableServerLoaderSession(AimTable table, Pipe pipe) throws IOException {
+    public TableServerLoaderSession(AimPartition table, Pipe pipe) throws IOException {
         this.pipe = pipe;
         this.table = table;
         String expectSchema = table.schema.toString();
@@ -32,8 +38,8 @@ public class TableServerLoaderSession extends Thread  {
         if (!actualSchema.equals(expectSchema)) {
             throw new IOException("Invalid loader schema, \nexpecting: " + expectSchema +"\nreceived:  " + actualSchema);
         }
-        record = ByteBuffer.allocate(Aim.COLUMN_BUFFER_SIZE * table.schema.size());
-        record.order(Aim.endian);
+        //TODO assuming fixed column size is not very clever but we need fixed record buffer
+        record = AimUtils.createBuffer(COLUMN_BUFFER_SIZE * table.schema.size());
     }
 
     @Override public void run() {
@@ -48,7 +54,7 @@ public class TableServerLoaderSession extends Thread  {
 //                        currentSegment.append(pipe.getInputStream());
                         //TODO read full record and check if it will fit within the buffer
                         record.clear();
-                        for(AimType type: table.schema.def()) {
+                        for(AimType type: table.schema.fields()) {
                             pipe.read(type.getDataType(), record);
                         }
                         record.flip();
@@ -91,9 +97,9 @@ public class TableServerLoaderSession extends Thread  {
     private void createNewSegmentIfNull() throws IOException {
         if (currentSegment == null) {
             if (table.keyColumn == null) {
-                currentSegment = new Segment(table.schema);
+                currentSegment = new AimSegmentLZ4(table.schema);
             } else {
-                currentSegment = new SegmentSorted(table.schema, table.keyColumn, table.sortOrder);
+                currentSegment = new AimSegmentLZ4QuickSort(table.schema, table.keyColumn, table.sortOrder);
             }
         }
     }

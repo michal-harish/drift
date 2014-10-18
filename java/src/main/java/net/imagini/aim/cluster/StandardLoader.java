@@ -11,10 +11,10 @@ import java.net.Socket;
 import java.util.zip.GZIPInputStream;
 
 import net.imagini.aim.AimSchema;
-import net.imagini.aim.AimType;
 import net.imagini.aim.Pipe;
 import net.imagini.aim.PipeLZ4;
 import net.imagini.aim.Protocol;
+import net.imagini.aim.types.AimType;
 
 public class StandardLoader {
 
@@ -40,7 +40,7 @@ public class StandardLoader {
     protected void storeLoadedRecord(byte[][] record) throws IOException {
         try {
             int i = 0;
-            for (AimType type : schema.def()) {
+            for (AimType type : schema.fields()) {
                 out.write(type.getDataType(), record[i]);
                 i++;
             }
@@ -135,7 +135,7 @@ public class StandardLoader {
                     try {
                         byte[][] record = createEmptyRecord();
                         int i = 0;
-                        for (AimType type : schema.def()) {
+                        for (AimType type : schema.fields()) {
                             String value = values[i];
                             record[i] = type.convert(value);
                             i++;

@@ -3,6 +3,7 @@ package net.imagini.aim;
 import java.util.TreeMap;
 
 import junit.framework.Assert;
+import net.imagini.aim.utils.ByteKey;
 
 import org.junit.Test;
 

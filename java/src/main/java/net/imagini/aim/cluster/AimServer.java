@@ -4,16 +4,17 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import net.imagini.aim.AimPartition;
 import net.imagini.aim.Pipe;
 
 
 public class AimServer extends Thread {
     ServerSocket controllerListener;
     private Thread controllerAcceptor;
-    private AimTable table;
+    private AimPartition table;
     public final int port;
 
-    public AimServer(AimTable table, int port) throws IOException {
+    public AimServer(AimPartition table, int port) throws IOException {
         this.table = table;
         this.port = port;
 

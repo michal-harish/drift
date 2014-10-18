@@ -1,4 +1,4 @@
-package net.imagini.aim.cluster;
+package net.imagini.aim;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -16,18 +16,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.imagini.aim.Aim;
-import net.imagini.aim.Aim.SortOrder;
-import net.imagini.aim.AimFilter;
-import net.imagini.aim.AimSchema;
-import net.imagini.aim.AimSegment;
-import net.imagini.aim.AimType;
-import net.imagini.aim.AimTypeAbstract.AimDataType;
-import net.imagini.aim.AimUtils;
-import net.imagini.aim.ByteKey;
-import net.imagini.aim.Pipe;
+import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.types.AimType;
+import net.imagini.aim.types.SortOrder;
+import net.imagini.aim.utils.AimUtils;
+import net.imagini.aim.utils.ByteKey;
 
-public class AimTable {
+public class AimPartition {
+    /**
+     * This is for ZeroCopy routines using pre-allocated buffers
+     */
+    final public static Integer COLUMN_BUFFER_SIZE = 2048; 
 
     public final AimSchema schema;
     public final Integer segmentSizeBytes;
@@ -41,7 +40,7 @@ public class AimTable {
 
     final ExecutorService executor = Executors.newFixedThreadPool(4);
 
-    public AimTable(AimSchema schema, Integer segmentSizeBytes, String keyField, SortOrder order) throws IOException {
+    public AimPartition(AimSchema schema, Integer segmentSizeBytes, String keyField, SortOrder order) throws IOException {
         this.keyColumn = schema.get(keyField);
         this.sortOrder = order;
         this.schema = schema;
@@ -66,7 +65,7 @@ public class AimTable {
 
     public AimType def(String colName) {
         checkColumn(colName);
-        return schema.def(colName);
+        return schema.field(colName);
     }
 
     public int getNumSegments() {
@@ -89,18 +88,6 @@ public class AimTable {
             throw new IllegalArgumentException("Column `"+colName+"` is not defined in schema "+ schema);
         }
     }
-
-//    /**
-//     * Open single segment.
-//     * @param segmentId
-//     * @return
-//     * @throws IOException
-//     */
-//    public AimSegment open(int segmentId) throws IOException {
-//        synchronized(segments) {
-//            return segmentId >=0 && segmentId < segments.size() ? segments.get(segmentId) : null;
-//        }
-//    }
 
     /**
      * Parallel count - currently hard-coded for 4-core processors, however once the table
@@ -318,7 +305,7 @@ public class AimTable {
             private int currentColumn = columnNames.length-1;
             private TreeMap<ByteKey,Integer> sortIndex = new TreeMap<>();
             final private Boolean[] hasData = new Boolean[segments.size()];
-            final private byte[][][] buffer = new byte[segments.size()][schema.size()][Aim.COLUMN_BUFFER_SIZE];
+            final private byte[][][] buffer = new byte[segments.size()][schema.size()][COLUMN_BUFFER_SIZE];
             @Override
             public void skip(AimDataType type) throws IOException {
                 if (++currentColumn == columnNames.length) {

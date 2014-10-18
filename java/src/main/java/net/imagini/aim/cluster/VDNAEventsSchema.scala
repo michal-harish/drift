@@ -1,10 +1,12 @@
 package net.imagini.aim.cluster
 
-import net.imagini.aim.AimSchema
-import scala.collection.JavaConverters._
 import java.util.LinkedHashMap
-import net.imagini.aim.AimType
-import net.imagini.aim.Aim
+
+import scala.collection.JavaConverters.mapAsJavaMapConverter
+
+import net.imagini.aim.AimSchema
+import net.imagini.aim.types.Aim
+import net.imagini.aim.types.AimType
 
 object VDNAEventsSchema extends AimSchema(new LinkedHashMap(Map[String, AimType](
 

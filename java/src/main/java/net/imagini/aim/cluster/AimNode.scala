@@ -1,8 +1,9 @@
 package net.imagini.aim.cluster
 
-import scala.collection.JavaConverters._
+import net.imagini.aim.types.SortOrder
+import net.imagini.aim.AimPartition;
+import net.imagini.aim.AimPartition ;
 import net.imagini.aim.AimSchema
-import net.imagini.aim.Aim.SortOrder
 
 object AimNode extends App {
 
@@ -28,8 +29,8 @@ object AimNode extends App {
 
   val key = schema.get.name(0)
   val sortOrder = SortOrder.ASC
-  val table = new AimTable(schema.get, segmentSize, key, sortOrder)
-  new AimServer(table, port).start
+  val partition = new AimPartition(schema.get, segmentSize, key, sortOrder)
+  new AimServer(partition, port).start
 
   new StandardLoader(schema.get, "localhost", port, separator, filename, gzip).processStandardInput
 

@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import net.imagini.aim.AimTypeAbstract.AimDataType;
+import net.imagini.aim.types.Aim;
+import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.types.AimType;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -80,11 +82,11 @@ public class AimSchema {
         return def.get(col);
     }
 
-    public AimType def(String colName) {
+    public AimType field(String colName) {
         return def.get(colIndex.get(colName));
     }
 
-    public AimType[] def() {
+    public AimType[] fields() {
         return def.toArray(new AimType[def.size()]);
     }
 

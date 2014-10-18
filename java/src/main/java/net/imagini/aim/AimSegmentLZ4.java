@@ -12,19 +12,25 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.imagini.aim.AimTypeAbstract.AimDataType;
-import net.imagini.aim.LZ4Buffer.LZ4Scanner;
+import net.imagini.aim.types.Aim;
+import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.types.AimType;
+import net.imagini.aim.utils.AimUtils;
+import net.imagini.aim.utils.BlockStorage;
+import net.imagini.aim.utils.BlockStorageLZ4;
+import net.imagini.aim.utils.Scanner;
 
 /**
  * zero-copy open methods, i.e. multiple stream readers should be able to operate without 
  * doubling the memory foot-print.
  * @author mharis
  */
-public class Segment implements AimSegment {
+public class AimSegmentLZ4 implements AimSegment {
 
+    final public static Integer LZ4_BLOCK_SIZE = 524280;
     final protected AimSchema schema;
     protected AtomicLong originalSize = new AtomicLong(0);
-    private LinkedHashMap<Integer,LZ4Buffer> columnar = new LinkedHashMap<>();
+    private LinkedHashMap<Integer,BlockStorage> columnar = new LinkedHashMap<>();
     private LinkedHashMap<Integer,ByteBuffer> writers = null;
     private AtomicLong count = new AtomicLong(0);
     private boolean writable;
@@ -34,13 +40,13 @@ public class Segment implements AimSegment {
      * Append-only segment
      * @throws IOException 
      */
-    public Segment(AimSchema schema) throws IOException {
+    public AimSegmentLZ4(AimSchema schema) throws IOException {
         this.schema = schema;
         this.writable = true;
         writers = new LinkedHashMap<>();
         for(int col=0; col < schema.size(); col++) {
-            columnar.put(col, new LZ4Buffer());
-            writers.put(col, ByteBuffer.allocate(Aim.LZ4_BLOCK_SIZE));
+            columnar.put(col, new BlockStorageLZ4());
+            writers.put(col, ByteBuffer.allocate(LZ4_BLOCK_SIZE));
         }
     }
 
@@ -62,7 +68,7 @@ public class Segment implements AimSegment {
             for(int col = 0; col < schema.size() ; col++) {
                 AimDataType type = schema.dataType(col);
                 ByteBuffer block = writers.get(col);
-                if (block.position() + record.limit() > Aim.LZ4_BLOCK_SIZE) {
+                if (block.position() + record.limit() > LZ4_BLOCK_SIZE) {
                     block.flip();
                     size.addAndGet(columnar.get(col).addBlock(block));
                     block.clear();
@@ -136,15 +142,15 @@ public class Segment implements AimSegment {
             subSchema = schema.subset(schema.name(0));
         }
 
-        final LZ4Scanner[] scanners = new LZ4Scanner[subSchema.size()];
+        final Scanner[] scanners = new Scanner[subSchema.size()];
         int i = 0; for(String colName: subSchema.names()) {
-            scanners[i++] = new LZ4Scanner(columnar.get(schema.get(colName)));
+            scanners[i++] = new Scanner(columnar.get(schema.get(colName)));
         }
 
         long count = 0;
         try {
             for(int c=0; c < subSchema.size(); c++) {
-                LZ4Scanner scanner = scanners[c];
+                Scanner scanner = scanners[c];
                 if (scanner.eof()) {
                     throw new EOFException();
                 }
@@ -155,7 +161,7 @@ public class Segment implements AimSegment {
                 }
                 for(int c=0; c< subSchema.size(); c++) {
                     AimType type = subSchema.get(c);
-                    LZ4Scanner stream = scanners[c];
+                    Scanner stream = scanners[c];
                     int skipLength;
                     if (type.equals(Aim.STRING)) {
                         skipLength = 4 + stream.asIntValue();
@@ -181,7 +187,7 @@ public class Segment implements AimSegment {
      * Not Thread-safe 
      * Filtered, Aggregate Input stream for all the selected columns in this segment.
      */
-    @Override final public InputStream select(final AimFilter filter, final String sortColumn, final String[] columns) throws IOException {
+    @Override final public InputStream select(final AimFilter filter, final String keyField, final String[] columns) throws IOException {
         try {
             checkWritable(false);
         } catch (IllegalAccessException e) {
@@ -190,7 +196,7 @@ public class Segment implements AimSegment {
         Set<String> totalColumnSet = new HashSet<String>(Arrays.asList(columns));
         if (filter != null) totalColumnSet.addAll(Arrays.asList(filter.getColumns()));
 
-        totalColumnSet.add(sortColumn);
+        totalColumnSet.add(keyField);
         final AimSchema subSchema = schema.subset(totalColumnSet.toArray(new String[totalColumnSet.size()]));
         final List<Integer> allColumns = new LinkedList<Integer>(); 
         for(String colName: subSchema.names()) allColumns.add(subSchema.get(colName));
@@ -200,9 +206,9 @@ public class Segment implements AimSegment {
 
         if (filter != null) filter.updateFormula(subSchema.names());
 
-        final LZ4Scanner[] scanners = new LZ4Scanner[subSchema.size()];
+        final Scanner[] scanners = new Scanner[subSchema.size()];
         int i = 0; for(String colName: subSchema.names()) {
-            scanners[i++] = new LZ4Scanner(columnar.get(schema.get(colName)));
+            scanners[i++] = new Scanner(columnar.get(schema.get(colName)));
         }
         return new InputStream() {
 
@@ -220,11 +226,11 @@ public class Segment implements AimSegment {
 
             @Override public int read() throws IOException {
                 read++; 
-                return checkNextByte() ? currentSelectScanner.read() & 0xff : -1;
+                return checkNextByte() ? currentSelectScanner.readByte() & 0xff : -1;
             }
 
             private int currentSelectColumn = -1;
-            private LZ4Scanner currentSelectScanner = null;
+            private Scanner currentSelectScanner = null;
             private int currentReadLength = 0;
             private int read = -1;
             private boolean checkNextByte() throws IOException {
@@ -247,7 +253,7 @@ public class Segment implements AimSegment {
                     currentSelectScanner = scanners[selectColumns.get(currentSelectColumn)];
                     while(true) {
                         for(int c=0; c < subSchema.size(); c++) {
-                            LZ4Scanner scanner = scanners[c];
+                            Scanner scanner = scanners[c];
                             if (scanner.eof()) {
                                 return false;
                             }
