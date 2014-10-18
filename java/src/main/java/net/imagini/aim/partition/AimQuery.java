@@ -1,7 +1,9 @@
-package net.imagini.aim;
+package net.imagini.aim.partition;
 
 import java.io.IOException;
 
+import net.imagini.aim.Pipe;
+import net.imagini.aim.segment.AimFilter;
 import net.imagini.aim.types.AimDataType;
 
 /**
@@ -9,17 +11,17 @@ import net.imagini.aim.types.AimDataType;
  */
 public class AimQuery {
 
-    private AimPartition table;
+    private AimPartition partition;
     private int startSegment;
     private int endSegment;
 
 
     public AimQuery(AimPartition table) { 
-        this.table = table;
+        this.partition = table;
     }
 
     public void range(Integer segmentRange) {
-        int segmentCount = table.getNumSegments();
+        int segmentCount = partition.getNumSegments();
         if (segmentRange == null) { //all segments
             startSegment = 0;
             endSegment = segmentCount-1;
@@ -32,11 +34,11 @@ public class AimQuery {
     }
 
     public AimFilter filter() {
-        return new AimFilter(table.schema);
+        return new AimFilter(partition.schema);
     }
 
     public Pipe select(final String... colNames) throws IOException {
-        final Pipe range = table.select(startSegment, endSegment, null, colNames);
+        final Pipe range = partition.select(startSegment, endSegment, null, colNames);
         return new Pipe() {
             private int fieldIndex = -1;
             @Override public byte[] read(AimDataType type) throws IOException {
@@ -47,11 +49,11 @@ public class AimQuery {
     }
 
     public Pipe select(AimFilter filter, final String... colNames) throws IOException {
-        return table.select(startSegment, endSegment, filter, colNames);
+        return partition.select(startSegment, endSegment, filter, colNames);
     }
 
     public Long count(AimFilter filter) throws IOException {
-        return table.count(startSegment, endSegment, filter); 
+        return partition.count(startSegment, endSegment, filter); 
     }
 
 }

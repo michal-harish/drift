@@ -1,27 +1,26 @@
-package net.imagini.aim.cluster;
+package net.imagini.aim.partition;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import net.imagini.aim.AimPartition;
 import net.imagini.aim.Pipe;
 
 
-public class AimServer extends Thread {
+public class AimPartitionServer extends Thread {
     ServerSocket controllerListener;
     private Thread controllerAcceptor;
-    private AimPartition table;
+    private AimPartition partition;
     public final int port;
 
-    public AimServer(AimPartition table, int port) throws IOException {
-        this.table = table;
+    public AimPartitionServer(AimPartition partition, int port) throws IOException {
+        this.partition = partition;
         this.port = port;
 
         controllerListener = new ServerSocket(port);
         controllerAcceptor = new Thread() {
             @Override public void run() {
-                System.out.println("Aim Server accepting connections on port " + AimServer.this.port + " " + AimServer.this.table.schema);
+                System.out.println("Aim Partition Server accepting connections on port " + AimPartitionServer.this.port + " " + AimPartitionServer.this.partition.schema);
                     while(true) {
                         Socket socket;
                         try {
@@ -38,12 +37,12 @@ public class AimServer extends Thread {
                             System.out.println(pipe.protocol + " connection from " + socket.getRemoteSocketAddress().toString());
                             switch(pipe.protocol) {
                                 //TODO case BINARY: new ReaderThread(); break;
-                                case LOADER: new TableServerLoaderSession(AimServer.this.table,pipe).start(); break;
-                                case QUERY: new TableServerQuerySession(AimServer.this.table,pipe).start(); break;
+                                case LOADER: new AimPartitionServerLoaderSession(AimPartitionServer.this.partition,pipe).start(); break;
+                                case QUERY: new AimPartitionServerQuerySession(AimPartitionServer.this.partition,pipe).start(); break;
                                 default: System.out.println("Unsupported protocol request " + pipe.protocol);
                             }
                         } catch (IOException e) {
-                            System.out.println("Aim Server at port "+AimServer.this.port +" failed to establish client connection: " + e.getMessage());
+                            System.out.println("Aim Server at port "+AimPartitionServer.this.port +" failed to establish client connection: " + e.getMessage());
                             continue;
                         }
                     }
@@ -59,7 +58,7 @@ public class AimServer extends Thread {
             controllerAcceptor.interrupt();
         } finally {
             close();
-            System.out.println("Aim Server at port "+AimServer.this.port + " shut down.");
+            System.out.println("Aim Server at port "+AimPartitionServer.this.port + " shut down.");
         }
     }
 

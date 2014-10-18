@@ -12,6 +12,7 @@ case class AimResult(val schema: AimSchema, val pipe: Pipe) {
   var filteredCount = 0L
   var count = 0L
   var error: Option[String] = None
+  def close = pipe.close
   def hasNext: Boolean = {
     pipe.readBool match {
       case true ⇒ true
@@ -20,7 +21,6 @@ case class AimResult(val schema: AimSchema, val pipe: Pipe) {
         count = pipe.readLong
         val error = pipe.read
         pipe.readBool
-        pipe.close
         this.error = if (error != null) Some(error) else None
         false
       }
@@ -33,15 +33,21 @@ case class AimResult(val schema: AimSchema, val pipe: Pipe) {
 
 class AimClient(val host: String, val port: Int) {
 
-  def query(query: String):Any = {
-    val socket = new Socket(InetAddress.getByName(host), port)
-    val pipe = new PipeLZ4(socket, Protocol.QUERY)
+  private var socket = new Socket(InetAddress.getByName(host), port)
+  private var pipe = new PipeLZ4(socket, Protocol.QUERY)
+  private def reconnect = {
+      socket.close
+      socket = new Socket(InetAddress.getByName(host), port)
+      pipe = new PipeLZ4(socket, Protocol.QUERY)
+  }
+
+  def close = pipe.close
+
+  def query(query: String): Any = {
     pipe.write(query).flush
     processResponse(pipe)
   }
   def select(filter: String = ""): Option[AimResult] = {
-    val socket = new Socket(InetAddress.getByName(host), port)
-    val pipe = new PipeLZ4(socket, Protocol.QUERY)
     if (!filter.isEmpty) {
       pipe.write(filter).flush
       processResponse(pipe) match {
@@ -59,10 +65,13 @@ class AimClient(val host: String, val port: Int) {
 
   private def processResponse(pipe: Pipe): Any = {
     if (!pipe.readBool) {
-      throw new Exception("Server rejected the query")
+      "Empty response"
     } else {
       pipe.read match {
-        case "ERROR" ⇒ throw new Exception(pipe.read());
+        case "ERROR" ⇒ {
+          reconnect
+          throw new Exception("AIM SERVER ERROR: " + pipe.read());
+        }
         case "STATS" ⇒ {
           val schema = pipe.read
           val numRecords = pipe.readLong
@@ -90,6 +99,7 @@ class AimClient(val host: String, val port: Int) {
           new AimResult(schema, pipe)
         }
         case _ ⇒ {
+          reconnect
           throw new IOException("Stream is curroupt, closing..")
         }
       }

@@ -1,4 +1,4 @@
-package net.imagini.aim;
+package net.imagini.aim.partition;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -16,6 +16,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import net.imagini.aim.Pipe;
+import net.imagini.aim.segment.AimFilter;
 import net.imagini.aim.segment.AimSegment;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;

@@ -1,9 +1,8 @@
-package net.imagini.aim.cluster;
+package net.imagini.aim.partition;
 
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -14,22 +13,20 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.imagini.aim.AimFilter;
-import net.imagini.aim.AimPartition;
-import net.imagini.aim.AimQuery;
 import net.imagini.aim.Pipe;
+import net.imagini.aim.segment.AimFilter;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class TableServerQuerySession extends Thread {
+public class AimPartitionServerQuerySession extends Thread {
 
     private Pipe pipe;
     private AimPartition table;
 
-    public TableServerQuerySession(AimPartition table, Pipe pipe) throws IOException {
+    public AimPartitionServerQuerySession(AimPartition table, Pipe pipe) throws IOException {
         this.pipe = pipe;
         this.table = table;
     }
@@ -41,13 +38,6 @@ public class TableServerQuerySession extends Thread {
             AimQuery query = new AimQuery(table);
             Integer range = null;
             AimFilter filter = null;
-            //filter = query.filter();
-            //filter.where("column").in("event","cc_urn");
-                //.and("user_uid").equals("ef056180-22a8-48aa-a164-ba64f6bfda13")
-                //.and("user_uid").equals("fde89f74-f6cd-4783-a8e0-c90e56f4ca0a")
-                //.and("api_key").contains("mirror")
-                //.and("timestamp").equals("1374541507")
-                ;
             while(true) {
                 String command;
                 Queue<String> cmd;
@@ -56,19 +46,14 @@ public class TableServerQuerySession extends Thread {
                     cmd = tokenize(input);
                     command = cmd.poll().toUpperCase();
                     switch(command.toUpperCase()) {
-                        default: 
-                            pipe.write(true);
-                            pipe.write("ERROR");
-                            pipe.write("Unknown query command " + command); 
-                            break;
+
+                        default: break;
 
                         case "STATS": handleStats(cmd); break;
-                        case "SCAN": handleScan(cmd); break;
 
                         case "ALL": range = null; filter = null; break;
                         case "LAST": range = table.getNumSegments()-1; filter = null; break;
                         case "RANGE": handleRangeQuery(cmd,query); filter = null; break;
-
                         case "FILTER": 
                             if (cmd.size()>0) {
                                 filter = handleFilterQuery(range, query, schema, cmd); 
@@ -161,25 +146,6 @@ public class TableServerQuerySession extends Thread {
     private AimQuery handleRangeQuery(Queue<String> cmd, AimQuery query) {
         // TODO Auto-generated method stub
         return null;
-    }
-
-    private void handleScan(Queue<String> cmd) throws IOException {
-        AimSchema schema = table.schema.subset(Arrays.asList("timestamp","api_key","user_quizzed","user_uid"));
-        long t = System.currentTimeMillis();
-        int n = table.getNumSegments();
-        Pipe scanner = table.select(0, n-1, null, schema.names());
-        System.out.println("Open ms: " + (System.currentTimeMillis()-t));
-        long count = 0;
-        try {
-            while(true) {
-                for (AimType type : schema.fields()) {
-                    scanner.read(type.getDataType());
-                }
-                count++;
-            }
-        } catch (EOFException e) {
-            System.out.println("Segment scanned records: "+count);
-        }
     }
 
     private void executeCount(

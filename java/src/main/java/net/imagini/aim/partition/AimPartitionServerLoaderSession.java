@@ -1,10 +1,9 @@
-package net.imagini.aim.cluster;
+package net.imagini.aim.partition;
 
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import net.imagini.aim.AimPartition;
 import net.imagini.aim.Pipe;
 import net.imagini.aim.segment.AimSegment;
 import net.imagini.aim.segment.AimSegmentQuickSort;
@@ -18,7 +17,7 @@ import net.imagini.aim.utils.BlockStorageLZ4;
  * @author mharis
  *
  */
-public class TableServerLoaderSession extends Thread  {
+public class AimPartitionServerLoaderSession extends Thread  {
 
     /* Zero-copy support
      * FIXME COLUMN_BUFFER_SIZE should be configurable for different schemas
@@ -26,25 +25,25 @@ public class TableServerLoaderSession extends Thread  {
     final public static Integer COLUMN_BUFFER_SIZE = 2048; 
 
     private Pipe pipe;
-    private AimPartition table;
+    private AimPartition partition;
     private Integer count = 0;
     private ByteBuffer record;
     private AimSegment currentSegment;
 
-    public TableServerLoaderSession(AimPartition table, Pipe pipe) throws IOException {
+    public AimPartitionServerLoaderSession(AimPartition partition, Pipe pipe) throws IOException {
         this.pipe = pipe;
-        this.table = table;
-        String expectSchema = table.schema.toString();
+        this.partition = partition;
+        String expectSchema = partition.schema.toString();
         String actualSchema = pipe.read();
         if (!actualSchema.equals(expectSchema)) {
             throw new IOException("Invalid loader schema, \nexpecting: " + expectSchema +"\nreceived:  " + actualSchema);
         }
         //TODO assuming fixed column size is not very clever but we need fixed record buffer
-        record = AimUtils.createBuffer(COLUMN_BUFFER_SIZE * table.schema.size());
+        record = AimUtils.createBuffer(COLUMN_BUFFER_SIZE * partition.schema.size());
     }
 
     @Override public void run() {
-        System.out.println("Loading into " + table);
+        System.out.println("Loading into " + partition);
         try {
             long t = System.currentTimeMillis();
             try {
@@ -55,13 +54,13 @@ public class TableServerLoaderSession extends Thread  {
 //                        currentSegment.append(pipe.getInputStream());
                         //TODO read full record and check if it will fit within the buffer
                         record.clear();
-                        for(AimType type: table.schema.fields()) {
+                        for(AimType type: partition.schema.fields()) {
                             pipe.read(type.getDataType(), record);
                         }
                         record.flip();
                         currentSegment.append(record);
                         count++;
-                        if (currentSegment.getOriginalSize() > table.segmentSizeBytes) {
+                        if (currentSegment.getOriginalSize() > partition.segmentSizeBytes) {
                             addCurrentSegment();
                         }
                     } catch (EOFException e) {
@@ -77,7 +76,7 @@ public class TableServerLoaderSession extends Thread  {
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {
-            System.out.println("Loading into " + table + " finished");
+            System.out.println("Loading into " + partition + " finished");
             try { pipe.close(); } catch (IOException e) { }
         }
     }
@@ -86,7 +85,7 @@ public class TableServerLoaderSession extends Thread  {
         try {
             currentSegment.close();
             if (currentSegment.getOriginalSize()>0) {
-                table.add(currentSegment);
+                partition.add(currentSegment);
                 currentSegment = null;
             }
             createNewSegmentIfNull();
@@ -97,10 +96,10 @@ public class TableServerLoaderSession extends Thread  {
 
     private void createNewSegmentIfNull() throws IOException, InstantiationException, IllegalAccessException {
         if (currentSegment == null) {
-            if (table.keyColumn == null) {
-                currentSegment = new AimSegmentUnsorted(table.schema, BlockStorageLZ4.class);
+            if (partition.keyColumn == null) {
+                currentSegment = new AimSegmentUnsorted(partition.schema, BlockStorageLZ4.class);
             } else {
-                currentSegment = new AimSegmentQuickSort(table.schema, table.keyColumn, table.sortOrder, BlockStorageLZ4.class);
+                currentSegment = new AimSegmentQuickSort(partition.schema, partition.keyColumn, partition.sortOrder, BlockStorageLZ4.class);
             }
         }
     }

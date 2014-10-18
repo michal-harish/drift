@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import net.imagini.aim.AimFilter;
-
 public interface AimSegment {
 
     void append(ByteBuffer record) throws IOException;
