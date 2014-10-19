@@ -12,13 +12,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
+import net.imagini.aim.tools.PipeUtils;
+import net.imagini.aim.tools.Scanner;
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
-import net.imagini.aim.utils.AimUtils;
 import net.imagini.aim.utils.BlockStorage;
-import net.imagini.aim.utils.Scanner;
 
 /**
  * zero-copy open methods, i.e. multiple stream readers should be able to operate without 
@@ -79,7 +79,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                     block.clear();
                 }
                 originalSize.addAndGet(
-                    AimUtils.copy(record, type, block)
+                    PipeUtils.copy(record, type, block)
                 );
             }
             count.incrementAndGet();

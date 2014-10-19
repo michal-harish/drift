@@ -6,15 +6,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
-import net.imagini.aim.types.Aim;
-import net.imagini.aim.types.AimDataType;
 import org.apache.commons.io.EndianUtils;
 
 /**
  * 1. byte array utils 2. inputstream utils 3. ByteBuffer utils
  */
-public class AimUtils {
+public class ByteUtils {
 
     /**
      * We need to use BIG_ENDIAN because the pro(s) are favourable to our
@@ -95,62 +92,6 @@ public class AimUtils {
         }
     }
 
-    public static int write(AimDataType type, byte[] value, OutputStream out)
-            throws IOException {
-        int size = 0;
-        if (type.equals(Aim.STRING)) {
-            size = getIntValue(value);
-            out.write(value, 0, size + 4);
-            return size + 4;
-        } else {
-            size = type.getSize();
-        }
-        out.write(value, 0, size);
-        return size;
-    }
-
-    public static long skip(InputStream in, AimDataType type)
-            throws IOException {
-        int size;
-        if (type.equals(Aim.STRING)) {
-            byte[] buf = new byte[4];
-            read(in, buf, 0, 4);
-            size = getIntValue(buf);
-        } else {
-            size = type.getSize();
-        }
-        return in.skip(size);
-    }
-
-    private static byte[] intBuffer = new byte[4];
-
-    // FIXME sizeOf is non-thread-safe because of intBuffer;
-    public static int sizeOf(InputStream in, AimDataType type)
-            throws IOException {
-        int size;
-        if (type.equals(Aim.STRING)) {
-            read(in, intBuffer, 0, 4);
-            size = getIntValue(intBuffer);
-        } else {
-            size = type.getSize();
-        }
-        return size;
-    }
-
-    static public int read(InputStream in, AimDataType type, byte[] buf)
-            throws IOException {
-        int size;
-        int offset = 0;
-        if (type.equals(Aim.STRING)) {
-            read(in, buf, 0, (offset = 4));
-            size = getIntValue(buf);
-        } else {
-            size = type.getSize();
-        }
-        read(in, buf, offset, size);
-        return offset + size;
-    }
-
     static public void read(InputStream in, byte[] buf, int offset, int len)
             throws IOException {
         int totalRead = 0;
@@ -196,24 +137,6 @@ public class AimUtils {
         }
     }
 
-    public static long copy(ByteBuffer src, AimDataType type, ByteBuffer dest) {
-        int size;
-        int head = 0;
-        if (type.equals(Aim.STRING)) {
-            size = src.getInt();
-            dest.putInt(size);
-            head = 4;
-        } else {
-            size = type.getSize();
-        }
-        // FIXME array buffer specific code should be done with slice instead
-        int o = dest.arrayOffset();
-        o += dest.position();
-        src.get(dest.array(), o, size);
-        dest.position(dest.position() + size);
-        return head + size;
-    }
-
     public static ByteBuffer createBuffer(int size) {
         ByteBuffer record = ByteBuffer.allocate(size);
         record.order(ENDIAN);
@@ -243,34 +166,5 @@ public class AimUtils {
         return bb;
     }
 
-    public static long skip(ByteBuffer in, AimDataType type) {
-        int size = sizeOf(in, type);
-        in.position(in.position() + size);
-        return size;
-    }
-
-    public static int sizeOf(ByteBuffer in, AimDataType type) {
-        int size;
-        if (type.equals(Aim.STRING)) {
-            size = getIntValue(in) + 4;
-        } else {
-            size = type.getSize();
-        }
-        return size;
-    }
-
-    static public int write(AimDataType type, byte[] value, ByteBuffer out)
-            throws IOException {
-        int size = 0;
-        if (type.equals(Aim.STRING)) {
-            size = getIntValue(value);
-            out.put(value, 0, size + 4);
-            return size + 4;
-        } else {
-            size = type.getSize();
-        }
-        out.put(value, 0, size);
-        return size;
-    }
 
 }

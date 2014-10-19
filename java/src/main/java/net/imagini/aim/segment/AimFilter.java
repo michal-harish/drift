@@ -6,10 +6,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import net.imagini.aim.Pipe;
+import net.imagini.aim.tools.Pipe;
+import net.imagini.aim.tools.Scanner;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
-import net.imagini.aim.utils.Scanner;
 
 import org.apache.commons.lang3.StringUtils;
 

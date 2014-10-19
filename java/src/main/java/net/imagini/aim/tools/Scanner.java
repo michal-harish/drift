@@ -1,9 +1,11 @@
-package net.imagini.aim.utils;
+package net.imagini.aim.tools;
 
 import java.nio.ByteBuffer;
 
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.utils.BlockStorage;
+import net.imagini.aim.utils.ByteUtils;
 
 //TODO rewrite in scala
 public class Scanner {
@@ -55,7 +57,7 @@ public class Scanner {
      * Reads an integer at the current position but does not advance
      */
     public int asIntValue() {
-        return AimUtils.getIntValue(zoom);
+        return ByteUtils.getIntValue(zoom);
     }
 
     /**
@@ -76,9 +78,9 @@ public class Scanner {
         int j = 0;
         int n;
         if (type.equals(Aim.STRING)) {
-            ni = AimUtils.getIntValue(zoom) + 4;
+            ni = ByteUtils.getIntValue(zoom) + 4;
             i += 4;
-            nj = AimUtils.getIntValue(value) + 4;
+            nj = ByteUtils.getIntValue(value) + 4;
             j += 4;
             n = Math.min(ni, nj);
         } else {
@@ -105,9 +107,9 @@ public class Scanner {
         int nj;
         int j = 0;
         if (type.equals(Aim.STRING)) {
-            ni = AimUtils.getIntValue(zoom) + 4;
+            ni = ByteUtils.getIntValue(zoom) + 4;
             i += 4;
-            nj = AimUtils.getIntValue(value) + 4;
+            nj = ByteUtils.getIntValue(value) + 4;
             j += 4;
         } else {
             ni = nj = type.getSize();

@@ -2,7 +2,7 @@ package net.imagini.aim.types;
 
 import java.nio.ByteBuffer;
 
-import net.imagini.aim.utils.AimUtils;
+import net.imagini.aim.utils.ByteUtils;
 
 public enum Aim implements AimDataType {
 
@@ -45,11 +45,11 @@ public enum Aim implements AimDataType {
             bb = ByteBuffer.allocate(1);
             bb.put(Byte.valueOf(value));
         } else if (this.equals(Aim.INT)) {
-            bb = AimUtils.createIntBuffer(Integer.valueOf(value));
+            bb = ByteUtils.createIntBuffer(Integer.valueOf(value));
         } else if (this.equals(Aim.LONG)) {
-            bb = AimUtils.createLongBuffer(Long.valueOf(value));
+            bb = ByteUtils.createLongBuffer(Long.valueOf(value));
         } else if (this.equals(Aim.STRING)) {
-            bb = AimUtils.createStringBuffer(value);
+            bb = ByteUtils.createStringBuffer(value);
         } else {
             throw new IllegalArgumentException("Unknown data type " + this.getClass().getSimpleName());
         }
@@ -63,11 +63,11 @@ public enum Aim implements AimDataType {
         } else if (this.equals(Aim.BYTE)) {
             return String.valueOf(value[0]);
         } else if (this.equals(Aim.INT)) {
-            return String.valueOf(AimUtils.getIntValue(value));
+            return String.valueOf(ByteUtils.getIntValue(value));
         } else if (this.equals(Aim.LONG)) {
-            return String.valueOf(AimUtils.getLongValue(value,0));
+            return String.valueOf(ByteUtils.getLongValue(value,0));
         } else if (this.equals(Aim.STRING)) {
-            int size = AimUtils.getIntValue(value);
+            int size = ByteUtils.getIntValue(value);
             return new String(value, 4, size);
         } else {
             throw new IllegalArgumentException("Unknown type " + this);

@@ -2,8 +2,8 @@ package net.imagini.aim.partition;
 
 import java.io.IOException;
 
-import net.imagini.aim.Pipe;
 import net.imagini.aim.segment.AimFilter;
+import net.imagini.aim.tools.Pipe;
 import net.imagini.aim.types.AimDataType;
 
 /**

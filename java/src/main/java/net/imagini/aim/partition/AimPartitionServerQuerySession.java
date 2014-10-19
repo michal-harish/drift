@@ -13,8 +13,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.imagini.aim.Pipe;
 import net.imagini.aim.segment.AimFilter;
+import net.imagini.aim.tools.Pipe;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;

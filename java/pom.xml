@@ -136,14 +136,14 @@
                 </goals>
                 <configuration>
                   <shadedArtifactAttached>false</shadedArtifactAttached>
-                  <finalName>aim-node</finalName>
+                  <finalName>aim-partition</finalName>
                   <transformers>
                     <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                       <resource>reference.conf</resource>
                     </transformer>
                     <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                       <manifestEntries>
-                        <Main-Class>net.imagini.aim.cluster.AimNode</Main-Class>
+                        <Main-Class>net.imagini.aim.partition.AimPartitionServer</Main-Class>
                       </manifestEntries>
                     </transformer>
                   </transformers>

@@ -4,12 +4,12 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import net.imagini.aim.Pipe;
 import net.imagini.aim.segment.AimSegment;
 import net.imagini.aim.segment.AimSegmentQuickSort;
 import net.imagini.aim.segment.AimSegmentUnsorted;
+import net.imagini.aim.tools.Pipe;
 import net.imagini.aim.types.AimType;
-import net.imagini.aim.utils.AimUtils;
+import net.imagini.aim.utils.ByteUtils;
 import net.imagini.aim.utils.BlockStorageLZ4;
 
 /**
@@ -39,7 +39,7 @@ public class AimPartitionServerLoaderSession extends Thread  {
             throw new IOException("Invalid loader schema, \nexpecting: " + expectSchema +"\nreceived:  " + actualSchema);
         }
         //TODO assuming fixed column size is not very clever but we need fixed record buffer
-        record = AimUtils.createBuffer(COLUMN_BUFFER_SIZE * partition.schema.size());
+        record = ByteUtils.createBuffer(COLUMN_BUFFER_SIZE * partition.schema.size());
     }
 
     @Override public void run() {

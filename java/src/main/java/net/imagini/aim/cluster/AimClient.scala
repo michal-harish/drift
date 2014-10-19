@@ -1,12 +1,13 @@
 package net.imagini.aim.cluster
 
-import net.imagini.aim.PipeLZ4
 import java.io.IOException
-import java.net.Socket
-import net.imagini.aim.types.AimSchema
-import net.imagini.aim.Pipe
-import net.imagini.aim.Protocol
 import java.net.InetAddress
+import java.net.Socket
+import scala.Array.canBuildFrom
+import net.imagini.aim.types.AimSchema
+import net.imagini.aim.tools.PipeLZ4
+import net.imagini.aim.tools.Pipe
+import net.imagini.aim.tools.Protocol
 
 case class AimResult(val schema: AimSchema, val pipe: Pipe) {
   var filteredCount = 0L

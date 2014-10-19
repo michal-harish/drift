@@ -1,4 +1,4 @@
-package net.imagini.aim;
+package net.imagini.aim.tools;
 
 public enum Protocol {
     BINARY(0), LOADER(1), QUERY(2), MAPREDUCE(3);

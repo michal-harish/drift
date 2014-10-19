@@ -18,7 +18,6 @@ class PartitionIntegrationTest extends FlatSpec with Matchers {
   def fixutreServer: AimPartitionServer = {
     val partition = new AimPartition(schema, 8192, schema.name(0), SortOrder.ASC)
     val server = new AimPartitionServer(partition, port)
-    server.start
     server
   }
   def fixutreLoadDataSyncs = {

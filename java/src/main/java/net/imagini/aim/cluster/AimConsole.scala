@@ -1,17 +1,7 @@
 package net.imagini.aim.cluster
 
 import java.io.BufferedReader
-import java.io.IOException
 import java.io.InputStreamReader
-import java.net.InetAddress
-import java.net.Socket
-
-import scala.Array.canBuildFrom
-
-import net.imagini.aim.Pipe
-import net.imagini.aim.PipeLZ4
-import net.imagini.aim.Protocol
-import net.imagini.aim.types.AimSchema
 
 object AimConsole extends AimConsole("localhost", 4000) with App {
 

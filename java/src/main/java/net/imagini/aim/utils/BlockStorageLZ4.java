@@ -77,7 +77,7 @@ public class BlockStorageLZ4 implements BlockStorage {
         zoom.put(decompress_buffer, 0, length);
         zoom.flip();*/
 
-        zoom.order(AimUtils.ENDIAN);
+        zoom.order(ByteUtils.ENDIAN);
         return zoom;
 
     }

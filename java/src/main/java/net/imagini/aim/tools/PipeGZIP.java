@@ -1,4 +1,4 @@
-package net.imagini.aim;
+package net.imagini.aim.tools;
 
 import java.io.IOException;
 import java.io.InputStream;

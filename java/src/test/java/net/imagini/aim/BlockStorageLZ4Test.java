@@ -3,8 +3,8 @@ package net.imagini.aim;
 import java.nio.ByteBuffer;
 
 import junit.framework.Assert;
+import net.imagini.aim.tools.Scanner;
 import net.imagini.aim.utils.BlockStorageLZ4;
-import net.imagini.aim.utils.Scanner;
 
 import org.junit.Test;
 

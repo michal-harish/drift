@@ -16,14 +16,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.imagini.aim.Pipe;
 import net.imagini.aim.segment.AimFilter;
 import net.imagini.aim.segment.AimSegment;
+import net.imagini.aim.tools.Pipe;
+import net.imagini.aim.tools.PipeUtils;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
 import net.imagini.aim.types.SortOrder;
-import net.imagini.aim.utils.AimUtils;
 import net.imagini.aim.utils.ByteKey;
 
 public class AimPartition {
@@ -347,7 +347,7 @@ public class AimPartition {
                     for(String colName: columnNames) {
                         int c = subSchema.get(colName);
                         AimType type = subSchema.get(c);
-                        AimUtils.read(str[s],type.getDataType(), buffer[s][c]);
+                        PipeUtils.read(str[s],type.getDataType(), buffer[s][c]);
                     }
                     sortIndex.put(new ByteKey(buffer[s][sortSubColumn],s), s);
                     hasData[s] = true;

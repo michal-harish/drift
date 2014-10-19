@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.UUID;
 
-import net.imagini.aim.utils.AimUtils;
+import net.imagini.aim.utils.ByteUtils;
 
 public class AimTypeUUID extends AimTypeAbstract {
 
@@ -35,7 +35,7 @@ public class AimTypeUUID extends AimTypeAbstract {
     }
 
     @Override public String convert(byte[] value) {
-        return new UUID(AimUtils.getLongValue(value,0) , AimUtils.getLongValue(value,8)).toString();
+        return new UUID(ByteUtils.getLongValue(value,0) , ByteUtils.getLongValue(value,8)).toString();
     }
 
 }

@@ -3,7 +3,7 @@ echo "~/kafka/bin/kafka-console-consumer.sh --zookeeper zookeeper-04.prod.visual
 #test datasync 
 cat src/test/resources/datasync.json \
 | jq -r 'select(.partnerUserId!=null and .userUid!=null) | .userUid,.timestamp,.idSpace,.partnerUserId' \
-| java -jar target/aim-node.jar --port 4000 --schema "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)"
+| java -jar target/aim-partition.jar --port 4000 --schema "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)"
 
 #stream of syncs
 ~/kafka/bin/kafka8 --topic datasync \

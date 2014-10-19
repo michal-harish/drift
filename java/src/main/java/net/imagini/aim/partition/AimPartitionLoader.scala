@@ -1,22 +1,28 @@
 package net.imagini.aim.partition
 
-import java.net.Socket
-import net.imagini.aim.types.AimSchema
-import net.imagini.aim.PipeLZ4
-import net.imagini.aim.Protocol
-import java.net.InetAddress
-import net.imagini.aim.types.AimType
-import java.io.EOFException
-import java.io.InputStream
 import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.util.zip.GZIPInputStream
+import java.io.EOFException
 import java.io.FileInputStream
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.net.InetAddress
+import java.net.Socket
+import java.util.zip.GZIPInputStream
+
+import scala.Array.canBuildFrom
+
+import net.imagini.aim.tools.PipeLZ4
+import net.imagini.aim.tools.Protocol
+import net.imagini.aim.types.AimSchema
+import net.imagini.aim.types.AimType
 
 class AimPartitionLoader(host: String, port: Int, val schema: AimSchema, val separator: String, val fileinput: InputStream, val gzip: Boolean) {
 
   def this(host: String, port: Int, schema: AimSchema, separator: String, filename: String, gzip: Boolean) 
-      = this(host, port, schema, separator, new FileInputStream(filename), gzip)
+      = this(host, port, schema, separator, if (filename == null) null else new FileInputStream(filename), gzip)
+
+  def this(host: String, port: Int, schema: AimSchema, separator: String, gzip: Boolean) 
+      = this(host, port, schema, separator, null.asInstanceOf[InputStream], gzip)
 
   val in: InputStream = if (fileinput == null) System.in else fileinput
   val socket = new Socket(InetAddress.getByName(host), port)
