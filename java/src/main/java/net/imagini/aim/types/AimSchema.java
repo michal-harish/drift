@@ -86,7 +86,7 @@ public class AimSchema {
         return def.toArray(new AimType[def.size()]);
     }
 
-    public AimDataType dataType(Integer col) {
+    public AimDataType dataType(int col) {
         return def.get(col).getDataType();
     }
 
