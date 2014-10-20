@@ -9,6 +9,7 @@ import net.imagini.aim.types.AimSchema
 import org.scalatest.FlatSpec
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.partition.AimPartitionLoader
+import net.imagini.aim.partition.AimPartition
 
 class PartitionIntegrationTest extends FlatSpec with Matchers {
   val host = "localhost"
@@ -16,7 +17,7 @@ class PartitionIntegrationTest extends FlatSpec with Matchers {
   val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
 
   def fixutreServer: AimPartitionServer = {
-    val partition = new AimPartition(schema, 8192, schema.name(0), SortOrder.ASC)
+    val partition = new AimPartition(schema, 8192)
     val server = new AimPartitionServer(partition, port)
     server
   }

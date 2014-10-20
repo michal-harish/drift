@@ -2,13 +2,14 @@ package net.imagini.aim.partition;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 
-import net.imagini.aim.cluster.AimQuery;
 import net.imagini.aim.segment.AimFilter;
 import net.imagini.aim.tools.Pipe;
+import net.imagini.aim.tools.PipeUtils;
 import net.imagini.aim.tools.Tokenizer;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
@@ -19,19 +20,17 @@ import org.apache.commons.lang3.StringUtils;
 public class AimPartitionServerQuerySession extends Thread {
 
     private Pipe pipe;
-    private AimPartition table;
+    private Partition partition;
 
-    public AimPartitionServerQuerySession(AimPartition table, Pipe pipe) throws IOException {
+    public AimPartitionServerQuerySession(Partition table, Pipe pipe) throws IOException {
         this.pipe = pipe;
-        this.table = table;
+        this.partition = table;
     }
 
     @Override
     public void run() {
         try {
-            AimSchema schema = table.schema;
-            AimQuery query = new AimQuery(table);
-            Integer range = null;
+            AimSchema schema = partition.schema();
             AimFilter filter = null;
             while(true) {
                 String command;
@@ -46,21 +45,19 @@ public class AimPartitionServerQuerySession extends Thread {
 
                         case "STATS": handleStats(cmd); break;
 
-                        case "ALL": range = null; filter = null; break;
-                        case "LAST": range = table.getNumSegments()-1; filter = null; break;
-                        case "RANGE": handleRangeQuery(cmd,query); filter = null; break;
+                        case "ALL": filter = null; break;
                         case "FILTER": 
                             if (cmd.size()>0) {
-                                filter = AimFilter.fromTokenQueue(schema, cmd); //range, query,  
+                                filter = AimFilter.fromTokenQueue(schema, cmd);  
                             }
-                            executeCount(range, query, filter);
+                            executeCount(filter);
                             break;
 
                         case "SELECT": 
                             if (cmd.size()>0) {
-                                schema = table.schema.subset(new ArrayList<String>(cmd));
+                                schema = partition.schema().subset(new ArrayList<String>(cmd));
                             }
-                            executeSelect(range, query, schema, filter, true); 
+                            executeSelect(schema, filter); 
                             break;
                     }
                     pipe.write(false);
@@ -89,44 +86,32 @@ public class AimPartitionServerQuerySession extends Thread {
     private void handleStats(Queue<String> cmd) throws IOException {
         pipe.write(true);
         pipe.write("STATS");
-        pipe.write(table.schema.toString());
-        pipe.write(table.getCount());
-        pipe.write(table.getNumSegments());
-        pipe.write(table.getSize());
-        pipe.write(table.getOriginalSize());
-    }
-
-    private AimQuery handleRangeQuery(Queue<String> cmd, AimQuery query) {
-        // TODO Auto-generated method stub
-        return null;
+        pipe.write(partition.schema().toString());
+        pipe.write(partition.getCount());
+        pipe.write(partition.getNumSegments());
+        pipe.write(partition.getCompressedSize());
+        pipe.write(partition.getUncompressedSize());
     }
 
     private void executeCount(
-        Integer range, 
-        AimQuery query, 
         AimFilter filter
     ) throws IOException, ExecutionException {
         long t = System.currentTimeMillis();
         t = (System.currentTimeMillis()-t);
-        query.range(range);
         pipe.write(true);
         pipe.write("COUNT");
-        Long count = query.count(filter);
+        Long count = partition.count(filter);
         pipe.write(filter == null ? null : filter.toString());
         pipe.write(count);
-        pipe.write((long)table.getCount());
+        pipe.write((long)partition.getCount());
         pipe.flush();
     }
 
     private void executeSelect(
-        Integer range, 
-        AimQuery query, 
         AimSchema schema, 
-        AimFilter filter,
-        boolean fetch
+        AimFilter filter
     ) throws IOException {
-        query.range(range);
-        Pipe result = query.select(filter, schema.names());
+        InputStream result = partition.select(filter, schema.names());
         pipe.write(true);
         pipe.write("RESULT");
         pipe.write(schema.toString());
@@ -139,21 +124,16 @@ public class AimPartitionServerQuerySession extends Thread {
                 written = false;
                 for(AimType type: schema.fields()) {
                     AimDataType dataType = type.getDataType();
-                    if (!fetch) {
-                        result.skip(dataType);
-                    } else {
-                        byte[] val = result.read(dataType);
-                        if (!written) pipe.write(written = true);
-                        pipe.write(dataType.getDataType(), val);
-                    }
-
+                    byte[] val = PipeUtils.read(result,dataType);
+                    if (!written) pipe.write(written = true);
+                    pipe.write(dataType.getDataType(), val);
                 }
                 count++;
             }
         } catch (Exception e) {
             pipe.write(false);
             pipe.write((long)count);
-            pipe.write((long)table.getCount());
+            pipe.write((long)partition.getCount());
             pipe.write((e instanceof EOFException ? "" : exceptionAsString(e))); //success flag
             pipe.flush();
         }

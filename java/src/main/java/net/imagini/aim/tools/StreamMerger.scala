@@ -12,13 +12,14 @@ import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.types.SortOrder._
+import scala.collection.JavaConverters._
 
-class MergeQueue extends TreeMap[ByteKey, Array[Array[Byte]]]
+class MergeQueue extends TreeMap[ByteKey, (Fetcher,Array[Array[Byte]])]
 
 /**
  * Concurrent streaming merge tool
  */
-class StreamMerger(val schema: AimSchema, val inputStreams: Seq[InputStream]) extends InputStream {
+class StreamMerger(val schema: AimSchema, val inputStreams: Array[InputStream]) extends InputStream {
 
   //TODO this must become part of the schema including key, but it must be easy to create variants of schemas with switching key columns and sort order
   val sortOrder = SortOrder.ASC
@@ -30,8 +31,8 @@ class StreamMerger(val schema: AimSchema, val inputStreams: Seq[InputStream]) ex
   val executor: ExecutorService = Executors.newFixedThreadPool(inputStreams.length)
   val fetchers: Seq[Fetcher] = inputStreams.map(in ⇒ new Fetcher(schema, in, executor))
 
+  //TODO this can be done by only storing the ByteKey and then reading directly from the underlying stream
   override def read: Int = if (position >= 0 && checkNextByte) record(field)(position) & 0xff else -1
-
   private var record: Array[Array[Byte]] = null
   private var field = schema.size - 1
   private var position = 0
@@ -53,7 +54,7 @@ class StreamMerger(val schema: AimSchema, val inputStreams: Seq[InputStream]) ex
   }
 
   private def nextRecord: Array[Array[Byte]] = {
-    for ((fetcher, f) ← (fetchers zip (1 to fetchers.length))) if (!fetcher.inSync) {
+    for ((fetcher, f) ← (fetchers zip (0 to fetchers.length))) if (!fetcher.inSync) {
       fetcher.next match {
         case Some(record) ⇒ {
           val byteKey = new ByteKey(record(0), f)
@@ -62,7 +63,7 @@ class StreamMerger(val schema: AimSchema, val inputStreams: Seq[InputStream]) ex
            * the underlying input stream must provide or transform the first field as the key
            * - this also optimizes towards zero-copy
            */
-          sortQueue.put(byteKey, record)
+          sortQueue.put(byteKey, (fetcher,record))
         }
         case None ⇒ {}
       }
@@ -71,7 +72,10 @@ class StreamMerger(val schema: AimSchema, val inputStreams: Seq[InputStream]) ex
       case DESC ⇒ sortQueue.pollLastEntry
       case ASC  ⇒ sortQueue.pollFirstEntry
     }
-    if (entry == null) throw new EOFException else entry.getValue
+    if (entry == null) throw new EOFException else {
+      entry.getValue._1.replenish
+      entry.getValue._2
+    }
   }
 
   override def close = inputStreams.foreach(_.close)
@@ -93,8 +97,12 @@ class Fetcher(val schema: AimSchema, val in: InputStream, val executor: Executor
 
   def next: Option[Array[Array[Byte]]] = {
     val recordMaybe = future.get
-    future = executor.submit(this)
+    future = null
     recordMaybe
+  }
+
+  def replenish = {
+    future = executor.submit(this)
   }
 
 }

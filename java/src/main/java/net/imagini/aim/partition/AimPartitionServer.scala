@@ -29,9 +29,7 @@ object AimPartitionServer extends App {
     }
   }
 
-  val key = schema.get.name(0)
-  val sortOrder = SortOrder.ASC
-  val partition = new AimPartition(schema.get, segmentSize, key, sortOrder)
+  val partition = new AimPartition(schema.get, segmentSize)
   val server = new AimPartitionServer(partition, port)
 
   new AimPartitionLoader("localhost", port, schema.get, separator, filename, gzip).processInput

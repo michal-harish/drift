@@ -125,7 +125,7 @@ public class AimSchema {
                 .toArray(new String[colIndex.size()]);
     }
 
-    public AimSchema subset(final String... columns) {
+    public AimSchema subset(final String[] columns) {
         return subset(Arrays.asList(columns));
     }
 

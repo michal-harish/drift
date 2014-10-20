@@ -29,11 +29,11 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
     private Map<ByteKey, List<ByteBuffer>> sortMap = new HashMap<>();
     private SortOrder sortOrder;
 
-    public AimSegmentQuickSort(AimSchema schema, String sortField, SortOrder sortOrder, Class<? extends BlockStorage> storageType)
+    public AimSegmentQuickSort(AimSchema schema,  Class<? extends BlockStorage> storageType)
     throws InstantiationException, IllegalAccessException {
-        super(schema, sortField, storageType);
-        this.sortColumn = schema.get(sortField);
-        this.sortOrder = sortOrder;
+        super(schema, schema.name(0), storageType);
+        this.sortColumn = 0;
+        this.sortOrder = SortOrder.ASC;
     }
 
     @Override

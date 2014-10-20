@@ -137,7 +137,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
             subSchema = schema.subset(filter.getColumns());
             filter.updateFormula(subSchema.names());
         } else {
-            subSchema = schema.subset(schema.name(0));
+            subSchema = schema.subset(new String[]{schema.name(0)});
         }
 
         final Scanner[] scanners = new Scanner[subSchema.size()];
