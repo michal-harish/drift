@@ -15,6 +15,9 @@ import net.imagini.aim.types.SortOrder._
 
 class MergeQueue extends TreeMap[ByteKey, Array[Array[Byte]]]
 
+/**
+ * Concurrent streaming merge tool
+ */
 class StreamMerger(val schema: AimSchema, val inputStreams: Seq[InputStream]) extends InputStream {
 
   //TODO this must become part of the schema including key, but it must be easy to create variants of schemas with switching key columns and sort order
@@ -27,33 +30,33 @@ class StreamMerger(val schema: AimSchema, val inputStreams: Seq[InputStream]) ex
   val executor: ExecutorService = Executors.newFixedThreadPool(inputStreams.length)
   val fetchers: Seq[Fetcher] = inputStreams.map(in ⇒ new Fetcher(schema, in, executor))
 
-  var record: Array[Array[Byte]] = null
-  var field = schema.size - 1
-  var position = -1
-  override def read: Int = if (checkNextByte) record(field)(position) & 0xff else -1
+  override def read: Int = if (position >= 0 && checkNextByte) record(field)(position) & 0xff else -1
+
+  private var record: Array[Array[Byte]] = null
+  private var field = schema.size - 1
+  private var position = 0
   private def checkNextByte: Boolean = {
     try {
       position += 1
       if (record == null || position == record(field).length) {
         field += 1
+        position = 0
         if (field == schema.size) {
-          //FIXME this doesn't pass-on the meta-bytes
           record = nextRecord
           field = 0
-          position = 0
         }
       }
       true
     } catch {
-      case (e: EOFException) ⇒ false
+      case (e: EOFException) ⇒ position = -1; false
     }
-
   }
+
   private def nextRecord: Array[Array[Byte]] = {
-    for (fetcher ← fetchers) if (!fetcher.inSync) {
+    for ((fetcher, f) ← (fetchers zip (1 to fetchers.length))) if (!fetcher.inSync) {
       fetcher.next match {
         case Some(record) ⇒ {
-          val byteKey = new ByteKey(record(0), fetcher.hashCode)
+          val byteKey = new ByteKey(record(0), f)
           /**
            * assuming that the first field of schema is always the key - e.g. whatever provides
            * the underlying input stream must provide or transform the first field as the key

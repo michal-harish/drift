@@ -52,12 +52,6 @@ public class PipeUtils {
         return result;
     }
 
-//    public static long skip(ByteBuffer in, AimDataType type) {
-//        int size = sizeOf(in, type);
-//        in.position(in.position() + size);
-//        return size;
-//    }
-
     static public void skip(InputStream in, AimDataType type) throws IOException {
         int skipLen = readSize(in, type);
         long totalSkipped = 0;
