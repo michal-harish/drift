@@ -1,20 +1,18 @@
-package net.imagini.aim.partition;
+package net.imagini.aim.cluster;
 
 import java.io.IOException;
 
+import net.imagini.aim.partition.AimPartition;
 import net.imagini.aim.segment.AimFilter;
 import net.imagini.aim.tools.Pipe;
 import net.imagini.aim.types.AimDataType;
 
-/**
- * @author mharis
- */
+//TODO get rid of this class after deciding how to transfer range into filters
 public class AimQuery {
 
     private AimPartition partition;
     private int startSegment;
     private int endSegment;
-
 
     public AimQuery(AimPartition table) { 
         this.partition = table;
@@ -31,10 +29,6 @@ public class AimQuery {
         } else {// single specific segment
             startSegment = endSegment = segmentRange;
         }
-    }
-
-    public AimFilter filter() {
-        return new AimFilter(partition.schema);
     }
 
     public Pipe select(final String... colNames) throws IOException {

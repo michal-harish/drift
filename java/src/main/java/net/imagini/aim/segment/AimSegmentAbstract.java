@@ -77,7 +77,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
     }
 
     //FIXME this is a limitation of size of the record as well as single-threaded context
-    private ByteBuffer recordBuffer = ByteBuffer.allocateDirect(65535);
+    private ByteBuffer recordBuffer = ByteBuffer.allocate(65535);
     final public void appendRecord(byte[][] record) throws IOException {
         if (record.length != schema.size()) {
             throw new IllegalArgumentException("Number of record values doesn't match the number of fields in the schema");
@@ -85,8 +85,9 @@ abstract public class AimSegmentAbstract implements AimSegment {
 
         recordBuffer.clear();
         for(int col = 0; col < schema.size() ; col++) {
-            recordBuffer.put(record[col]);
+            PipeUtils.write(schema.get(col).getDataType(), record[col], recordBuffer);
         }
+        recordBuffer.flip();
         appendRecord(recordBuffer);
     }
 
@@ -132,7 +133,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
 
     @Override final public Long count(AimFilter filter) throws IOException {
         final AimSchema subSchema;
-        if (filter != null) {
+        if (filter != AimFilter.emptyFilter) {
             subSchema = schema.subset(filter.getColumns());
             filter.updateFormula(subSchema.names());
         } else {

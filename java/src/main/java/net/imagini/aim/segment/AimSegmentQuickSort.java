@@ -29,11 +29,10 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
     private Map<ByteKey, List<ByteBuffer>> sortMap = new HashMap<>();
     private SortOrder sortOrder;
 
-    public AimSegmentQuickSort(AimSchema schema, int sortColumn,
-            SortOrder sortOrder, Class<? extends BlockStorage> storageType)
-            throws InstantiationException, IllegalAccessException {
-        super(schema, schema.name(sortColumn), storageType);
-        this.sortColumn = sortColumn;
+    public AimSegmentQuickSort(AimSchema schema, String sortField, SortOrder sortOrder, Class<? extends BlockStorage> storageType)
+    throws InstantiationException, IllegalAccessException {
+        super(schema, sortField, storageType);
+        this.sortColumn = schema.get(sortField);
         this.sortOrder = sortOrder;
     }
 
@@ -55,6 +54,7 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
                     sortMap.put(sortValue, new ArrayList<ByteBuffer>());
                 }
                 List<ByteBuffer> keyspace = sortMap.get(sortValue);
+                //TODO use slice and change recordBuffer to direct buffer
                 keyspace.add(ByteBuffer.wrap(Arrays.copyOfRange(record.array(),
                         0, record.limit())));
             }

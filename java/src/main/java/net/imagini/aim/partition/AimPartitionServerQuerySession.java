@@ -3,18 +3,13 @@ package net.imagini.aim.partition;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import net.imagini.aim.cluster.AimQuery;
 import net.imagini.aim.segment.AimFilter;
 import net.imagini.aim.tools.Pipe;
+import net.imagini.aim.tools.Tokenizer;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
@@ -43,7 +38,7 @@ public class AimPartitionServerQuerySession extends Thread {
                 Queue<String> cmd;
                 String input = pipe.read();
                 try {
-                    cmd = tokenize(input);
+                    cmd = Tokenizer.tokenize(input);
                     command = cmd.poll().toUpperCase();
                     switch(command.toUpperCase()) {
 
@@ -56,7 +51,7 @@ public class AimPartitionServerQuerySession extends Thread {
                         case "RANGE": handleRangeQuery(cmd,query); filter = null; break;
                         case "FILTER": 
                             if (cmd.size()>0) {
-                                filter = handleFilterQuery(range, query, schema, cmd); 
+                                filter = AimFilter.fromTokenQueue(schema, cmd); //range, query,  
                             }
                             executeCount(range, query, filter);
                             break;
@@ -99,48 +94,6 @@ public class AimPartitionServerQuerySession extends Thread {
         pipe.write(table.getNumSegments());
         pipe.write(table.getSize());
         pipe.write(table.getOriginalSize());
-    }
-
-    private AimFilter handleFilterQuery(Integer range, AimQuery query, AimSchema schema, Queue<String> cmd) throws IOException {
-        query.range(range);
-
-        AimFilter rootFilter = query.filter();
-
-        AimFilter filter = rootFilter;
-        while(cmd.size()>0) {
-            String subject = cmd.poll();
-            switch(subject.toUpperCase()) {
-                case "AND": filter = filter.and(cmd.poll()); break;
-                case "OR": filter = filter.or(cmd.poll()); break;
-                default: filter = filter.where(subject); break; //expression
-            }
-            op: while(cmd.size()>0) {
-                String predicate = cmd.poll();
-                switch(predicate.toUpperCase()) {
-                    case "NOT": filter = filter.not(); continue op;
-                    case "IN":
-                        if (cmd.poll().equals("(")) {
-                            List<String> values = new ArrayList<String>();
-                            String value;
-                            while (!")".equals(value = cmd.poll())) {
-                                if (value.equals(",")) value = cmd.poll();
-                                values.add(value);
-                            }
-                            filter = filter.in(values.toArray(new String[values.size()]));
-                        }
-                        break;
-                    case "CONTAINS": filter = filter.contains(cmd.poll()); break;
-                    case "=": filter = filter.equals(cmd.poll()); break;
-                    case ">": filter = filter.greaterThan(cmd.poll()); break;
-                    case "<": filter = filter.lessThan(cmd.poll()); break;
-                    default:break;
-                }
-                break;
-            }
-        }
-
-        return rootFilter;
-
     }
 
     private AimQuery handleRangeQuery(Queue<String> cmd, AimQuery query) {
@@ -207,39 +160,6 @@ public class AimPartitionServerQuerySession extends Thread {
 
     }
 
-    static enum Token { 
-        WHITESPACE,KEYWORD,OPERATOR,NUMBER,STRING
-    }
-
-    @SuppressWarnings("serial")
-    static final Map<Token,Pattern> matchers = new HashMap<Token,Pattern>() {{
-        put(Token.WHITESPACE, Pattern.compile("^((\\s+))"));
-        put(Token.KEYWORD, Pattern.compile("^(([A-Za-z_]+))"));
-        put(Token.OPERATOR, Pattern.compile("^(([\\!@\\$%\\^&\\*;\\:|,<.>/\\?\\-=\\+\\(\\)\\[\\]\\{\\}`~]+))")); // TODO define separately () {} []
-        put(Token.NUMBER,  Pattern.compile("^(([0-9]+|[0-9]+\\.[0-9]+))"));
-        put(Token.STRING, Pattern.compile("^('(.*?)')")); // TODO fix escape sequence (?:\\"|.)*? OR /'(?:[^'\\]|\\.)*'/
-    }};
-
-    private Queue<String> tokenize(String input) throws IOException {
-        Queue<String> result = new LinkedList<String>();
-        int i = 0;
-        main: while(i<input.length()) {
-            String s = input.substring(i);
-            for(Entry<Token,Pattern> p: matchers.entrySet()) {
-                Matcher m = p.getValue().matcher(s);
-                if (m.find()) {
-                    i += m.group(1).length();
-                    String word = m.group(2);
-                    if (!p.getKey().equals(Token.WHITESPACE)) {
-                        result.add(word);
-                    }
-                    continue main;
-                }
-            }
-            throw new IllegalArgumentException("Invalid query near: " + s);
-        }
-        return result;
-    }
 
     public static String exceptionAsString(Exception e) {
         String[] trace = new String[e.getStackTrace().length];

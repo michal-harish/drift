@@ -96,10 +96,10 @@ public class AimPartitionServerLoaderSession extends Thread  {
 
     private void createNewSegmentIfNull() throws IOException, InstantiationException, IllegalAccessException {
         if (currentSegment == null) {
-            if (partition.keyColumn == null) {
+            if (partition.keyField == null) {
                 currentSegment = new AimSegmentUnsorted(partition.schema, BlockStorageLZ4.class);
             } else {
-                currentSegment = new AimSegmentQuickSort(partition.schema, partition.keyColumn, partition.sortOrder, BlockStorageLZ4.class);
+                currentSegment = new AimSegmentQuickSort(partition.schema, partition.keyField, partition.sortOrder, BlockStorageLZ4.class);
             }
         }
     }

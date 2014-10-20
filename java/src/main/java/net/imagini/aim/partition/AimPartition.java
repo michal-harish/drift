@@ -34,7 +34,8 @@ public class AimPartition {
 
     public final AimSchema schema;
     public final Integer segmentSizeBytes;
-    public final Integer keyColumn;
+    public final String keyField;
+    private final Integer keyColumn;
     public final SortOrder sortOrder;
     private LinkedList<AimSegment> segments = new LinkedList<>();
     private AtomicInteger numSegments = new AtomicInteger(0);
@@ -46,6 +47,7 @@ public class AimPartition {
 
     public AimPartition(AimSchema schema, Integer segmentSizeBytes, String keyField, SortOrder order) throws IOException {
         this.keyColumn = schema.get(keyField);
+        this.keyField = keyField;
         this.sortOrder = order;
         this.schema = schema;
         this.segmentSizeBytes = segmentSizeBytes;

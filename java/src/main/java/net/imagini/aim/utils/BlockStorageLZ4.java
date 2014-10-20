@@ -46,7 +46,8 @@ public class BlockStorageLZ4 implements BlockStorage {
                 compress_buffer = new byte[maxCLen+65535];
             }
             int cLen = compressor.compress(block.array(), 0, blockLength, compress_buffer, 0);
-            compressedBlocks.add(Arrays.copyOfRange(compress_buffer, 0, cLen));
+            byte[] data = Arrays.copyOfRange(compress_buffer, 0, cLen);
+            compressedBlocks.add(data);
             lengths.add(blockLength);
             compressedSize += cLen;
             originalSize += blockLength;

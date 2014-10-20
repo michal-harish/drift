@@ -2,12 +2,16 @@ package net.imagini.aim.segment;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
 import net.imagini.aim.tools.Pipe;
 import net.imagini.aim.tools.Scanner;
+import net.imagini.aim.tools.Tokenizer;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
 
@@ -33,6 +37,49 @@ import org.apache.commons.lang3.StringUtils;
  * @author mharis
  */
 public class AimFilter {
+
+    public static final AimFilter emptyFilter = null;
+
+    public static AimFilter fromString(AimSchema schema, String declaration) {
+        return fromTokenQueue(schema, Tokenizer.tokenize(declaration));
+    }
+
+    public static AimFilter fromTokenQueue(AimSchema schema, Queue<String> cmd) {
+        AimFilter rootFilter = new AimFilter(schema);
+        AimFilter filter = rootFilter;
+        while(cmd.size()>0) {
+            String subject = cmd.poll();
+            switch(subject.toUpperCase()) {
+                case "AND": filter = filter.and(cmd.poll()); break;
+                case "OR": filter = filter.or(cmd.poll()); break;
+                default: filter = filter.where(subject); break; //expression
+            }
+            op: while(cmd.size()>0) {
+                String predicate = cmd.poll();
+                switch(predicate.toUpperCase()) {
+                    case "NOT": filter = filter.not(); continue op;
+                    case "IN":
+                        if (cmd.poll().equals("(")) {
+                            List<String> values = new ArrayList<String>();
+                            String value;
+                            while (!")".equals(value = cmd.poll())) {
+                                if (value.equals(",")) value = cmd.poll();
+                                values.add(value);
+                            }
+                            filter = filter.in(values.toArray(new String[values.size()]));
+                        }
+                        break;
+                    case "CONTAINS": filter = filter.contains(cmd.poll()); break;
+                    case "=": filter = filter.equals(cmd.poll()); break;
+                    case ">": filter = filter.greaterThan(cmd.poll()); break;
+                    case "<": filter = filter.lessThan(cmd.poll()); break;
+                    default:break;
+                }
+                break;
+            }
+        }
+        return rootFilter;
+    }
 
     protected static AimFilter proxy(AimFilter root, AimSchema schema, String expression) {
         AimFilter result = new AimFilterSimple(root, schema, expression);
