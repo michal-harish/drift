@@ -7,6 +7,7 @@ public interface BlockStorage {
   int addBlock(ByteBuffer block);
   int numBlocks();
   long compressedSize();
+  long originalSize();
   ByteBuffer decompress(int block);
-  ByteBuffer createWriterBuffer();
+  ByteBuffer newBlock();
 }

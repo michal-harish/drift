@@ -33,15 +33,17 @@ abstract public class AimSegmentAbstract implements AimSegment {
     private AtomicLong count = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
     private AtomicLong originalSize = new AtomicLong(0);
+    private String keyField;
 
-    public AimSegmentAbstract(AimSchema schema, Class<? extends BlockStorage> storageType) throws InstantiationException, IllegalAccessException {
+    public AimSegmentAbstract(AimSchema schema, final String keyField, Class<? extends BlockStorage> storageType) throws InstantiationException, IllegalAccessException {
         this.schema = schema;
         this.writable = true;
+        this.keyField = keyField;
         writers = new LinkedHashMap<>();
         for(int col=0; col < schema.size(); col++) {
             BlockStorage blockStorage = storageType.newInstance();
             columnar.put(col, blockStorage);
-            writers.put(col, blockStorage.createWriterBuffer());
+            writers.put(col, blockStorage.newBlock());
         }
     }
 
@@ -63,11 +65,36 @@ abstract public class AimSegmentAbstract implements AimSegment {
         }
     }
 
+    final public void appendRecord(String... values) throws IOException {
+        if (values.length != schema.size()) {
+            throw new IllegalArgumentException("Number of values doesn't match the number of fields in the schema");
+        }
+        byte[][] record = new byte[schema.size()][];
+        for(int col = 0; col < schema.size() ; col++) {
+            record[col] = schema.get(col).convert(values[col]);
+        }
+        appendRecord(record);
+    }
+
+    //FIXME this is a limitation of size of the record as well as single-threaded context
+    private ByteBuffer recordBuffer = ByteBuffer.allocateDirect(65535);
+    final public void appendRecord(byte[][] record) throws IOException {
+        if (record.length != schema.size()) {
+            throw new IllegalArgumentException("Number of record values doesn't match the number of fields in the schema");
+        }
+
+        recordBuffer.clear();
+        for(int col = 0; col < schema.size() ; col++) {
+            recordBuffer.put(record[col]);
+        }
+        appendRecord(recordBuffer);
+    }
+
     /**
      * ByteBuffer record is a horizontal buffer where columns of a single record 
      * follow in precise order.
      */
-    final protected void appendRecord(ByteBuffer record) throws IOException {
+    public void appendRecord(ByteBuffer record) throws IOException {
         try {
             checkWritable(true);
             for(int col = 0; col < schema.size() ; col++) {
@@ -157,7 +184,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
      * Not Thread-safe 
      * Filtered, Aggregate Input stream for all the selected columns in this segment.
      */
-    @Override final public InputStream select(final AimFilter filter, final String keyField, final String[] columns) throws IOException {
+    @Override final public InputStream select(final AimFilter filter, final String[] columns) throws IOException {
         try {
             checkWritable(false);
         } catch (IllegalAccessException e) {
@@ -166,7 +193,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
         Set<String> totalColumnSet = new HashSet<String>(Arrays.asList(columns));
         if (filter != null) totalColumnSet.addAll(Arrays.asList(filter.getColumns()));
 
-        totalColumnSet.add(keyField);
+        if (keyField != null) totalColumnSet.add(keyField);
         final AimSchema subSchema = schema.subset(totalColumnSet.toArray(new String[totalColumnSet.size()]));
         final List<Integer> allColumns = new LinkedList<Integer>(); 
         for(String colName: subSchema.names()) allColumns.add(subSchema.get(colName));

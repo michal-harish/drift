@@ -58,7 +58,7 @@ public class AimPartitionServerLoaderSession extends Thread  {
                             pipe.read(type.getDataType(), record);
                         }
                         record.flip();
-                        currentSegment.append(record);
+                        currentSegment.appendRecord(record);
                         count++;
                         if (currentSegment.getOriginalSize() > partition.segmentSizeBytes) {
                             addCurrentSegment();

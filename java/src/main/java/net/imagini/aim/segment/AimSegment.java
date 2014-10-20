@@ -6,7 +6,9 @@ import java.nio.ByteBuffer;
 
 public interface AimSegment {
 
-    void append(ByteBuffer record) throws IOException;
+    void appendRecord(ByteBuffer record) throws IOException;
+    void appendRecord(byte[][] record) throws IOException;
+    void appendRecord(String... values) throws IOException;
 
     void close() throws IllegalAccessException, IOException;
 
@@ -18,6 +20,6 @@ public interface AimSegment {
 
     Long count(AimFilter filter)  throws IOException;
 
-    InputStream select(AimFilter filter, String keyField, String[] columnNames) throws IOException;
+    InputStream select(AimFilter filter, String[] columnNames) throws IOException;
 
 }

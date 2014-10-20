@@ -32,27 +32,23 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
     public AimSegmentQuickSort(AimSchema schema, int sortColumn,
             SortOrder sortOrder, Class<? extends BlockStorage> storageType)
             throws InstantiationException, IllegalAccessException {
-        super(schema, storageType);
+        super(schema, schema.name(sortColumn), storageType);
         this.sortColumn = sortColumn;
         this.sortOrder = sortOrder;
     }
 
     @Override
-    public void append(ByteBuffer record) throws IOException {
+    public void appendRecord(ByteBuffer record) throws IOException {
         try {
             checkWritable(true);
 
-            ByteKey sortValue = null;
-            for (int col = 0; col < schema.size(); col++) {
-                AimDataType type = schema.dataType(col);
+            AimDataType sortType = schema.dataType(sortColumn);
+            ByteKey sortValue = new ByteKey(
+                Arrays.copyOfRange(record.array(), 
+                record.position(), 
+                record.position() + PipeUtils.sizeOf(record, sortType)) 
+            );
 
-                if (col == sortColumn) {
-                    sortValue = new ByteKey(Arrays.copyOfRange(record.array(),
-                            record.position(),
-                            record.position() + PipeUtils.sizeOf(record, type)));
-                }
-
-            }
             // close record
             if (sortValue != null) {
                 if (!sortMap.containsKey(sortValue)) {
@@ -80,7 +76,7 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
             List<ByteBuffer> bucket = sortMap.get(key);
             for (ByteBuffer record : bucket) {
                 try {
-                    appendRecord(record);
+                    super.appendRecord(record);
                 } catch (EOFException e) {
                     break;
                 }

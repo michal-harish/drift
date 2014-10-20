@@ -299,7 +299,7 @@ public class AimPartition {
         final InputStream[] str = new InputStream[segments.size()];
         final AimSchema subSchema = schema.subset(columnNames);
         for(int s = 0; s <seg.length; s++) {
-            str[s] = segments.get(seg[s]).select(filter, schema.name(keyColumn), columnNames);
+            str[s] = segments.get(seg[s]).select(filter, columnNames);
         }
 
         final int sortSubColumn = subSchema.get(schema.name(keyColumn));

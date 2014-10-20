@@ -12,6 +12,12 @@ Motivation
   -> so segments must have a columnar format allow for high speed filtering without re-streaming the data to a remote process 
   -> sending the mappers to the data rather then loading the data and then mapping like in Hadoop or Spark
 
+Usecases
+===========
+
+1) mixing pageview datasets from multiple id-spaces, e.g. addthis + visualdna pageviews
+2) identity linking from newly discovered information
+3) ...
 
 Design Overview and Decisions
 ===============================
