@@ -16,8 +16,8 @@ Usecases
 ===========
 
 1) mixing pageview datasets from multiple id-spaces, e.g. addthis + visualdna pageviews
-2) identity linking from newly discovered information
-3) ...
+2) retrospective profile data update
+3) identity linking from newly discovered information
 
 Design Overview and Decisions
 ===============================

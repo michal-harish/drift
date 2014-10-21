@@ -1,4 +1,4 @@
-package net.imagini.aim.segment;
+package net.imagini.aim.tools;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -9,9 +9,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
-import net.imagini.aim.tools.Pipe;
-import net.imagini.aim.tools.Scanner;
-import net.imagini.aim.tools.Tokenizer;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
 
@@ -38,8 +35,6 @@ import org.apache.commons.lang3.StringUtils;
  */
 
 public class AimFilter {
-
-    public static final AimFilter emptyFilter = null;
 
     public static AimFilter fromString(AimSchema schema, String declaration) {
         return fromTokenQueue(schema, Tokenizer.tokenize(declaration));
@@ -97,15 +92,15 @@ public class AimFilter {
 
     private AimSchema schema;
     protected AimFilter root;
-    protected AimType type;
+    protected AimType aimType;
     protected AimFilter next;
 
-    protected AimFilter(AimFilter root, AimType type) {
-        this(root,type,null);
+    protected AimFilter(AimFilter root, AimType aimType) {
+        this(root,aimType,null);
     }
 
     protected AimFilter(AimFilter root, AimType type, AimFilter next) {
-        this.type = type;
+        this.aimType = type;
         this.root = root;
         this.next = next;
     }
@@ -148,15 +143,15 @@ public class AimFilter {
      * This is thread-safe and called in parallel for 
      * multiple segments.
      */
-    public boolean match(Scanner[] record) {
-        return root.match(true, record);
+    public boolean matches(Scanner[] record) {
+        return root.matches(true, record);
     }
 
-    protected boolean match(boolean soFar, Scanner[] record) {
-        return next == null ? soFar : next.match(soFar, record);
+    protected boolean matches(boolean soFar, Scanner[] record) {
+        return next == null ? soFar : next.matches(soFar, record);
     }
 
-    protected boolean match( Scanner value, Scanner[] record) {
+    protected boolean matches( Scanner value, Scanner[] record) {
         throw new IllegalAccessError(this.getClass().getSimpleName() + " cannot be matched against a value");
     }
 
@@ -165,12 +160,12 @@ public class AimFilter {
     }
 
     public AimFilter equals(final String value) {
-        if (type == null) return next.equals(value);
-        final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
-        return next = new AimFilter(root,type) {
-            @Override public String toString() { return "= " + type.wrap(value) + super.toString(); }
-            @Override protected boolean match(Scanner value, Scanner[] record) {
-                boolean match = super.match(value.compare(val,type.getDataType())==0, record);
+        if (aimType == null) return next.equals(value);
+        final ByteBuffer val = ByteBuffer.wrap(aimType.convert(value));
+        return next = new AimFilter(root,aimType) {
+            @Override public String toString() { return "= " + aimType.wrap(value) + super.toString(); }
+            @Override protected boolean matches(Scanner value, Scanner[] record) {
+                boolean match = super.matches(value.compare(val,aimType.getDataType())==0, record);
                 return match;
             }
         };
@@ -195,64 +190,64 @@ public class AimFilter {
     }
 
     public AimFilter not() {
-        return next = new AimFilter(root, type, next) {
+        return next = new AimFilter(root, aimType, next) {
             @Override public String toString() { return "NOT" + super.toString(); }
-            @Override protected boolean match(boolean soFar, Scanner[] record) {
-                return !next.match(soFar, record);
+            @Override protected boolean matches(boolean soFar, Scanner[] record) {
+                return !next.matches(soFar, record);
             }
         };
     }
 
     public AimFilter contains(final String value) {
-        if (type == null) return next.contains(value);
-        final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
-        return next = new AimFilter(root,type) {
-            @Override public String toString() { return "CONTAINS " + type.wrap(value) + super.toString(); }
-            @Override protected boolean match(Scanner value,  Scanner[] record) {
-                return super.match(value.contains(val,type.getDataType()), record);
+        if (aimType == null) return next.contains(value);
+        final ByteBuffer val = ByteBuffer.wrap(aimType.convert(value));
+        return next = new AimFilter(root,aimType) {
+            @Override public String toString() { return "CONTAINS " + aimType.wrap(value) + super.toString(); }
+            @Override protected boolean matches(Scanner value,  Scanner[] record) {
+                return super.matches(value.contains(val,aimType.getDataType()), record);
             }
         };
     }
 
     public AimFilter greaterThan(final String value) {
-        if (type == null) return next.greaterThan(value);
-        final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
-        return next = new AimFilter(root,type) {
-            @Override public String toString() { return "> " + type.wrap(value) + super.toString(); }
-            @Override protected boolean match(Scanner value, Scanner[] data) {
-                return super.match(value.compare(val,type.getDataType()) > 0, data);
+        if (aimType == null) return next.greaterThan(value);
+        final ByteBuffer val = ByteBuffer.wrap(aimType.convert(value));
+        return next = new AimFilter(root,aimType) {
+            @Override public String toString() { return "> " + aimType.wrap(value) + super.toString(); }
+            @Override protected boolean matches(Scanner value, Scanner[] data) {
+                return super.matches(value.compare(val,aimType.getDataType()) > 0, data);
             }
         };
     }
 
     public AimFilter lessThan(final String value) {
-        if (type == null) return next.lessThan(value);
-        final ByteBuffer val = ByteBuffer.wrap(type.convert(value));
-        return next = new AimFilter(root,type) {
-            @Override public String toString() { return "< " + type.wrap(value) +super.toString(); }
-            @Override protected boolean match(Scanner value, Scanner[] data) {
-                return super.match(value.compare(val,type.getDataType()) < 0, data);
+        if (aimType == null) return next.lessThan(value);
+        final ByteBuffer val = ByteBuffer.wrap(aimType.convert(value));
+        return next = new AimFilter(root,aimType) {
+            @Override public String toString() { return "< " + aimType.wrap(value) +super.toString(); }
+            @Override protected boolean matches(Scanner value, Scanner[] data) {
+                return super.matches(value.compare(val,aimType.getDataType()) < 0, data);
             }
         };
     }
 
     public AimFilter in(final String... values) {
-        if (type == null) return next.in(values);
+        if (aimType == null) return next.in(values);
         final ByteBuffer[] vals = new ByteBuffer[values.length]; 
         int i = 0; for(String value:values) {
-            vals[i++] = ByteBuffer.wrap(type.convert(value));
+            vals[i++] = ByteBuffer.wrap(aimType.convert(value));
         }
-        return next = new AimFilter(root,type) {
+        return next = new AimFilter(root,aimType) {
             @Override public String toString() { return "IN (" + StringUtils.join(values, ",") +")" + super.toString(); }
-            @Override protected boolean match(Scanner value, Scanner[] data) {
+            @Override protected boolean matches(Scanner value, Scanner[] data) {
                 boolean localResult = false;
                 for(ByteBuffer val: vals) {
-                    if (value.compare(val,type.getDataType())==0) {
+                    if (value.compare(val,aimType.getDataType())==0) {
                         localResult = true;
                         break;
                     }
                 }
-                return super.match(localResult, data);
+                return super.matches(localResult, data);
             }
         };
     }
@@ -277,8 +272,8 @@ public class AimFilter {
                 throw new IllegalArgumentException("Unknwon filter column " + colName);
             }
         }
-        @Override protected boolean match(boolean soFar, Scanner[] data) {
-            return next.match(data[colIndex], data);
+        @Override protected boolean matches(boolean soFar, Scanner[] data) {
+            return next.matches(data[colIndex], data);
         }
         @Override public String toString() {
             return colName + super.toString();
@@ -292,8 +287,8 @@ public class AimFilter {
             next = AimFilter.proxy(root, root.schema,expression);
         }
         @Override
-        protected boolean match(boolean soFar, Scanner[] data) {
-            return compare(soFar, next.match(true, data));
+        protected boolean matches(boolean soFar, Scanner[] data) {
+            return compare(soFar, next.matches(true, data));
         }
         abstract protected boolean compare(boolean a, boolean b);
 

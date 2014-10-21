@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.imagini.aim.tools.PipeUtils;
+import net.imagini.aim.tools.AimFilter;
 import net.imagini.aim.tools.Scanner;
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
@@ -45,10 +46,6 @@ abstract public class AimSegmentAbstract implements AimSegment {
             columnar.put(col, blockStorage);
             writers.put(col, blockStorage.newBlock());
         }
-    }
-
-    @Override final public long getCount() {
-        return count.get();
     }
 
     @Override final public long getCompressedSize() {
@@ -131,9 +128,13 @@ abstract public class AimSegmentAbstract implements AimSegment {
         this.writable = false;
     }
 
-    @Override final public Long count(AimFilter filter) throws IOException {
+    @Override final public long count() {
+        return count.get();
+    }
+
+    @Override final public long count(AimFilter filter) throws IOException {
         final AimSchema subSchema;
-        if (filter != AimFilter.emptyFilter) {
+        if (filter != null) {
             subSchema = schema.subset(filter.getColumns());
             filter.updateFormula(subSchema.names());
         } else {
@@ -154,7 +155,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                 }
             }
             while(true) {
-                if (filter == AimFilter.emptyFilter || filter.match(scanners)) {
+                if (filter == null || filter.matches(scanners)) {
                     count++;
                 }
                 for(int c=0; c< subSchema.size(); c++) {
@@ -256,7 +257,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                                 return false;
                             }
                         }
-                        if (filter == AimFilter.emptyFilter || filter.match(scanners)) {
+                        if (filter == null || filter.matches(scanners)) {
                             skipNextRecord(true);
                             break;
                         }

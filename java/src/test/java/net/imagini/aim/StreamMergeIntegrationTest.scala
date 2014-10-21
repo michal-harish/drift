@@ -7,7 +7,7 @@ import net.imagini.aim.segment.AimSegmentUnsorted
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.utils.BlockStorageLZ4
-import net.imagini.aim.segment.AimFilter
+import net.imagini.aim.tools.AimFilter
 import scala.collection.JavaConverters._
 import net.imagini.aim.tools.PipeUtils
 import net.imagini.aim.tools.StreamMerger

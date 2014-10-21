@@ -2,7 +2,7 @@ package net.imagini.aim.partition
 
 import net.imagini.aim.tools.Pipe
 import java.io.IOException
-import net.imagini.aim.segment.AimFilter
+import net.imagini.aim.tools.AimFilter
 import java.util.Queue
 import net.imagini.aim.tools.Tokenizer
 import java.util.ArrayList
@@ -59,7 +59,7 @@ class AimPartitionServerQuerySession(val partition: AimPartition, val pipe: Pipe
     pipe.write(true);
     pipe.write("COUNT");
     val count = partition.count(filter)
-    pipe.write(if (filter == AimFilter.emptyFilter) null else filter.toString)
+    pipe.write(if (filter == null) null else filter.toString)
     pipe.write(count);
     pipe.write(partition.getCount)
     pipe.flush();
@@ -82,7 +82,7 @@ class AimPartitionServerQuerySession(val partition: AimPartition, val pipe: Pipe
     pipe.write(true)
     pipe.write("RESULT")
     pipe.write(schema.toString)
-    pipe.write(if (filter == AimFilter.emptyFilter) null else filter.toString)
+    pipe.write(if (filter == null) null else filter.toString)
     var count: Long = 0
     try {
       while (true) {

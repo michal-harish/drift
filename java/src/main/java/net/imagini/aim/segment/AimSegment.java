@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
+import net.imagini.aim.tools.AimFilter;
+
 public interface AimSegment {
 
     void appendRecord(ByteBuffer record) throws IOException;
@@ -12,13 +14,13 @@ public interface AimSegment {
 
     void close() throws IllegalAccessException, IOException;
 
-    long getCount();
+    long count();
 
     long getCompressedSize();
 
     long getOriginalSize();
 
-    Long count(AimFilter filter)  throws IOException;
+    long count(AimFilter filter)  throws IOException;
 
     InputStream select(AimFilter filter, String[] columnNames) throws IOException;
 

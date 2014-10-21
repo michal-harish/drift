@@ -4,7 +4,7 @@ import net.imagini.aim.types.AimSchema
 import scala.collection.mutable.ListBuffer
 import net.imagini.aim.segment.AimSegment
 import java.util.concurrent.atomic.AtomicInteger
-import net.imagini.aim.segment.AimFilter
+import net.imagini.aim.tools.AimFilter
 import java.io.InputStream
 import net.imagini.aim.tools.StreamMerger
 import java.util.concurrent.Executors
@@ -25,7 +25,7 @@ class AimPartition(val schema: AimSchema, val segmentSizeBytes: Int) {
     }
   }
   val mapreduce = Executors.newFixedThreadPool(4)
-  def getCount: Long = segments.foldLeft(0L)(_ + _.getCount)
+  def getCount: Long = segments.foldLeft(0L)(_ + _.count)
   def getCompressedSize: Long = segments.foldLeft(0L)(_ + _.getCompressedSize)
   def getUncompressedSize: Long = segments.foldLeft(0L)(_ + _.getOriginalSize)
 
