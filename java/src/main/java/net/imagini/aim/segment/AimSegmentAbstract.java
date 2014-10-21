@@ -160,15 +160,15 @@ abstract public class AimSegmentAbstract implements AimSegment {
                 }
                 for(int c=0; c< subSchema.size(); c++) {
                     AimType type = subSchema.get(c);
-                    Scanner stream = scanners[c];
+                    Scanner scanner = scanners[c];
                     int skipLength;
                     if (type.equals(Aim.STRING)) {
-                        skipLength = 4 + stream.asIntValue();
+                        skipLength = 4 + scanner.asIntValue();
                     } else {
                         skipLength  = type.getDataType().getSize();
                     }
-                    stream.skip(skipLength);
-                    if (stream.eof()) {
+                    scanner.skip(skipLength);
+                    if (scanner.eof()) {
                         throw new EOFException();
                     }
                 }

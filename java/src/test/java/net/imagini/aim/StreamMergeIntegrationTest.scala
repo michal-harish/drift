@@ -8,7 +8,6 @@ import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.utils.BlockStorageLZ4
 import net.imagini.aim.tools.AimFilter
-import scala.collection.JavaConverters._
 import net.imagini.aim.tools.PipeUtils
 import net.imagini.aim.tools.StreamMerger
 import java.io.EOFException
@@ -16,7 +15,9 @@ import java.io.EOFException
 class StreamMergeIntegrationTest extends FlatSpec with Matchers {
 
   private def readRecord(schema: AimSchema, mergeSort: StreamMerger) = {
-    schema.fields.map(t ⇒ { t.convert(PipeUtils.read(mergeSort, t.getDataType)) }).foldLeft("")(_ + _ + " ")
+    val r = schema.fields.map(t ⇒ { t.convert(PipeUtils.read(mergeSort, t.getDataType)) }).foldLeft("")(_ + _ + " ")
+    println(r)
+    r
   }
   "2 sorted segments" should "yield correct groups when merge-sorted" in {
     val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),column(STRING),value(STRING)")
@@ -32,9 +33,9 @@ class StreamMergeIntegrationTest extends FlatSpec with Matchers {
     s2.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.music.com}")
     s2.close
 
-    val subschema = schema.subset(List("user_uid", "value").asJava)
+    val subschema = schema.subset(Array("user_uid", "value"))
     val filter = AimFilter.fromString(schema, "column='pageview'")
-    val mergeSort = new StreamMerger(subschema, Array(
+    val mergeSort = new StreamMerger(subschema, 1, Array(
         s1.select(filter, subschema.names),
         s2.select(filter, subschema.names)))
 

@@ -37,7 +37,7 @@ class AimPartition(val schema: AimSchema, val segmentSizeBytes: Int) {
     val str: Array[InputStream] = new Array(segments.size)
     val subSchema: AimSchema = schema.subset(columnNames)
     for (s ← (0 to seg.length - 1)) str(s) = segments(seg(s)).select(filter, columnNames)
-    new StreamMerger(subSchema, str)
+    new StreamMerger(subSchema, 1000, str) //TODO the queueSize=1000 varies depending on query so expose it as optimization parameter
   }
 
   /**
