@@ -154,7 +154,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                 }
             }
             while(true) {
-                if (filter == null || filter.match(scanners)) {
+                if (filter == AimFilter.emptyFilter || filter.match(scanners)) {
                     count++;
                 }
                 for(int c=0; c< subSchema.size(); c++) {
@@ -256,7 +256,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                                 return false;
                             }
                         }
-                        if (filter == null || filter.match(scanners)) {
+                        if (filter == AimFilter.emptyFilter || filter.match(scanners)) {
                             skipNextRecord(true);
                             break;
                         }

@@ -4,8 +4,21 @@ import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import java.nio.ByteBuffer
 import net.imagini.aim.utils.ByteUtils
+import java.util.TreeMap
+import net.imagini.aim.utils.ByteKey
 
 class ByteBufferTest extends FlatSpec with Matchers {
+
+  "ByteKeys with same value and different classifiers" should "be different" in {
+        val tree = new TreeMap[ByteKey,String]()
+        val key2 = new ByteKey("12345678".getBytes(),2) 
+        val key1 = new ByteKey("12345678".getBytes(),1)
+        tree.put(key2, "two")
+        tree.put(key1, "one")
+        tree.size should equal(2)
+        tree.pollFirstEntry.getValue should equal("one")
+        tree.pollFirstEntry.getValue should equal("two")
+    }
 
     "ByteBuffer slice " should "" in {
         val bb1 = ByteBuffer.allocate(12)

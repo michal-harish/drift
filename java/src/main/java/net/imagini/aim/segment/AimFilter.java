@@ -36,6 +36,7 @@ import org.apache.commons.lang3.StringUtils;
  * 
  * @author mharis
  */
+
 public class AimFilter {
 
     public static final AimFilter emptyFilter = null;
@@ -45,6 +46,7 @@ public class AimFilter {
     }
 
     public static AimFilter fromTokenQueue(AimSchema schema, Queue<String> cmd) {
+        //TODO if cmd == ('*') then return emptyFilter
         AimFilter rootFilter = new AimFilter(schema);
         AimFilter filter = rootFilter;
         while(cmd.size()>0) {
