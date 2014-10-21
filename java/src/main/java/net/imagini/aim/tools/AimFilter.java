@@ -106,6 +106,14 @@ public class AimFilter {
     }
 
     /**
+     * This is thread-safe and called in parallel for 
+     * multiple segments.
+     */
+    public boolean matches(Scanner[] record) {
+        return root.matches(true, record);
+    }
+
+    /**
      * This has to be synchronized as it can be called from multiple
      * segments at the same time and changes some internal data.
      * It is not called frequently so it should be ok.
@@ -137,14 +145,6 @@ public class AimFilter {
 
     protected void update(String[] usedColumns) {
         if (next != null) next.update(usedColumns);
-    }
-
-    /**
-     * This is thread-safe and called in parallel for 
-     * multiple segments.
-     */
-    public boolean matches(Scanner[] record) {
-        return root.matches(true, record);
     }
 
     protected boolean matches(boolean soFar, Scanner[] record) {

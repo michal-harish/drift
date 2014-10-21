@@ -14,6 +14,7 @@ import net.imagini.aim.types.SortOrder
 import net.imagini.aim.types.SortOrder._
 import scala.collection.JavaConverters._
 
+//TODO this is not fully parallel as we always wait for the consumed fetcher to replenish
 class MergeQueue extends TreeMap[ByteKey, (Fetcher,Array[Array[Byte]])]
 
 /**
