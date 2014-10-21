@@ -1,5 +1,5 @@
-AIM - crossing large data sets in memory - a conceptual child of Cassandra, Spark and Kafka
-
+working name: AIM - crossing large data sets in memory - a conceptual child of Cassandra, Spark and Kafka
+candidate name: DRIFT - as in concept drift theory - this project is about fast sequential processing of key-ed data sets
 
 Motivation
 ==========
