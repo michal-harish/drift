@@ -9,7 +9,8 @@ import net.imagini.aim.types.SortOrder
 import net.imagini.aim.tools.PipeUtils
 import java.io.EOFException
 
-class MergeScanner(val schema: AimSchema, val filter: AimFilter, val partition: AimPartition) /*extends InputStream*/ {
+class MergeScanner(val filter: AimFilter, val partition: AimPartition) /*extends InputStream*/ {
+  val schema: AimSchema = filter.schema
   val sortOrder = SortOrder.ASC
   val keyColumn: Int = 0
   val keyField: String = schema.name(keyColumn)

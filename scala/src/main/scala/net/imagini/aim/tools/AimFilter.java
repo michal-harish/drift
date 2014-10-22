@@ -84,16 +84,21 @@ public class AimFilter {
         return result;
     }
 
+    private AimSchema schema;
+    protected AimFilter root;
+    protected AimType aimType;
+    protected AimFilter next;
+
+
     public AimFilter(AimSchema schema) {
         this(null, null);
         this.root = this;
         this.schema = schema;
     }
 
-    private AimSchema schema;
-    protected AimFilter root;
-    protected AimType aimType;
-    protected AimFilter next;
+    public AimSchema schema() {
+        return root.schema;
+    }
 
     protected AimFilter(AimFilter root, AimType aimType) {
         this(root,aimType,null);

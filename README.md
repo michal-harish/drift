@@ -17,15 +17,13 @@ Motivation
 
 Usecase 1 - VisualDNA DXP / retroactive data windows 
 ----------------------------------------------------
+    Drift Solution - Two tables with same Key (potentially co-partitioned for more performnce in group filters)
 
-    Drift Solution 1
 Usecase 2 - VisualDNA DXP / combining datasets from id-spaces
 -------------------------------------------------------------
 
 Usecase 3 - VisualDNA DXP / id-linking from newly discovered information 
 ------------------------------------------------------------------------
-   -  
-   - 
 
 
 Design Concepts
@@ -44,7 +42,7 @@ Segment
    |
 BlockStorage
 
-![Design Overview](https://dl.dropboxusercontent.com/u/15048579/aim.svg "Design Overview")
+![Design Overview](https://dl.dropboxusercontent.com/u/15048579/drift.svg "Design Overview")
  
  
 Design thoughts dump

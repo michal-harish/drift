@@ -32,7 +32,7 @@ class MergeScannerTest extends FlatSpec with Matchers {
 
     //TODO select only subset of columns: user_uid, value
     val filter = AimFilter.fromString(schema, "column='pageview'")
-    val mergeScan = new MergeScanner(schema, filter, partition)
+    val mergeScan = new MergeScanner(filter, partition)
 
     //TODO scannerToInputStream converter tool
     mergeScan.nextRecordAsString should be("17b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.music.com} ")
