@@ -2,23 +2,17 @@ package net.imagini.aim.tools
 
 import java.io.EOFException
 import java.io.InputStream
-import java.util.TreeMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.Callable
-import java.util.concurrent.Future
 import scala.collection.JavaConverters._
 import java.util.concurrent.atomic.AtomicInteger
-import scala.collection.mutable.Queue
-import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ConcurrentSkipListMap
-
 import net.imagini.aim.utils.ByteKey
-import net.imagini.aim.types.AimDataType
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.types.SortOrder._
+import scala.Array.canBuildFrom
 
 
 class InputStreamQueue(limit: Int) extends LinkedBlockingQueue[Option[Array[Array[Byte]]]](limit)

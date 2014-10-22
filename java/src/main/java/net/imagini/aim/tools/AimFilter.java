@@ -165,7 +165,7 @@ public class AimFilter {
         return next = new AimFilter(root,aimType) {
             @Override public String toString() { return "= " + aimType.wrap(value) + super.toString(); }
             @Override protected boolean matches(Scanner value, Scanner[] record) {
-                boolean match = super.matches(value.compare(val,aimType.getDataType())==0, record);
+                boolean match = super.matches(value.compare(val,aimType)==0, record);
                 return match;
             }
         };
@@ -215,7 +215,7 @@ public class AimFilter {
         return next = new AimFilter(root,aimType) {
             @Override public String toString() { return "> " + aimType.wrap(value) + super.toString(); }
             @Override protected boolean matches(Scanner value, Scanner[] data) {
-                return super.matches(value.compare(val,aimType.getDataType()) > 0, data);
+                return super.matches(value.compare(val,aimType) > 0, data);
             }
         };
     }
@@ -226,7 +226,7 @@ public class AimFilter {
         return next = new AimFilter(root,aimType) {
             @Override public String toString() { return "< " + aimType.wrap(value) +super.toString(); }
             @Override protected boolean matches(Scanner value, Scanner[] data) {
-                return super.matches(value.compare(val,aimType.getDataType()) < 0, data);
+                return super.matches(value.compare(val,aimType) < 0, data);
             }
         };
     }
@@ -242,7 +242,7 @@ public class AimFilter {
             @Override protected boolean matches(Scanner value, Scanner[] data) {
                 boolean localResult = false;
                 for(ByteBuffer val: vals) {
-                    if (value.compare(val,aimType.getDataType())==0) {
+                    if (value.compare(val,aimType)==0) {
                         localResult = true;
                         break;
                     }

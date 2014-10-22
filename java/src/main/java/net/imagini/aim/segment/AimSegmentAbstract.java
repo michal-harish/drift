@@ -132,6 +132,14 @@ abstract public class AimSegmentAbstract implements AimSegment {
         return count.get();
     }
 
+    @Override public Scanner[] wrapScanners(AimSchema subSchema) {
+        final Scanner[] scanners = new Scanner[subSchema.size()];
+        int i = 0; for(String colName: subSchema.names()) {
+            scanners[i++] = new Scanner(columnar.get(schema.get(colName)));
+        }
+        return scanners;
+    }
+
     @Override final public long count(AimFilter filter) throws IOException {
         final AimSchema subSchema;
         if (filter != null) {

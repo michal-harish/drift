@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import net.imagini.aim.tools.AimFilter;
+import net.imagini.aim.tools.Scanner;
+import net.imagini.aim.types.AimSchema;
 
 public interface AimSegment {
 
@@ -23,5 +25,7 @@ public interface AimSegment {
     long count(AimFilter filter)  throws IOException;
 
     InputStream select(AimFilter filter, String[] columnNames) throws IOException;
+
+    Scanner[] wrapScanners(AimSchema subSchema);
 
 }

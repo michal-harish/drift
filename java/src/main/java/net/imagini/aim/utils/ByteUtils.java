@@ -19,6 +19,10 @@ public class ByteUtils {
      */
     final public static ByteOrder ENDIAN = ByteOrder.BIG_ENDIAN;
 
+    public static int compareUnisgned(byte a, byte b) {
+        return (a & 0xFF)  - (b & 0xFF);
+    }
+
     /**
      * 1. byte[] utils
      */
@@ -165,6 +169,5 @@ public class ByteUtils {
         bb.put(val);
         return bb;
     }
-
 
 }

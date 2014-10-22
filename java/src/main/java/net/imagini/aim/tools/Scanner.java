@@ -1,23 +1,29 @@
 package net.imagini.aim.tools;
 
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.types.AimType;
 import net.imagini.aim.utils.BlockStorage;
 import net.imagini.aim.utils.ByteUtils;
 
 //TODO rewrite in scala
-public class Scanner {
+public class Scanner extends InputStream {
     private BlockStorage blockStorage;
     private Integer currentBlock = -1;
-    private ByteBuffer zoom;
+    protected ByteBuffer zoom;
     private int maxBlock;
 
     public Scanner(BlockStorage blockStorage) {
         this.blockStorage = blockStorage;
         this.maxBlock = blockStorage.numBlocks() - 1;
         rewind();
+    }
+
+    @Override public int read() {
+        return eof() ? -1 : readByte();
     }
 
     public void rewind() {
@@ -43,7 +49,7 @@ public class Scanner {
      * Skips the next n bytes but the caller must know that these bytes are available
      * as this method doesn't check the block overflow
      */
-    public long skip(long skipBytes) {
+    @Override public long skip(long skipBytes) {
         if (skipBytes > zoom.remaining()) {
             skipBytes = zoom.remaining();
         }
@@ -67,28 +73,34 @@ public class Scanner {
         return zoom.get();
     }
 
+    public int compare(Scanner otherScanner, AimType type) {
+        return compare(otherScanner.zoom, type);
+    }
     /**
      * Compares the current buffer position if treated as given type with the given value
      * but does not advance
      */
-    public int compare(ByteBuffer value, AimDataType type) {
+    public int compare(ByteBuffer value, AimType type) {
+
         int ni;
         int i = zoom.position();
         int nj;
-        int j = 0;
+        int j = value.position();
         int n;
+        int k = 0;
         if (type.equals(Aim.STRING)) {
             ni = ByteUtils.getIntValue(zoom) + 4;
             i += 4;
             nj = ByteUtils.getIntValue(value) + 4;
             j += 4;
             n = Math.min(ni, nj);
+            k += 4;
         } else {
-            n = ni = nj = type.getSize();
+            n = ni = nj = type.getDataType().getSize();
         }
         if (ni == nj) {
-            for (; j < n; i++, j++) {
-                int cmp = Byte.compare(zoom.get(i), value.get(j));
+            for (; k < n; k++, i++, j++) {
+                int cmp = ByteUtils.compareUnisgned(zoom.get(i), value.get(j));
                 if (cmp != 0) {
                     return cmp;
                 }
@@ -141,6 +153,22 @@ public class Scanner {
         }
         zoom.rewind();
         return true;
+    }
+
+    public String debugValue(AimType aimType) {
+        return debugValue(zoom, aimType);
+    }
+
+    public String debugValue(ByteBuffer value, AimType aimType) {
+        int size = aimType.getDataType().getSize();
+        if (aimType.equals(Aim.STRING)) {
+            size = ByteUtils.getIntValue(value) + 4;
+        }
+        int p1 = value.position();
+        byte[] v = new byte[size];
+        value.get(v);
+        value.position(p1);
+        return aimType.convert(v);
     }
 
 }
