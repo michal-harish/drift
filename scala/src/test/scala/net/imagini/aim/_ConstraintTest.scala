@@ -8,6 +8,7 @@ import net.imagini.aim.utils.BlockStorageLZ4
 import net.imagini.aim.tools.StreamMerger
 import net.imagini.aim.tools.AimFilter
 import net.imagini.aim.tools.PipeUtils
+
 import java.io.EOFException
 
 class ConstraintTest extends FlatSpec with Matchers {
