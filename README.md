@@ -1,5 +1,6 @@
-working name: AIM - crossing large data sets in memory - a conceptual child of Cassandra, Spark and Kafka
-candidate name: DRIFT - as in concept drift theory - this project is about fast sequential processing of key-ed data sets
+working name: AIM, candidate name: DRIFT
+
+Fast sequential processing of keyed data windows - a conceptual child of Cassandra, Spark and Kafka
 
 Motivation
 ==========
@@ -21,9 +22,21 @@ Usecases
 
 Design Overview and Decisions
 ===============================
+Table (Schema)
+   |
+Cluster
+   |
+Partition 
+   |
+Group
+   |
+Segment
+   |
+BlockStorage
 
 ![Design Overview](https://dl.dropboxusercontent.com/u/15048579/aim.svg "Design Overview")
  
+
 * Table is a virtual entity which has a strictly-typed structure of columns, however individual records are not randomly accessible
 * Multiple records are stored together in an Segment, which can be distributed across different nodes
 * All columns must be present in each segment for sophisticated mapping, i.e. columns cannot be stored across multiple locations
