@@ -1,4 +1,6 @@
-working name: AIM, candidate name: DRIFT
+working name: AIM
+candidate name: DRIFT
+the next best alternative for the basic use case: HBase
 
 Fast sequential processing of keyed data windows - a conceptual child of Cassandra, Spark and Kafka
 
@@ -13,20 +15,28 @@ Motivation
   -> so segments must have a columnar format allow for high speed filtering without re-streaming the data to a remote process 
   -> sending the mappers to the data rather then loading the data and then mapping like in Hadoop or Spark
 
-Usecases
-===========
+Usecase 1 - VisualDNA DXP / retroactive data windows 
+----------------------------------------------------
 
-1) mixing pageview datasets from multiple id-spaces, e.g. addthis + visualdna pageviews
-2) retrospective profile data update
-3) identity linking from newly discovered information
+    Drift Solution 1
+Usecase 2 - VisualDNA DXP / combining datasets from id-spaces
+-------------------------------------------------------------
 
-Design Overview and Decisions
+Usecase 3 - VisualDNA DXP / id-linking from newly discovered information 
+------------------------------------------------------------------------
+   -  
+   - 
+
+
+Design Concepts
 ===============================
-Table (Schema)
+ Type       (physical and logical data types)
    |
-Cluster
+Schema      (definition of columns and KEY each having to be of one of the provided Types)
    |
-Partition 
+Table       (a logical entity which conforms to a given schema, with sequential interface, consiting of partitions)
+   |
+Partition   (a physical node 
    |
 Group
    |
@@ -36,8 +46,20 @@ BlockStorage
 
 ![Design Overview](https://dl.dropboxusercontent.com/u/15048579/aim.svg "Design Overview")
  
-
-* Table is a virtual entity which has a strictly-typed structure of columns, however individual records are not randomly accessible
+ 
+Design thoughts dump
+================================================================================================= 
+* co-partitioning to solve brut-forcie
+* by having partitions as defined above, the future map-reduce protocol is possible in principle, but until then at least something like parallel off-load to hdfs should be possible 
+* because the whole thing is sequential, storage could be a choice from memory, memory-mapped files, to hard files
+* fine-tuning load strategies, e.g.switching between heap-sort, quick-sort when closing a segment
+* fine-tuning select streams, e.g. if we want recent data we'll wait a bit longer for the initial response
+* range queries are filters that limit the segments used in the consequent select stream
+* design of each logical table will have : a) at the cluster level design b) schema level c) segment level d) query tuning
+* We should try to wrap segement processing units into cpu-bound threads (may require C programming) 
+    -> https://github.com/peter-lawrey/Java-Thread-Affinity
+* Think about UTF8 column type before it's too late (everything is just a byte array atm)
+* We'll surely need a 64-bit DOUBLE too
 * Multiple records are stored together in an Segment, which can be distributed across different nodes
 * All columns must be present in each segment for sophisticated mapping, i.e. columns cannot be stored across multiple locations
 * Each segment is stored as an LZ4-compressed in-memory buffer, therefore records cannot be addressed individually but can be 
@@ -72,17 +94,6 @@ cd java
 mvn clean package
 ...TODO add quickstart for loading test json data
 
-
-TODOs and NOTEs
-============================
-- We should try to wrap segement processing units into cpu-bound threads (may require C programming) 
-    -> https://github.com/peter-lawrey/Java-Thread-Affinity
-- We need to compensate reduction with Hashtable or some clever Indexing mechanism
-- Think about UTF8 column type before it's too late (everything is just a byte array atm)
-- We'll surely need a 64-bit DOUBLE too
-- Think about custom column types like UUID[16] IPV4[4] IPV6[6] UTC[4] or schema-mapping functions
-    - shema-mapping functions is cleaner as it is only in the wolrd of loaders 
-    - but then the filters still need to do the same so probably custom fields
 
 Benchmark
 ======================
