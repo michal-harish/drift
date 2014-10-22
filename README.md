@@ -15,16 +15,6 @@ Motivation
   -> so segments must have a columnar format allow for high speed filtering without re-streaming the data to a remote process 
   -> sending the mappers to the data rather then loading the data and then mapping like in Hadoop or Spark
 
-Usecase 1 - VisualDNA DXP / retroactive data windows 
-----------------------------------------------------
-    Drift Solution - Two tables with same Key (potentially co-partitioned for more performnce in group filters)
-
-Usecase 2 - VisualDNA DXP / combining datasets from id-spaces
--------------------------------------------------------------
-
-Usecase 3 - VisualDNA DXP / id-linking from newly discovered information 
-------------------------------------------------------------------------
-
 
 Design Concepts
 ===============================
@@ -43,8 +33,16 @@ Segment
 BlockStorage
 
 ![Design Overview](https://dl.dropboxusercontent.com/u/15048579/drift.svg "Design Overview")
- 
- 
+
+Usecases 
+----------------------------------------------------
+
+* Usecase 1 - VisualDNA DXP / retroactive data windows: Solution - Two tables with same Key (potentially co-partitioned for more performnce in group filters)
+
+* Usecase 2 - VisualDNA DXP / combining datasets from id-spaces
+
+* Usecase 3 - VisualDNA DXP / id-linking from newly discovered information 
+
 Design thoughts dump
 ================================================================================================= 
 * co-partitioning to solve brut-forcie
@@ -86,13 +84,6 @@ Design thoughts dump
     7-20   -            -               reserved
 
 
-Quick-Start
-===========
-cd java
-mvn clean package
-...TODO add quickstart for loading test json data
-
-
 Benchmark
 ======================
 1.000.000 real events loaded into 10 segments on a single box -> 240Mb compressed to 24Mb
@@ -101,15 +92,10 @@ result = 347 out of 1000000
 1 CPU avg consistent query time: 113 ms -> 240Mb(lz4)/sec/box
 2 CPUs: avg consistent query time: 61 ms -> 480Mb(lz4)/sec/box
 
-Protocol Message Types
-======================
 
-Schema
-------
-
-Filter BitSet 
--------------
-
-Select Stream
--------------
+Quick-Start
+===========
+cd java
+mvn clean package
+...TODO add quickstart for loading test json data
 
