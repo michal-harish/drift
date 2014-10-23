@@ -46,6 +46,7 @@ public class AimSchema {
                 switch(function) {
                     case "UUID": result.put(name, Aim.UUID(result.get(name).getDataType())); break;
                     case "IPV4": result.put(name, Aim.IPV4(result.get(name).getDataType())); break;
+                    case "TIME": result.put(name, Aim.TIME(result.get(name).getDataType())); break;
                     default: throw new IllegalArgumentException("Unknown type " + type);
                 }
             }
