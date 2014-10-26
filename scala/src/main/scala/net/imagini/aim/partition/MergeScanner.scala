@@ -21,7 +21,7 @@ case class Selected extends Throwable
 class MergeScanner(val partition: AimPartition, val selectDef: String, val rowFilterDef: String, val groupFilterDef: String) /*extends InputStream*/ {
   def this(partition: AimPartition) = this(partition, "*", "*", "*")
   val keyField: String = partition.schema.name(0)
-  val selectSchema = if (selectDef.contains("*")) partition.schema else partition.schema.subset(selectDef.split(","))
+  val selectSchema = if (selectDef.contains("*")) partition.schema else partition.schema.subset(selectDef.split(",").map(_.trim))
   val rowFilter = RowFilter.fromString(partition.schema, rowFilterDef)
   val groupFilter = RowFilter.fromString(partition.schema, groupFilterDef)
   val sortOrder = SortOrder.ASC
