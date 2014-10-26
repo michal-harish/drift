@@ -42,7 +42,7 @@ public class RowFilter {
         while(cmd.size()>0) {
             String subject = cmd.poll();
             switch(subject.toUpperCase()) {
-                case "*": return rootFilter; 
+                case "*": rootFilter.isEmptyFilter = true; return rootFilter; 
                 case "AND": filter = filter.and(cmd.poll()); break;
                 case "OR": filter = filter.or(cmd.poll()); break;
                 default: filter = filter.where(subject); break; //expression
@@ -84,6 +84,10 @@ public class RowFilter {
     protected RowFilter root;
     protected AimType aimType;
     protected RowFilter next;
+    protected boolean isEmptyFilter = false;
+    public boolean isEmptyFilter() {
+        return isEmptyFilter;
+    }
 
 
     public RowFilter(AimSchema schema) {

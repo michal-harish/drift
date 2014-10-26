@@ -134,7 +134,7 @@ public class AimSchema {
         final AimSchema subSchema = new AimSchema(
                 new LinkedHashMap<String, AimType>() {
                     {
-                        for (String colName : columns) {
+                        for (String colName : columns) if (colName != null){
                             put(colName, def.get(colIndex.get(colName)));
                         }
                     }
