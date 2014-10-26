@@ -4,7 +4,7 @@ import net.imagini.aim.types.AimSchema
 import scala.collection.mutable.ListBuffer
 import net.imagini.aim.segment.AimSegment
 import java.util.concurrent.atomic.AtomicInteger
-import net.imagini.aim.tools.AimFilter
+import net.imagini.aim.tools.RowFilter
 import java.io.InputStream
 import net.imagini.aim.tools.StreamMerger
 import java.util.concurrent.Executors
@@ -29,8 +29,8 @@ class AimPartition(val schema: AimSchema, val segmentSizeBytes: Int) {
   def getCompressedSize: Long = segments.foldLeft(0L)(_ + _.getCompressedSize)
   def getUncompressedSize: Long = segments.foldLeft(0L)(_ + _.getOriginalSize)
 
-  //TODO select(filter: AimGroupFilter(AimFilter), columnNames:...)
-  def select(filter: AimFilter, columnNames: Array[String]): InputStream = {
+  //TODO select(filter: AimGroupFilter(RowFilter), columnNames:...)
+  def select(filter: RowFilter, columnNames: Array[String]): InputStream = {
     val range = defaultRange
     val seg: Array[Int] = new Array(range._2 - range._1 + 1)
     for (i ← (range._2 to range._2)) seg(i - range._1) = i
@@ -45,7 +45,7 @@ class AimPartition(val schema: AimSchema, val segmentSizeBytes: Int) {
    * the table is distributed across multiple machines this thread pool should
    * be bigger until the I/O becomes bottleneck.
    */
-  def count(filter: AimFilter): Long = {
+  def count(filter: RowFilter): Long = {
     //TODO range will become part of the filter
     val range = defaultRange
     val seg: Array[Int] = new Array(range._2 - range._1 + 1)
@@ -59,7 +59,7 @@ class AimPartition(val schema: AimSchema, val segmentSizeBytes: Int) {
     results.foldLeft(0L)(_ + _.get)
   }
 
-//  def reduce[T](filter: AimFilter, reducer:() => T): T= {
+//  def reduce[T](filter: RowFilter, reducer:() => T): T= {
 //    val range = defaultRange
 //    val seg: Array[Int] = new Array(range._2 - range._1 + 1)
 //    val results: List[Future[Long]] = seg.map(s => mapreduce.submit(new Callable[Long] {

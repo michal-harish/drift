@@ -2,7 +2,7 @@ package net.imagini.aim.partition
 
 import net.imagini.aim.tools.Pipe
 import java.io.IOException
-import net.imagini.aim.tools.AimFilter
+import net.imagini.aim.tools.RowFilter
 import java.util.Queue
 import net.imagini.aim.tools.Tokenizer
 import java.util.ArrayList
@@ -12,7 +12,7 @@ import java.io.EOFException
 
 class AimPartitionServerQuerySession(val partition: AimPartition, val pipe: Pipe) extends Thread {
 
-  var filter: AimFilter = null
+  var filter: RowFilter = null
 
   def exceptionAsString(e: Throwable): String = e.getMessage + e.getStackTrace.map(trace ⇒ trace.toString).foldLeft("\n")(_ + _ + "\n")
 
@@ -54,7 +54,7 @@ class AimPartitionServerQuerySession(val partition: AimPartition, val pipe: Pipe
 
   private def handleFilter(cmd: Queue[String]) = {
     if (cmd.size > 0) {
-      filter = AimFilter.fromTokenQueue(partition.schema, cmd)
+      filter = RowFilter.fromTokenQueue(partition.schema, cmd)
     }
     pipe.write(true);
     pipe.write("COUNT");

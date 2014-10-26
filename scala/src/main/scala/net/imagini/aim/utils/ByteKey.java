@@ -18,7 +18,7 @@ public class ByteKey implements Comparable<ByteKey> {
     }
 
     @Override public boolean equals(Object other) {
-        if (!(other instanceof ByteKey)) {
+        if (other == null || !(other instanceof ByteKey)) {
             return false;
         }
         ByteKey otherKey = ((ByteKey)other);

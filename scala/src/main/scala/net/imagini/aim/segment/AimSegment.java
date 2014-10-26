@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import net.imagini.aim.tools.AimFilter;
+import net.imagini.aim.tools.RowFilter;
 import net.imagini.aim.tools.Scanner;
 import net.imagini.aim.types.AimSchema;
 
@@ -22,9 +22,9 @@ public interface AimSegment {
 
     long getOriginalSize();
 
-    long count(AimFilter filter)  throws IOException;
+    long count(RowFilter filter)  throws IOException;
 
-    InputStream select(AimFilter filter, String[] columnNames) throws IOException;
+    InputStream select(RowFilter filter, String[] columnNames) throws IOException;
 
     Scanner[] wrapScanners(AimSchema subSchema);
 

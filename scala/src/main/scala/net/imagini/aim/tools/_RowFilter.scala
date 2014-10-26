@@ -5,17 +5,17 @@ import java.util.Queue
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
 
-object RowFilter {
-  protected[tools] def proxy(root: RowFilter, schema: AimSchema, expression: String): RowFilter = new RowFilterSimple(schema, root, expression)
+object _RowFilter {
+  def proxy(root: _RowFilter, schema: AimSchema, expression: String): _RowFilter = new _RowFilterSimple(schema, root, expression)
 
-  def fromString(schema: AimSchema, declaration: String): RowFilter = fromTokenQueue(schema, Tokenizer.tokenize(declaration))
-  def fromTokenQueue(schema: AimSchema, cmd: Queue[String]): RowFilter = {
+  def fromString(schema: AimSchema, declaration: String): _RowFilter = fromTokenQueue(schema, Tokenizer.tokenize(declaration))
+  def fromTokenQueue(schema: AimSchema, cmd: Queue[String]): _RowFilter = {
     //
-    new RowFilter(null)
+    new _RowFilter(null)
   }
 }
 
-class RowFilterSimple(schema: AimSchema, root: RowFilter, val colName: String) extends RowFilter(schema, root, schema.field(colName), null) {
+class _RowFilterSimple(schema: AimSchema, root: _RowFilter, val colName: String) extends _RowFilter(schema, root, schema.field(colName), null) {
   var colIndex = -1
   override protected def getColumnSet(fields: Array[String]): Set[String] = super.getColumnSet(Array(colName))
   override def update(usedColumns: Array[String]) = {
@@ -30,10 +30,10 @@ class RowFilterSimple(schema: AimSchema, root: RowFilter, val colName: String) e
 
 }
 
-class RowFilter(val schema: AimSchema, val root:RowFilter, val aimType: AimType, val next:RowFilter) {
+class _RowFilter(val schema: AimSchema, val root:_RowFilter, val aimType: AimType, val next:_RowFilter) {
   def this(schema: AimSchema) = this(schema, null,null,null)
-  protected[tools] def this(root:RowFilter, aimType: AimType) = this(null, root, aimType, null)
-  protected[tools] def this(root:RowFilter, aimType:AimType , next:RowFilter) = this(null, root, aimType, next)
+  def this(root:_RowFilter, aimType: AimType) = this(null, root, aimType, null)
+  def this(root:_RowFilter, aimType:AimType , next:_RowFilter) = this(null, root, aimType, next)
 
   /**
    * This has to be synchronized as it can be called from multiple
@@ -41,7 +41,7 @@ class RowFilter(val schema: AimSchema, val root:RowFilter, val aimType: AimType,
    * It is not called frequently so it should be ok.
    */
   final def updateFormula(usedColumns: Array[String]) {
-    this.synchronized {
+    _RowFilter.this.synchronized {
       //root.update(usedColumns);
     }
   }
@@ -61,10 +61,10 @@ class RowFilter(val schema: AimSchema, val root:RowFilter, val aimType: AimType,
 
   protected[tools] def matches(soFar: Boolean, record: Array[Scanner]): Boolean = if (next == null) soFar else next.matches(soFar, record)
 
-  protected[tools] def matches(value: Scanner, record: Array[Scanner]): Boolean = {
-    throw new IllegalAccessError(this.getClass().getSimpleName() + " cannot be matched against a value")
+  def matches(value: Scanner, record: Array[Scanner]): Boolean = {
+    throw new IllegalAccessError(_RowFilter.this.getClass().getSimpleName() + " cannot be matched against a value")
   }
 
-  def where(expression: String): RowFilter = RowFilter.proxy(root, root.schema, expression)
+  def where(expression: String): _RowFilter = _RowFilter.proxy(root, root.schema, expression)
 
 }

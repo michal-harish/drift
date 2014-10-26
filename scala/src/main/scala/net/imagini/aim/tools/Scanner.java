@@ -2,6 +2,7 @@ package net.imagini.aim.tools;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
@@ -9,19 +10,40 @@ import net.imagini.aim.types.AimType;
 import net.imagini.aim.utils.BlockStorage;
 import net.imagini.aim.utils.ByteUtils;
 
-//TODO rewrite in scala
 public class Scanner extends InputStream {
+    private static class Mark {
+        public final Integer block;
+        public final Integer position;
+        public Mark(Integer block, Integer position) {
+            this.block = block;
+            this.position = position;
+        }
+    }
     private BlockStorage blockStorage;
     private Integer currentBlock = -1;
     protected ByteBuffer zoom;
     private int maxBlock;
+    private Mark mark = null;
 
     public Scanner(BlockStorage blockStorage) {
         this.blockStorage = blockStorage;
         this.maxBlock = blockStorage.numBlocks() - 1;
         rewind();
     }
+    public void mark() {
+        this.mark = new Mark(currentBlock, zoom.position());
+    }
 
+    @Override public void reset() {
+        if (mark != null) {
+            if (currentBlock != mark.block) {
+                currentBlock = mark.block;
+                decompress(mark.block);
+            }
+            zoom.position(mark.position);
+            mark = null;
+        }
+    }
     @Override public int read() {
         return eof() ? -1 : readByte();
     }
@@ -64,6 +86,10 @@ public class Scanner extends InputStream {
      */
     public int asIntValue() {
         return ByteUtils.getIntValue(zoom);
+    }
+    public byte[] asAimValue(AimType t) {
+        int size = PipeUtils.sizeOf(zoom, t.getDataType());
+        return Arrays.copyOfRange(zoom.array(), zoom.position(), zoom.position() + size);
     }
 
     /**

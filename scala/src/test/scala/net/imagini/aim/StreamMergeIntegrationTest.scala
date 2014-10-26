@@ -7,7 +7,7 @@ import net.imagini.aim.segment.AimSegmentUnsorted
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.utils.BlockStorageLZ4
-import net.imagini.aim.tools.AimFilter
+import net.imagini.aim.tools.RowFilter
 import net.imagini.aim.tools.PipeUtils
 import net.imagini.aim.tools.StreamMerger
 import java.io.EOFException
@@ -34,7 +34,7 @@ class StreamMergeIntegrationTest extends FlatSpec with Matchers {
     s2.close
 
     val subschema = schema.subset(Array("user_uid", "value"))
-    val filter = AimFilter.fromString(schema, "column='pageview'")
+    val filter = RowFilter.fromString(schema, "column='pageview'")
     val mergeSort = new StreamMerger(subschema, 1, Array(
         s1.select(filter, subschema.names),
         s2.select(filter, subschema.names)))

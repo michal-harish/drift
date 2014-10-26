@@ -3,7 +3,6 @@ package net.imagini.aim.partition
 import net.imagini.aim.utils.ByteKey
 import net.imagini.aim.types.AimSchema
 import scala.collection.mutable.LinkedList
-import net.imagini.aim.tools.AimFilter
 import net.imagini.aim.tools.Scanner
 
 /**

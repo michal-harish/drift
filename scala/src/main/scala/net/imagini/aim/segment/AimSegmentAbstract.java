@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.imagini.aim.tools.PipeUtils;
-import net.imagini.aim.tools.AimFilter;
+import net.imagini.aim.tools.RowFilter;
 import net.imagini.aim.tools.Scanner;
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
@@ -140,7 +140,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
         return scanners;
     }
 
-    @Override final public long count(AimFilter filter) throws IOException {
+    @Override final public long count(RowFilter filter) throws IOException {
         final AimSchema subSchema;
         if (filter != null) {
             subSchema = schema.subset(filter.getColumns());
@@ -194,7 +194,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
      * Not Thread-safe 
      * Filtered, Aggregate Input stream for all the selected columns in this segment.
      */
-    @Override final public InputStream select(final AimFilter filter, final String[] columns) throws IOException {
+    @Override final public InputStream select(final RowFilter filter, final String[] columns) throws IOException {
         try {
             checkWritable(false);
         } catch (IllegalAccessException e) {

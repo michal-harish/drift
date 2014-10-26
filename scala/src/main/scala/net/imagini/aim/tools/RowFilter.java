@@ -15,38 +15,34 @@ import net.imagini.aim.types.AimType;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * AimFilter objects can be chained into a filter chain that is evaulated from left to right.
+ * RowFilter objects can be chained into a filter chain that is evaulated from left to right.
  * 
  * Example:
  * 
- *  AimTable table = ...
- *  AimFilter filter = new AimFilter(table);
+ * RowFilter filter = new RowFilter(schema);
  *      .where("timestamp").greaterThan("1374467639")
  *      .and("timestamp").lessThan("12746999");
- * 
- * The filter object can then be used as an argument to the table.open(..) method which
- * will return a virtual filtered InputStream for all the selected columns and all
- * records that match the filter criteria:
- * 
- *  table.open(..,filter,"timestamp","user_uid","api_key,"url");
- * 
- * 
+ *
+ * Alternative:
+ *
+ * RowFilter.fromString("timestamp > 1374467639 and timestamp < 12746999")
+ *
  * @author mharis
  */
 
-public class AimFilter {
+public class RowFilter {
 
-    public static AimFilter fromString(AimSchema schema, String declaration) {
+    public static RowFilter fromString(AimSchema schema, String declaration) {
         return fromTokenQueue(schema, Tokenizer.tokenize(declaration));
     }
 
-    public static AimFilter fromTokenQueue(AimSchema schema, Queue<String> cmd) {
-        //TODO if cmd == ('*') then return emptyFilter
-        AimFilter rootFilter = new AimFilter(schema);
-        AimFilter filter = rootFilter;
+    public static RowFilter fromTokenQueue(AimSchema schema, Queue<String> cmd) {
+        RowFilter rootFilter = new RowFilter(schema);
+        RowFilter filter = rootFilter;
         while(cmd.size()>0) {
             String subject = cmd.poll();
             switch(subject.toUpperCase()) {
+                case "*": return rootFilter; 
                 case "AND": filter = filter.and(cmd.poll()); break;
                 case "OR": filter = filter.or(cmd.poll()); break;
                 default: filter = filter.where(subject); break; //expression
@@ -78,19 +74,19 @@ public class AimFilter {
         return rootFilter;
     }
 
-    protected static AimFilter proxy(AimFilter root, AimSchema schema, String expression) {
-        AimFilter result = new AimFilterSimple(root, schema, expression);
+    protected static RowFilter proxy(RowFilter root, AimSchema schema, String expression) {
+        RowFilter result = new RowFilterSimple(root, schema, expression);
         result.root = root;
         return result;
     }
 
     private AimSchema schema;
-    protected AimFilter root;
+    protected RowFilter root;
     protected AimType aimType;
-    protected AimFilter next;
+    protected RowFilter next;
 
 
-    public AimFilter(AimSchema schema) {
+    public RowFilter(AimSchema schema) {
         this(null, null);
         this.root = this;
         this.schema = schema;
@@ -100,11 +96,11 @@ public class AimFilter {
         return root.schema;
     }
 
-    protected AimFilter(AimFilter root, AimType aimType) {
+    protected RowFilter(RowFilter root, AimType aimType) {
         this(root,aimType,null);
     }
 
-    protected AimFilter(AimFilter root, AimType type, AimFilter next) {
+    protected RowFilter(RowFilter root, AimType type, RowFilter next) {
         this.aimType = type;
         this.root = root;
         this.next = next;
@@ -160,14 +156,14 @@ public class AimFilter {
         throw new IllegalAccessError(this.getClass().getSimpleName() + " cannot be matched against a value");
     }
 
-    public AimFilter where(String expression) {
-        return next = AimFilter.proxy(root, root.schema, expression);
+    public RowFilter where(String expression) {
+        return next = RowFilter.proxy(root, root.schema, expression);
     }
 
-    public AimFilter equals(final String value) {
+    public RowFilter equals(final String value) {
         if (aimType == null) return next.equals(value);
         final ByteBuffer val = ByteBuffer.wrap(aimType.convert(value));
-        return next = new AimFilter(root,aimType) {
+        return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "= " + aimType.wrap(value) + super.toString(); }
             @Override protected boolean matches(Scanner value, Scanner[] record) {
                 boolean match = super.matches(value.compare(val,aimType)==0, record);
@@ -176,8 +172,8 @@ public class AimFilter {
         };
     }
 
-    public AimFilter and(String expression) {
-        return next = new AimFilterOp(root, expression) {
+    public RowFilter and(String expression) {
+        return next = new RowFilterOp(root, expression) {
             @Override public String toString() { return "AND" + super.toString(); }
             @Override protected boolean compare(boolean a, boolean b) {
                 return a & b;
@@ -185,8 +181,8 @@ public class AimFilter {
         };
     }
 
-    public AimFilter or(String expression) {
-        return next = new AimFilterOp(root, expression) {
+    public RowFilter or(String expression) {
+        return next = new RowFilterOp(root, expression) {
             @Override public String toString() { return "OR"+ super.toString(); }
             @Override protected boolean compare(boolean a, boolean b) {
                 return a | b;
@@ -194,8 +190,8 @@ public class AimFilter {
         };
     }
 
-    public AimFilter not() {
-        return next = new AimFilter(root, aimType, next) {
+    public RowFilter not() {
+        return next = new RowFilter(root, aimType, next) {
             @Override public String toString() { return "NOT" + super.toString(); }
             @Override protected boolean matches(boolean soFar, Scanner[] record) {
                 return !next.matches(soFar, record);
@@ -203,10 +199,10 @@ public class AimFilter {
         };
     }
 
-    public AimFilter contains(final String value) {
+    public RowFilter contains(final String value) {
         if (aimType == null) return next.contains(value);
         final ByteBuffer val = ByteBuffer.wrap(aimType.convert(value));
-        return next = new AimFilter(root,aimType) {
+        return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "CONTAINS " + aimType.wrap(value) + super.toString(); }
             @Override protected boolean matches(Scanner value,  Scanner[] record) {
                 return super.matches(value.contains(val,aimType.getDataType()), record);
@@ -214,10 +210,10 @@ public class AimFilter {
         };
     }
 
-    public AimFilter greaterThan(final String value) {
+    public RowFilter greaterThan(final String value) {
         if (aimType == null) return next.greaterThan(value);
         final ByteBuffer val = ByteBuffer.wrap(aimType.convert(value));
-        return next = new AimFilter(root,aimType) {
+        return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "> " + aimType.wrap(value) + super.toString(); }
             @Override protected boolean matches(Scanner value, Scanner[] data) {
                 return super.matches(value.compare(val,aimType) > 0, data);
@@ -225,10 +221,10 @@ public class AimFilter {
         };
     }
 
-    public AimFilter lessThan(final String value) {
+    public RowFilter lessThan(final String value) {
         if (aimType == null) return next.lessThan(value);
         final ByteBuffer val = ByteBuffer.wrap(aimType.convert(value));
-        return next = new AimFilter(root,aimType) {
+        return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "< " + aimType.wrap(value) +super.toString(); }
             @Override protected boolean matches(Scanner value, Scanner[] data) {
                 return super.matches(value.compare(val,aimType) < 0, data);
@@ -236,13 +232,13 @@ public class AimFilter {
         };
     }
 
-    public AimFilter in(final String... values) {
+    public RowFilter in(final String... values) {
         if (aimType == null) return next.in(values);
         final ByteBuffer[] vals = new ByteBuffer[values.length]; 
         int i = 0; for(String value:values) {
             vals[i++] = ByteBuffer.wrap(aimType.convert(value));
         }
-        return next = new AimFilter(root,aimType) {
+        return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "IN (" + StringUtils.join(values, ",") +")" + super.toString(); }
             @Override protected boolean matches(Scanner value, Scanner[] data) {
                 boolean localResult = false;
@@ -257,10 +253,10 @@ public class AimFilter {
         };
     }
 
-    public static class AimFilterSimple extends AimFilter {
+    public static class RowFilterSimple extends RowFilter {
         private int colIndex;
         private String colName;
-        public AimFilterSimple(AimFilter root, AimSchema schema, String field) {
+        public RowFilterSimple(RowFilter root, AimSchema schema, String field) {
             super(root, schema.field(field));
             this.colName = field;
         }
@@ -286,16 +282,16 @@ public class AimFilter {
 
     }
 
-    abstract static public class AimFilterOp extends AimFilter {
-        public AimFilterOp(AimFilter root, String expression) {
+    abstract static public class RowFilterOp extends RowFilter {
+        public RowFilterOp(RowFilter root, String expression) {
             super(root, null);
-            next = AimFilter.proxy(root, root.schema,expression);
+            next = RowFilter.proxy(root, root.schema,expression);
         }
         @Override
         protected boolean matches(boolean soFar, Scanner[] data) {
             return compare(soFar, next.matches(true, data));
         }
         abstract protected boolean compare(boolean a, boolean b);
-
     }
+
 }
