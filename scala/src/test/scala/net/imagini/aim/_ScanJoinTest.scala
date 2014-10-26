@@ -50,15 +50,15 @@ class ScanJoinTest extends FlatSpec with Matchers {
     val partitionC1 = new AimPartition(schemaC, 1000)
     partitionC1.add(sC1)
 
-    val mergeScanA = new MergeScanner(partitionA1, "user_uid,url", "url contains 'travel.com'", "*")
+    val mergeScanA = new MergeScanner(partitionA1, "user_uid,url,conversion,quizzed", "url contains 'travel.com'", "*")
     println(mergeScanA.nextRowAsString)
     println(mergeScanA.nextRowAsString)
     println(mergeScanA.nextRowAsString)
 
-    val mergeScanB = new MergeScanner(partitionB1, "user_uid,url,conversion", "url contains 'travel.com'", "*")
+    val mergeScanB = new MergeScanner(partitionB1, "user_uid,url,conversion,quizzed", "url contains 'travel.com'", "*")
     println(mergeScanB.nextRowAsString)
 
-    val mergeScanC = new MergeScanner(partitionC1, "*", "flag='quizzed' and value=true", "*")
+    val mergeScanC = new MergeScanner(partitionC1, "user_uid,url,conversion,quizzed(group value where flag='quizzed')", "*", "flag='quizzed' and value=true")
     println(mergeScanC.nextRowAsString)
 
     val joinScan = new JoinScanner(
@@ -71,10 +71,10 @@ class ScanJoinTest extends FlatSpec with Matchers {
      * and table C is used only for gorup filter but not for select result.
      * 
      * user_uid(UUID:BYTEARRAY[16])         | url(STRING)                           | conversion(STRING)    |
-     * =====================================+=======================================+=======================|
-     * 37b22cfb-a29e-42c3-a3d9-12d32850e103 | www.travel.com/offers                 |                       |
-     * 37b22cfb-a29e-42c3-a3d9-12d32850e103 | www.travel.com/offers/holiday         |                       |
-     * 37b22cfb-a29e-42c3-a3d9-12d32850e103 | www.travel.com/offers                 |                       |
+     * =====================================+=======================================+=======================+
+     * 37b22cfb-a29e-42c3-a3d9-12d32850e103 | www.travel.com/offers                 | -                     |
+     * 37b22cfb-a29e-42c3-a3d9-12d32850e103 | www.travel.com/offers/holiday         | -                     |
+     * 37b22cfb-a29e-42c3-a3d9-12d32850e103 | www.travel.com/offers                 | -                     |
      * 37b22cfb-a29e-42c3-a3d9-12d32850e103 | www.travel.com/offers/holiday/book    | buy                   |
      * =====================================+=======================================+=======================|
      */

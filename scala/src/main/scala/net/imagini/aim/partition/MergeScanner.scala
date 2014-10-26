@@ -18,6 +18,7 @@ import net.imagini.aim.types.AimDataType
 import net.imagini.aim.types.AimTypeAbstract
 import net.imagini.aim.types.Aim
 import java.io.ByteArrayInputStream
+import scala.xml.dtd.EMPTY
 
 case class Selected extends Throwable
 
@@ -33,6 +34,7 @@ class MergeScanner(val partition: AimPartition, val selectStatement: String, val
     selectDef.map(f ⇒ f match {
       case field: String if (partition.schema.has(field))    ⇒ (field -> partition.schema.field(field))
       case function: String if (function.contains("(group")) ⇒ new AimTypeGROUP(partition.schema, function).typeTuple
+      case empty: String                                     ⇒ empty -> Aim.EMPTY
     }): _*).asJava))
 
   val groupFunctions: Seq[AimTypeGROUP] = selectSchema.fields.filter(_.isInstanceOf[AimTypeGROUP]).map(_.asInstanceOf[AimTypeGROUP])
@@ -52,18 +54,16 @@ class MergeScanner(val partition: AimPartition, val selectStatement: String, val
   private var transformedKey: Array[Byte] = null
 
   def nextRowAsString: String = rowAsString(nextRow)
-  def rowAsString(streams: Seq[InputStream]): String = (selectSchema.fields, streams).zipped.map((t, s) ⇒ {
-    //println(t)
-    t.convert(PipeUtils.read(s, t.getDataType))
-  }).foldLeft("")(_ + _ + " ")
+
+  def rowAsString(streams: Seq[InputStream]): String = (selectSchema.fields, streams).zipped.map((t, s) ⇒ t.convert(PipeUtils.read(s, t.getDataType))).foldLeft("")(_ + _ + " ")
 
   def nextRow: Seq[InputStream] = {
     val scanRow = nextRowScan
     val streams: Seq[InputStream] = selectSchema.names.map(f ⇒ selectSchema.field(f) match {
-      case function: AimTypeGROUP ⇒ function.toInputStream
-      case field: AimType         ⇒ scanRow(scanSchema.get(f))
+      case function: AimTypeGROUP                      ⇒ function.toInputStream
+      case empty: AimType if (empty.equals(Aim.EMPTY)) ⇒ null
+      case field: AimType                              ⇒ scanRow(scanSchema.get(f))
     })
-    //val streams = colIndex.filter(f ⇒ f >= 0).map(scanRow(_))
     colIndex.map(f ⇒ if (f < 0) PipeUtils.skip(scanRow(-1 * f - 1), scanSchema.get(-1 * f - 1).getDataType))
     streams
   }
@@ -136,11 +136,11 @@ class MergeScanner(val partition: AimPartition, val selectStatement: String, val
     val field = body.substring(0, body.indexOf(" "))
     val dataType = schema.field(field).getDataType
     val filter = RowFilter.fromString(schema, body.substring(body.indexOf(" where ") + 7).trim)
-    private var value: InputStream = null
-    def reset = value = null
-    def satisfied = value != null
-    def satisfy(value: Array[Byte]) = this.value = new ByteArrayInputStream(value)
-    def toInputStream = { value.reset; value }
+    private var stream: InputStream = null
+    def reset = stream = null
+    def satisfied = stream != null
+    def satisfy(value: Array[Byte]) = stream = new ByteArrayInputStream(value)
+    def toInputStream = { stream.reset; stream }
     override def getDataType = dataType
     override def toString = "GROUP[" + field + " WHERE" + filter + "]"
     override def convert(value: String): Array[Byte] = dataType.convert(value)
