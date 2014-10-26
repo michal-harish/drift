@@ -26,13 +26,10 @@ class ScanMergeGroupFunctionTest extends FlatSpec with Matchers {
     partition.add(s1)
     partition.add(s2)
 
-    val mergeScan = new MergeScanner(partition, "user_uid,value,at_id(group value where column='addthis_id')", "column='pageview'", "*")
-    try {
-      while (true) {
-        println(mergeScan.nextRowAsString)
-      }
-    } catch {
-      case e: EOFException ⇒ {}
-    }
+    val mergeScan = new MergeScanner(partition, "at_id(group value where column='addthis_id'),value", "column='pageview'", "*")
+    mergeScan.nextRowAsString should be("AT1234 {www.ebay.com} ")
+    mergeScan.nextRowAsString should be("AT1234 {www.auto.com} ")
+    mergeScan.nextRowAsString should be("AT9876 {www.travel.com} ")
+    an[EOFException] must be thrownBy mergeScan.nextRowAsString
   }
 }

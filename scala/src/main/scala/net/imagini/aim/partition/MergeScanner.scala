@@ -21,10 +21,6 @@ import java.io.ByteArrayInputStream
 
 case class Selected extends Throwable
 
-/**
- * TODO refactor filter initialisation - at the moment the filter requires calling updateFormuls
- * because the set of scanners available for matching is dictated by what needs to be selected plus what needs to be filtered
- */
 class MergeScanner(val partition: AimPartition, val selectStatement: String, val rowFilterStatement: String, val groupFilterStatement: String) {
   def this(partition: AimPartition) = this(partition, "*", "*", "*")
   val selectDef = if (selectStatement.contains("*")) partition.schema.names else selectStatement.split(",").map(_.trim)
