@@ -37,11 +37,11 @@ BlockStorage
 Usecases 
 ----------------------------------------------------
 
-* Usecase 1 - VisualDNA DXP / retroactive data windows: Solution - Two tables with same Key (potentially co-partitioned for more performnce in group filters)
+* Usecase 1 - retroactive data windows: Solution - two tables in the same Keyspace, i.e. co-partitioned, with ScanJoin select
 
-* Usecase 2 - VisualDNA DXP / combining datasets from id-spaces
+* Usecase 2 - combining datasets from id-spaces - two tables from different Keyspaces, with StreamJoin and key transformation (!)
 
-* Usecase 3 - VisualDNA DXP / id-linking from newly discovered information 
+* Usecase 3 - id-linking from newly discovered information (?)
 
 Design thoughts dump
 ================================================================================================= 
