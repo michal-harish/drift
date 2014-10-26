@@ -37,11 +37,11 @@ class ScanJoinTest extends FlatSpec with Matchers {
     val partitionB1 = new AimPartition(schemaB, 1000)
     partitionB1.add(sB1)
 
-    val mergeScanA = new MergeScanner(partitionA1, "url contains 'travel.com'")
+    val mergeScanA = new MergeScanner(partitionA1, "*", "url contains 'travel.com'", "*")
     println(mergeScanA.nextRowAsString)
     println(mergeScanA.nextRowAsString)
 
-    val mergeScanB = new MergeScanner(partitionB1, "flag='quizzed' and value=true")
+    val mergeScanB = new MergeScanner(partitionB1, "*", "flag='quizzed' and value=true", "*")
     println(mergeScanB.nextRowAsString)
 
     //A(select user_uid,url,timestamp from A filter url contains 'travel.com') join B(quizzed=true)

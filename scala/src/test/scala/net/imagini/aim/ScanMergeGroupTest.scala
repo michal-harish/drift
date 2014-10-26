@@ -26,13 +26,13 @@ class GroupMergeScannerTest extends FlatSpec with Matchers {
     partition.add(s1)
     partition.add(s2)
 
-    val mergeScan = new MergeScanner(partition, "column='pageview'", "column='addthis_id'")
+    val mergeScan = new MergeScanner(partition, "*", "column='pageview'", "column='addthis_id'")
     mergeScan.nextRowAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.ebay.com} ")
     mergeScan.nextRowAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.auto.com} ")
     mergeScan.nextRowAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.travel.com} ")
     an[EOFException] must be thrownBy mergeScan.nextRowAsString
 
-    val mergeScan2 = new MergeScanner(partition, "column='pageview'", "column='addthis_id' and value='AT9876'")
+    val mergeScan2 = new MergeScanner(partition, "*", "column='pageview'", "column='addthis_id' and value='AT9876'")
     mergeScan2.nextRowAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.travel.com} ")
     an[EOFException] must be thrownBy mergeScan2.nextRowAsString
 

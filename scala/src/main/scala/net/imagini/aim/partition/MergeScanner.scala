@@ -14,23 +14,31 @@ case class Selected extends Throwable
 
 /**
  * TODO refactor filter initialisation - at the moment the filter requires calling updateFormuls
- *  because the set of scanners available for matching is dictated by what needs to be selected plus what needs to be filtered
+ * because the set of scanners available for matching is dictated by what needs to be selected plus what needs to be filtered
+ *
+ * TODO scannerToInputStream converter tool
  */
-class MergeScanner(val partition: AimPartition, val rowFilterDef: String, val groupFilterDef: String) /*extends InputStream*/ {
-  def this(partition: AimPartition, rowFilterDef: String) = this(partition, rowFilterDef, "*")
-  def this(partition: AimPartition) = this(partition, "*", "*")
-  val schema = partition.schema
-  val rowFilter = RowFilter.fromString(schema, rowFilterDef)
-  rowFilter.updateFormula(schema.names)
-  val groupFilter = RowFilter.fromString(schema, groupFilterDef)
-  groupFilter.updateFormula(schema.names)
+class MergeScanner(val partition: AimPartition, val selectDef: String, val rowFilterDef: String, val groupFilterDef: String) /*extends InputStream*/ {
+  def this(partition: AimPartition) = this(partition, "*", "*", "*")
+  val keyField: String = partition.schema.name(0)
+  val selectSchema = if (selectDef.contains("*")) partition.schema else partition.schema.subset(selectDef.split(","))
+  val rowFilter = RowFilter.fromString(partition.schema, rowFilterDef)
+  val groupFilter = RowFilter.fromString(partition.schema, groupFilterDef)
   val sortOrder = SortOrder.ASC
-  val keyColumn: Int = 0
-  val keyField: String = schema.name(keyColumn)
-  val keyType = schema.get(keyColumn)
-  val scanners: Seq[Array[Scanner]] = partition.segments.map(segment ⇒ segment.wrapScanners(schema))
 
-  def nextRow: Array[Scanner] = {
+  val scanSchema: AimSchema = partition.schema.subset(selectSchema.names ++ rowFilter.getColumns ++ groupFilter.getColumns :+ keyField)
+  rowFilter.updateFormula(scanSchema.names)
+  groupFilter.updateFormula(scanSchema.names)
+  val keyColumn: Int = scanSchema.get(keyField)
+  val keyType = scanSchema.get(keyColumn)
+  val scanners: Seq[Array[Scanner]] = partition.segments.map(segment ⇒ segment.wrapScanners(scanSchema))
+  val colIndex: Seq[Int] = selectSchema.names.map(n ⇒ scanSchema.get(n)) ++ scanSchema.names.filter(!selectSchema.names.contains(_)).map(n ⇒ -1 * scanSchema.get(n) - 1)
+
+  def nextRowAsString: String = rowAsString(nextRow)
+
+  def rowAsString(row: Seq[Scanner]): String = (selectSchema.fields, row).zipped.map((t, s) ⇒ t.convert(PipeUtils.read(s, t.getDataType))).foldLeft("")(_ + _ + " ")
+
+  def nextRow: Seq[Scanner] = {
     var key = nextGroup
     var row = unfilteredRow
     try {
@@ -48,7 +56,7 @@ class MergeScanner(val partition: AimPartition, val rowFilterDef: String, val gr
     } catch {
       case e: Selected ⇒ {}
     }
-    row
+    colIndex.filter(f ⇒ { if (f < 0) { PipeUtils.skip(row(-1 * f - 1), scanSchema.get(-1 * f - 1).getDataType); false } else true }).map(row(_))
   }
 
   private def nextGroup: Array[Byte] = {
@@ -75,9 +83,7 @@ class MergeScanner(val partition: AimPartition, val rowFilterDef: String, val gr
     key
   }
 
-  private def skipRow(row: Array[Scanner]) = for ((t, s) ← (schema.fields zip row)) PipeUtils.skip(s, t.getDataType)
-  def rowAsString(row: Array[Scanner]): String = (schema.fields, row).zipped.map((t, s) ⇒ t.convert(PipeUtils.read(s, t.getDataType))).foldLeft("")(_ + _ + " ")
-  def nextRowAsString: String = rowAsString(nextRow)
+  private def skipRow(row: Array[Scanner]) = for ((t, s) ← (scanSchema.fields zip row)) PipeUtils.skip(s, t.getDataType)
 
   def unfilteredRow: Array[Scanner] = {
     var nextSegment = -1

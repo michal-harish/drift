@@ -32,13 +32,12 @@ class MergeScannerTest extends FlatSpec with Matchers {
     partition.add(s2)
 
     //TODO select only subset of columns: user_uid, value
-    val mergeScan = new MergeScanner(partition, "column='pageview'")
+    val mergeScan = new MergeScanner(partition, "user_uid,value", "column='pageview'", "*")
 
-    //TODO scannerToInputStream converter tool
-    mergeScan.nextRowAsString should be("17b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.music.com} ")
-    mergeScan.nextRowAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.ebay.com} ")
-    mergeScan.nextRowAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.auto.com} ")
-    mergeScan.nextRowAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.travel.com} ")
+    mergeScan.nextRowAsString should be("17b22cfb-a29e-42c3-a3d9-12d32850e103 {www.music.com} ")
+    mergeScan.nextRowAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 {www.ebay.com} ")
+    mergeScan.nextRowAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 {www.auto.com} ")
+    mergeScan.nextRowAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103 {www.travel.com} ")
 
     an[EOFException] must be thrownBy mergeScan.nextRowAsString
   }
