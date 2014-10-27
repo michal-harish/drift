@@ -14,15 +14,15 @@ public class AimSchema {
 
     public static AimSchema fromString(String declaration) {
         final String[] dec = declaration.split(",");
-        LinkedHashMap<String, AimType> result = new LinkedHashMap<String,AimType>();
-        for(int f=0; f<dec.length; f++) {
-            String name = String.valueOf(f+1);
+        LinkedHashMap<String, AimType> result = new LinkedHashMap<String, AimType>();
+        for (int f = 0; f < dec.length; f++) {
+            String name = String.valueOf(f + 1);
             String function = null;
             Integer length = null;
             String type = dec[f].trim();
             if (type.contains("(")) {
                 name = type.substring(0, type.indexOf("("));
-                type = type.substring(type.indexOf("(")+1,type.indexOf(")"));
+                type = type.substring(type.indexOf("(") + 1, type.indexOf(")"));
             }
             type = type.toUpperCase();
             if (type.contains(":")) {
@@ -30,24 +30,45 @@ public class AimSchema {
                 type = type.split(":")[1];
             }
             if (type.contains("[")) {
-                length = Integer.valueOf(type.substring(type.indexOf("[")+1,type.indexOf("]")));
+                length = Integer.valueOf(type.substring(type.indexOf("[") + 1,
+                        type.indexOf("]")));
                 type = type.substring(0, type.indexOf("["));
             }
-            switch(type) {
-                case "BOOL": result.put(name,Aim.BOOL); break;
-                case "BYTE": result.put(name,Aim.BYTE); break;
-                case "INT": result.put(name,Aim.INT); break;
-                case "LONG": result.put(name,Aim.LONG); break;
-                case "BYTEARRAY": result.put(name,Aim.BYTEARRAY(length)); break;
-                case "STRING": result.put(name,Aim.STRING); break;
-                default: throw new IllegalArgumentException("Unknown data type " + type);
+            switch (type) {
+            case "BOOL":
+                result.put(name, Aim.BOOL);
+                break;
+            case "BYTE":
+                result.put(name, Aim.BYTE);
+                break;
+            case "INT":
+                result.put(name, Aim.INT);
+                break;
+            case "LONG":
+                result.put(name, Aim.LONG);
+                break;
+            case "BYTEARRAY":
+                result.put(name, Aim.BYTEARRAY(length));
+                break;
+            case "STRING":
+                result.put(name, Aim.STRING);
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown data type " + type);
             }
             if (function != null) {
-                switch(function) {
-                    case "UUID": result.put(name, Aim.UUID(result.get(name).getDataType())); break;
-                    case "IPV4": result.put(name, Aim.IPV4(result.get(name).getDataType())); break;
-                    case "TIME": result.put(name, Aim.TIME(result.get(name).getDataType())); break;
-                    default: throw new IllegalArgumentException("Unknown type " + type);
+                switch (function) {
+                case "UUID":
+                    result.put(name, Aim.UUID(result.get(name).getDataType()));
+                    break;
+                case "IPV4":
+                    result.put(name, Aim.IPV4(result.get(name).getDataType()));
+                    break;
+                case "TIME":
+                    result.put(name, Aim.TIME(result.get(name).getDataType()));
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown type " + type);
                 }
             }
         }
@@ -105,7 +126,7 @@ public class AimSchema {
 
     @Override
     public String toString() {
-//        String result = name + "=";
+        // String result = name + "=";
         String result = "";
         for (Entry<String, Integer> c : colIndex.entrySet()) {
             String name = c.getKey();
@@ -132,13 +153,14 @@ public class AimSchema {
     @SuppressWarnings("serial")
     public AimSchema subset(final List<String> columns) {
         final AimSchema subSchema = new AimSchema(
-                new LinkedHashMap<String, AimType>() {
-                    {
-                        for (String colName : columns) if (colName != null){
+            new LinkedHashMap<String, AimType>() {
+                {
+                    for (String colName : columns)
+                        if (colName != null) {
                             put(colName, def.get(colIndex.get(colName)));
                         }
-                    }
-                });
+                }
+            });
         return subSchema;
     }
 }

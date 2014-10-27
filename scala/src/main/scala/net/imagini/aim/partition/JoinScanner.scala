@@ -6,7 +6,7 @@ import net.imagini.aim.tools.PipeUtils
 import scala.collection.mutable.LinkedList
 
 class JoinScanner(val merges: MergeScanner*) {
-  val keyType = merges(0).scanSchema.get(0)
+  val keyType = merges(0).schema.get(0)
 //  while (true) {
 //    merges.map(_.currentGroup)
 //    var cmp: Int = -1

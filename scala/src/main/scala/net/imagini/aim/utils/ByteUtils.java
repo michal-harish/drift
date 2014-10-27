@@ -126,7 +126,12 @@ public class ByteUtils {
     /**
      * 3. nio.ByteBuffer utils
      */
-    static public int getIntValue(ByteBuffer value) {
+    static public ByteBuffer wrap(byte[] value) {
+        ByteBuffer bb = ByteBuffer.wrap(value);
+        bb.order(ENDIAN);
+        return bb;
+    }
+    static public int asIntValue(ByteBuffer value) {
         int offset = value.position();
         if (ENDIAN.equals(ByteOrder.LITTLE_ENDIAN)) {
             return ((((int) value.get(offset + 3)) << 24)

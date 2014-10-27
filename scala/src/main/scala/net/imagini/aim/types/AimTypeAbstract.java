@@ -12,7 +12,7 @@ abstract public class AimTypeAbstract implements AimType {
         return this.toString().hashCode();
     }
 
-    @Override public String wrap(String value) {
+    @Override public String escape(String value) {
         return value;
     }
 

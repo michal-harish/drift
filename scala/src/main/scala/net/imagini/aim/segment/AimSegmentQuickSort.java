@@ -54,7 +54,7 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
                     sortMap.put(sortValue, new ArrayList<ByteBuffer>());
                 }
                 List<ByteBuffer> keyspace = sortMap.get(sortValue);
-                //TODO use slice and change recordBuffer to direct buffer
+                //FIXME use slice and change recordBuffer to direct buffer
                 keyspace.add(ByteBuffer.wrap(Arrays.copyOfRange(record.array(),
                         0, record.limit())));
             }

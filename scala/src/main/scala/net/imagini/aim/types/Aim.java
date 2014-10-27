@@ -33,7 +33,7 @@ public enum Aim implements AimDataType {
         return this;
     }
 
-    @Override public String wrap(String value) {
+    @Override public String escape(String value) {
         return this.equals(STRING) ? "'"+value+"'" : value;
     }
 

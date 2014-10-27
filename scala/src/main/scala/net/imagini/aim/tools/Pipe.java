@@ -141,7 +141,7 @@ public class Pipe {
             buf.mark();
             ByteUtils.read(inputPipe, buf, (offset  = 4));
             buf.reset();
-            size = ByteUtils.getIntValue(buf);
+            size = ByteUtils.asIntValue(buf);
             buf.position(buf.position()+4);
         } else {
             size = type.getSize();

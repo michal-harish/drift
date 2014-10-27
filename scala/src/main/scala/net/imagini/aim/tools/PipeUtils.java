@@ -111,7 +111,7 @@ public class PipeUtils {
     public static int sizeOf(ByteBuffer in, AimDataType type) {
         int size;
         if (type.equals(Aim.STRING)) {
-            size = ByteUtils.getIntValue(in) + 4;
+            size = ByteUtils.asIntValue(in) + 4;
         } else {
             size = type.getSize();
         }

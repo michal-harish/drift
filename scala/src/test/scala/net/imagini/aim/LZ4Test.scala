@@ -5,6 +5,7 @@ import org.scalatest.FlatSpec
 import net.imagini.aim.utils.BlockStorageLZ4
 import java.nio.ByteBuffer
 import net.imagini.aim.tools.Scanner
+import net.imagini.aim.utils.ByteUtils
 
 class LZ4Test  extends FlatSpec with Matchers {
 
@@ -29,8 +30,8 @@ class LZ4Test  extends FlatSpec with Matchers {
                 "\n"
 
         val instance = new BlockStorageLZ4()
-        instance.addBlock(ByteBuffer.wrap((value1).getBytes))
-        instance.addBlock(ByteBuffer.wrap((value2).getBytes))
+        instance.addBlock(ByteUtils.wrap((value1).getBytes))
+        instance.addBlock(ByteUtils.wrap((value2).getBytes))
         instance.compressedSize should equal(168)
         instance.originalSize should equal(value1.length + value2.length)
 
@@ -38,7 +39,7 @@ class LZ4Test  extends FlatSpec with Matchers {
         var ch:Char = 0
         var actualValue = "";
         while (!scanner.eof()) {
-            ch = scanner.readByte.toChar
+            ch = scanner.read.toChar
             actualValue += ch
         }
         value1+value2 should equal (actualValue)

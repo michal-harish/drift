@@ -21,14 +21,14 @@ public class Scanner extends InputStream {
     }
     private BlockStorage blockStorage;
     private Integer currentBlock = -1;
-    protected ByteBuffer zoom;
-//    private int maxBlock;
+    protected ByteBuffer zoom = null;
     private Mark mark = null;
 
     public Scanner(BlockStorage blockStorage) {
         this.blockStorage = blockStorage;
         rewind();
     }
+    //TODO mark and reset should be delegated to storage so that decompressed buffers are kept in cache until marks are released
     public void mark() {
         if (!eof()) {
             this.mark = new Mark(currentBlock, zoom.position());
@@ -46,11 +46,12 @@ public class Scanner extends InputStream {
         }
     }
     @Override public int read() {
-        return eof() ? -1 : readByte();
+        return eof() ? -1 : zoom.get();
     }
 
     public void rewind() {
         if (currentBlock == 0 && blockStorage.numBlocks()>0) {
+            //FIXME
             zoom.rewind();
             mark = null;
         } else {
@@ -91,18 +92,14 @@ public class Scanner extends InputStream {
      * Reads an integer at the current position but does not advance
      */
     public int asIntValue() {
-        return ByteUtils.getIntValue(zoom);
+        return ByteUtils.asIntValue(zoom);
     }
+
+
+    //FIXME intead of copyOfRange it should be just a view of ByteBuffer
     public byte[] asAimValue(AimType t) {
         int size = PipeUtils.sizeOf(zoom, t.getDataType());
         return Arrays.copyOfRange(zoom.array(), zoom.position(), zoom.position() + size);
-    }
-
-    /**
-     * Reads a byte and advances the position
-     */
-    public byte readByte() {
-        return zoom.get();
     }
 
     public int compare(Scanner otherScanner, AimType type) {
@@ -121,9 +118,9 @@ public class Scanner extends InputStream {
         int n;
         int k = 0;
         if (type.equals(Aim.STRING)) {
-            ni = ByteUtils.getIntValue(zoom) + 4;
+            ni = ByteUtils.asIntValue(zoom) + 4;
             i += 4;
-            nj = ByteUtils.getIntValue(value) + 4;
+            nj = ByteUtils.asIntValue(value) + 4;
             j += 4;
             n = Math.min(ni, nj);
             k += 4;
@@ -151,9 +148,9 @@ public class Scanner extends InputStream {
         int nj;
         int j = 0;
         if (type.equals(Aim.STRING)) {
-            ni = ByteUtils.getIntValue(zoom) + 4;
+            ni = ByteUtils.asIntValue(zoom) + 4;
             i += 4;
-            nj = ByteUtils.getIntValue(value) + 4;
+            nj = ByteUtils.asIntValue(value) + 4;
             j += 4;
         } else {
             ni = nj = type.getSize();
@@ -194,7 +191,7 @@ public class Scanner extends InputStream {
     public String debugValue(ByteBuffer value, AimType aimType) {
         int size = aimType.getDataType().getSize();
         if (aimType.equals(Aim.STRING)) {
-            size = ByteUtils.getIntValue(value) + 4;
+            size = ByteUtils.asIntValue(value) + 4;
         }
         int p1 = value.position();
         byte[] v = new byte[size];

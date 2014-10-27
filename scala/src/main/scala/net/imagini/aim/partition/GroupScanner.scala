@@ -13,6 +13,7 @@ import net.imagini.aim.types.AimType
 import net.imagini.aim.types.Aim
 import scala.collection.JavaConverters._
 import net.imagini.aim.tools.PipeUtils
+import net.imagini.aim.utils.ByteUtils
 
 class GroupScanner(val partition: AimPartition, val groupSelectStatement: String, val rowFilterStatement: String, val groupFilterStatement: String) {
   //
@@ -33,10 +34,11 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
 
   val merge = new MergeScanner(partition, requiredColumns, RowFilter.fromString(partition.schema, "*"))
 
-  rowFilter.updateFormula(merge.scanSchema.names)
-  groupFilter.updateFormula(merge.scanSchema.names)
-  groupFunctions.map(_.filter.updateFormula(merge.scanSchema.names))
+  rowFilter.updateFormula(merge.schema.names)
+  groupFilter.updateFormula(merge.schema.names)
+  groupFunctions.map(_.filter.updateFormula(merge.schema.names))
 
+  //FIXME
   private var currentGroupKey: Array[Byte] = null
 
   def selectCurrentFilteredGroup = {
@@ -51,7 +53,7 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
             satisfiesFilter = true
           }
           groupFunctions.filter(f ⇒ !f.satisfied && f.filter.matches(merge.currentRow)).foreach(f ⇒ {
-            f.satisfy(merge.currentRow(merge.scanSchema.get(f.field)).asAimValue(f.dataType))
+            f.satisfy(merge.currentRow(merge.schema.get(f.field)).asAimValue(f.dataType))
           })
           if (!satisfiesFilter || !groupFunctions.forall(_.satisfied)) {
             merge.skipCurrentRow
@@ -93,11 +95,11 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
     val streams: Seq[Scanner] = selectSchema.names.map(f ⇒ selectSchema.field(f) match {
       case function: AimTypeGROUP                      ⇒ function.toScanner
       case empty: AimType if (empty.equals(Aim.EMPTY)) ⇒ null
-      case field: AimType                              ⇒ merge.currentRow(merge.scanSchema.get(f))
+      case field: AimType                              ⇒ merge.currentRow(merge.schema.get(f))
     })
-    merge.scanSchema.names.filter(!selectSchema.has(_)).map(n =>{
-      val hiddenColumn = merge.scanSchema.get(n)
-      PipeUtils.skip(merge.currentRow(hiddenColumn), merge.scanSchema.dataType(hiddenColumn))
+    merge.schema.names.filter(!selectSchema.has(_)).map(n =>{
+      val hiddenColumn = merge.schema.get(n)
+      PipeUtils.skip(merge.currentRow(hiddenColumn), merge.schema.dataType(hiddenColumn))
     })
     merge.consumed
     streams
@@ -117,7 +119,7 @@ class AimTypeGROUP(val schema: AimSchema, val definition: String) extends AimTyp
   private val scanner = new Scanner(storage)
   def reset = { storage.clear; scanner.rewind }
   def satisfied = storage.numBlocks > 0
-  def satisfy(value: Array[Byte]) = storage.addBlock(value)
+  def satisfy(value: Array[Byte]) = storage.addBlock(ByteUtils.wrap(value))
   def toScanner = { scanner.rewind; scanner }
   override def getDataType = dataType
   override def toString = "GROUP[" + field + " WHERE" + filter + "]"

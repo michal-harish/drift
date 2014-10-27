@@ -34,11 +34,11 @@ class MergeScanner(val partition: AimPartition, val selectFields: Array[String],
   val sortOrder = SortOrder.ASC
   val selectSchema: AimSchema = partition.schema.subset(selectFields)
 
-  val scanSchema: AimSchema = partition.schema.subset(selectFields ++ rowFilter.getColumns :+ keyField)
-  rowFilter.updateFormula(scanSchema.names)
-  val keyColumn: Int = scanSchema.get(keyField)
-  val keyType = scanSchema.get(keyColumn)
-  val scanners: Seq[Array[Scanner]] = partition.segments.map(segment ⇒ segment.wrapScanners(scanSchema))
+  val schema: AimSchema = partition.schema.subset(selectFields ++ rowFilter.getColumns :+ keyField)
+  rowFilter.updateFormula(schema.names)
+  val keyColumn: Int = schema.get(keyField)
+  val keyType = schema.get(keyColumn)
+  val scanners: Seq[Array[Scanner]] = partition.segments.map(segment ⇒ segment.wrapScanners(schema))
 
   private var currentSegment = -1
 
@@ -68,7 +68,7 @@ class MergeScanner(val partition: AimPartition, val selectFields: Array[String],
   }
 
   def skipCurrentRow = {
-    for ((t, s) ← (scanSchema.fields zip scanners(currentSegment))) PipeUtils.skip(s, t.getDataType)
+    for ((t, s) ← (schema.fields zip scanners(currentSegment))) PipeUtils.skip(s, t.getDataType)
     consumed
   }
 
@@ -76,13 +76,12 @@ class MergeScanner(val partition: AimPartition, val selectFields: Array[String],
 
   def nextResult: Seq[Scanner] = {
     selectNextFilteredRow
-    val streams: Seq[Scanner] = selectSchema.names.map(f ⇒ currentRow(scanSchema.get(f)))
-    scanSchema.names.filter(!selectFields.contains(_)).map(n ⇒ {
-      val hiddenColumn = scanSchema.get(n)
-      PipeUtils.skip(currentRow(hiddenColumn), scanSchema.dataType(hiddenColumn))
+    val streams: Seq[Scanner] = selectSchema.names.map(f ⇒ currentRow(schema.get(f)))
+    schema.names.filter(!selectFields.contains(_)).map(n ⇒ {
+      val hiddenColumn = schema.get(n)
+      PipeUtils.skip(currentRow(hiddenColumn), schema.dataType(hiddenColumn))
     })
     consumed
-
     streams
   }
 

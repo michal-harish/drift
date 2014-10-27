@@ -12,7 +12,7 @@ import net.jpountz.lz4.LZ4Factory;
  * This is an lz4 buffer for ZeroCopy filtering and scanning.
  * 
  * It is not Thread-Safe as it is a shared storage.
- * For Thread-Safe operations over an instance of LZ4Buffer use LZ4Scanner.
+ * For Thread-Safe operations over an instance of LZ4Buffer use Scanner instance
  * 
  * Although we've tried to use direct buffers, it seems that it doesn't
  * give that much performance - the zero copy approach itself has much larger effect -

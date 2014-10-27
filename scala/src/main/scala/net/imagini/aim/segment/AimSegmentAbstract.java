@@ -235,7 +235,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
 
             @Override public int read() throws IOException {
                 read++; 
-                return checkNextByte() ? currentSelectScanner.readByte() & 0xff : -1;
+                return checkNextByte() ? currentSelectScanner.read() & 0xff : -1;
             }
 
             private int currentSelectColumn = -1;

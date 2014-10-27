@@ -20,7 +20,7 @@ class ByteBufferTest extends FlatSpec with Matchers {
         tree.pollFirstEntry.getValue should equal("two")
     }
 
-    "ByteBuffer slice " should "" in {
+    "ByteBuffer slice " should "share the same memory" in {
         val bb1 = ByteBuffer.allocate(12)
         println("BB1 Position="+bb1.position+", " + "Limit="+bb1.limit+", " + "Capacity="+ bb1.capacity +", ")
         bb1.put("012345".getBytes)

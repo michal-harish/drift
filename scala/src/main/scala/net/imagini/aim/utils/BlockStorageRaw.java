@@ -7,22 +7,21 @@ import java.util.LinkedList;
 public class BlockStorageRaw implements BlockStorage {
 
     private int size = 0;
+
+    //FIXME ByteBuffer refernce
     private LinkedList<byte[]> blocks = new LinkedList<>();
+
 
     public void clear() {
         blocks.clear();
         size = 0;
     }
 
-    public int addBlock(byte[] block) {
-        size += block.length;
-        blocks.add(block);
-        return block.length;
-    }
-
     @Override
     public int addBlock(ByteBuffer block) {
-        return addBlock(Arrays.copyOf(block.array(), block.limit()));
+        size += block.limit();
+        blocks.add(Arrays.copyOf(block.array(), block.limit()));
+        return block.limit();
     }
 
     @Override
