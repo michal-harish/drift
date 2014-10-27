@@ -10,11 +10,11 @@ import net.imagini.aim.types.AimSchema;
 
 public interface AimSegment {
 
-    void appendRecord(ByteBuffer record) throws IOException;
-    void appendRecord(byte[][] record) throws IOException;
-    void appendRecord(String... values) throws IOException;
+    AimSegment appendRecord(ByteBuffer record) throws IOException;
+    AimSegment appendRecord(byte[][] record) throws IOException;
+    AimSegment appendRecord(String... values) throws IOException;
 
-    void close() throws IllegalAccessException, IOException;
+    AimSegment close() throws IllegalAccessException, IOException;
 
     long count();
 

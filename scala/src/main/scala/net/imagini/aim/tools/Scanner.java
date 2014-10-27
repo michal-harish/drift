@@ -22,16 +22,17 @@ public class Scanner extends InputStream {
     private BlockStorage blockStorage;
     private Integer currentBlock = -1;
     protected ByteBuffer zoom;
-    private int maxBlock;
+//    private int maxBlock;
     private Mark mark = null;
 
     public Scanner(BlockStorage blockStorage) {
         this.blockStorage = blockStorage;
-        this.maxBlock = blockStorage.numBlocks() - 1;
         rewind();
     }
     public void mark() {
-        this.mark = new Mark(currentBlock, zoom.position());
+        if (!eof()) {
+            this.mark = new Mark(currentBlock, zoom.position());
+        }
     }
 
     @Override public void reset() {
@@ -49,8 +50,13 @@ public class Scanner extends InputStream {
     }
 
     public void rewind() {
-        currentBlock = -1;
-        zoom = null;
+        if (currentBlock == 0 && blockStorage.numBlocks()>0) {
+            zoom.rewind();
+            mark = null;
+        } else {
+            currentBlock = -1;
+            zoom = null;
+        }
     }
 
     public boolean eof() {
@@ -171,7 +177,7 @@ public class Scanner extends InputStream {
 
     private boolean decompress(Integer block) {
         if (this.currentBlock != block) {
-            if (block > maxBlock) {
+            if (block > blockStorage.numBlocks() - 1) {
                 return false;
             }
             this.currentBlock = block;

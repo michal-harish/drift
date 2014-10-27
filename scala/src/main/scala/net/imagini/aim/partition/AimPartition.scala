@@ -18,11 +18,12 @@ class AimPartition(val schema: AimSchema, val segmentSizeBytes: Int) {
   val numSegments = new AtomicInteger(0)
   def getNumSegments = numSegments.get
   def defaultRange:(Int,Int) = (0, numSegments.get -1)
-  def add(segment: AimSegment) {
+  def add(segment: AimSegment):AimSegment = {
     segments.synchronized { //TODO is this necessary
       segments += segment
       numSegments.incrementAndGet
     }
+    segment
   }
   val mapreduce = Executors.newFixedThreadPool(4)
   def getCount: Long = segments.foldLeft(0L)(_ + _.count)

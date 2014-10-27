@@ -9,12 +9,20 @@ public class BlockStorageRaw implements BlockStorage {
     private int size = 0;
     private LinkedList<byte[]> blocks = new LinkedList<>();
 
+    public void clear() {
+        blocks.clear();
+        size = 0;
+    }
+
+    public int addBlock(byte[] block) {
+        size += block.length;
+        blocks.add(block);
+        return block.length;
+    }
+
     @Override
     public int addBlock(ByteBuffer block) {
-        int blockSize = block.limit();
-        size += blockSize;
-        blocks.add(Arrays.copyOf(block.array(), block.limit()));
-        return blockSize;
+        return addBlock(Arrays.copyOf(block.array(), block.limit()));
     }
 
     @Override

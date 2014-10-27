@@ -62,7 +62,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
         }
     }
 
-    final public void appendRecord(String... values) throws IOException {
+    final public AimSegment appendRecord(String... values) throws IOException {
         if (values.length != schema.size()) {
             throw new IllegalArgumentException("Number of values doesn't match the number of fields in the schema");
         }
@@ -70,12 +70,12 @@ abstract public class AimSegmentAbstract implements AimSegment {
         for(int col = 0; col < schema.size() ; col++) {
             record[col] = schema.get(col).convert(values[col]);
         }
-        appendRecord(record);
+        return appendRecord(record);
     }
 
     //FIXME this is a limitation of size of the record as well as single-threaded context
     private ByteBuffer recordBuffer = ByteBuffer.allocate(65535);
-    final public void appendRecord(byte[][] record) throws IOException {
+    final public AimSegment appendRecord(byte[][] record) throws IOException {
         if (record.length != schema.size()) {
             throw new IllegalArgumentException("Number of record values doesn't match the number of fields in the schema");
         }
@@ -85,14 +85,14 @@ abstract public class AimSegmentAbstract implements AimSegment {
             PipeUtils.write(schema.get(col).getDataType(), record[col], recordBuffer);
         }
         recordBuffer.flip();
-        appendRecord(recordBuffer);
+        return appendRecord(recordBuffer);
     }
 
     /**
      * ByteBuffer record is a horizontal buffer where columns of a single record 
      * follow in precise order.
      */
-    public void appendRecord(ByteBuffer record) throws IOException {
+    public AimSegment appendRecord(ByteBuffer record) throws IOException {
         try {
             checkWritable(true);
             for(int col = 0; col < schema.size() ; col++) {
@@ -108,12 +108,13 @@ abstract public class AimSegmentAbstract implements AimSegment {
                 );
             }
             count.incrementAndGet();
+            return this;
         } catch (IllegalAccessException e1) {
             throw new IOException(e1);
         }
     }
 
-    @Override public void close() throws IOException, IllegalAccessException {
+    @Override public AimSegment close() throws IOException, IllegalAccessException {
         checkWritable(true);
         //check open writer blocks and add them if available
         for(int col = 0; col < schema.size() ; col++) {
@@ -126,6 +127,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
         }
         this.writers = null;
         this.writable = false;
+        return this;
     }
 
     @Override final public long count() {

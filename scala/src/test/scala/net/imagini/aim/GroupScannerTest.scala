@@ -8,8 +8,9 @@ import net.imagini.aim.utils.BlockStorageLZ4
 import net.imagini.aim.partition.AimPartition
 import net.imagini.aim.partition.MergeScanner
 import java.io.EOFException
+import net.imagini.aim.partition.GroupScanner
 
-class ScanMergeGroupFunctionTest extends FlatSpec with Matchers {
+class GroupScannerTest extends FlatSpec with Matchers {
   "ScannerMerge with GroupFilter" should "return all records for filtered group" in {
     val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),column(STRING),value(STRING)")
     val s1 = new AimSegmentQuickSort(schema, classOf[BlockStorageLZ4])
@@ -26,10 +27,15 @@ class ScanMergeGroupFunctionTest extends FlatSpec with Matchers {
     partition.add(s1)
     partition.add(s2)
 
-    val mergeScan = new MergeScanner(partition, "at_id(group value where column='addthis_id'),value", "column='pageview'", "*")
-    mergeScan.nextRowAsString should be("AT1234 {www.ebay.com} ")
-    mergeScan.nextRowAsString should be("AT1234 {www.auto.com} ")
-    mergeScan.nextRowAsString should be("AT9876 {www.travel.com} ")
-    an[EOFException] must be thrownBy mergeScan.nextRowAsString
+    val groupScan = new GroupScanner(partition, "value, user_uid", "column='pageview'", "column='addthis_id'")
+    groupScan.nextResultAsString should be("{www.ebay.com} 37b22cfb-a29e-42c3-a3d9-12d32850e103 ")
+    groupScan.nextResultAsString should be("{www.auto.com} 37b22cfb-a29e-42c3-a3d9-12d32850e103 ")
+    groupScan.nextResultAsString should be("{www.travel.com} a7b22cfb-a29e-42c3-a3d9-12d32850e103 ")
+    an[EOFException] must be thrownBy groupScan.nextResultAsString
+
+    val gropuScan2 = new GroupScanner(partition, "*", "column='pageview'", "column='addthis_id' and value='AT9876'")
+    gropuScan2.nextResultAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.travel.com} ")
+    an[EOFException] must be thrownBy gropuScan2.nextResultAsString
+
   }
 }

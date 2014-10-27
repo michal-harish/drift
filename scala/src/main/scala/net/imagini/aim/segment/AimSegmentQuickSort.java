@@ -37,7 +37,7 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
     }
 
     @Override
-    public void appendRecord(ByteBuffer record) throws IOException {
+    public AimSegment appendRecord(ByteBuffer record) throws IOException {
         try {
             checkWritable(true);
 
@@ -58,14 +58,14 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
                 keyspace.add(ByteBuffer.wrap(Arrays.copyOfRange(record.array(),
                         0, record.limit())));
             }
-
+            return this;
         } catch (IllegalAccessException e) {
             throw new IOException(e);
         }
     }
 
     @Override
-    public void close() throws IOException, IllegalAccessException {
+    public AimSegment close() throws IOException, IllegalAccessException {
         checkWritable(true);
         List<ByteKey> keys = new ArrayList<ByteKey>(sortMap.keySet());
         Collections.sort(keys);
@@ -83,7 +83,7 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
             }
         }
         sortMap = null;
-        super.close();
+        return super.close();
     }
 
 }
