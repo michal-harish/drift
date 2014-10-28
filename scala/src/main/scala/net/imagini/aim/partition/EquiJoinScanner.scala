@@ -28,12 +28,14 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
   override def reset = { left.reset; right.reset }
 
   def selectRow: Array[ByteBuffer] = {
+    //inner join
     var cmp: Int = -1
     do {
       cmp = TypeUtils.compare(left.selectKey, right.selectKey, keyType)
       if (cmp < 0) left.skipRow
       else if (cmp > 0) right.skipRow
     } while (cmp != 0)
+    //equi select
     val leftRow = left.selectRow
     val rightRow = right.selectRow
     leftSelectIndex.map(c ⇒ leftRow(c)) ++ rightRow

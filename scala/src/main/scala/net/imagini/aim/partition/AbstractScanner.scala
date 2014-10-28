@@ -4,6 +4,7 @@ import net.imagini.aim.types.AimSchema
 import java.nio.ByteBuffer
 import net.imagini.aim.tools.Scanner
 import net.imagini.aim.types.AimType
+import org.apache.commons.lang3.StringUtils
 
 trait AbstractScanner {
 
@@ -21,12 +22,8 @@ trait AbstractScanner {
 
   def reset
 
-  final protected[aim] def selectRowAsString: String = {
-    (schema.fields, selectRow).zipped.map((t, b) ⇒ t.asString(b)).foldLeft("")(_ + _ + " ")
-  }
-
   final protected[aim] def nextResultAsString: String = {
-    val result = selectRowAsString
+    val result = (schema.fields, selectRow).zipped.map((t, b) ⇒ t.asString(b)).mkString(" ")
     skipRow
     result
   }

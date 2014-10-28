@@ -26,7 +26,6 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
     selectDef.map(f ⇒ f match {
       case field: String if (partition.schema.has(field))    ⇒ (field -> partition.schema.field(field))
       case function: String if (function.contains("(group")) ⇒ new AimTypeGROUP(partition.schema, function).typeTuple
-      case empty: String                                     ⇒ empty -> Aim.EMPTY
     }): _*).asJava))
 
   override val keyColumn = schema.get(partition.schema.name(0))
@@ -102,7 +101,7 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
     val mergeRow = merge.selectRow
     (schema.fields, (0 to schema.fields.length)).zipped.map((f, c) ⇒ f match {
       case function: AimTypeGROUP                      ⇒ function.toByteBuffer
-      case empty: AimType if (empty.equals(Aim.EMPTY)) ⇒ null
+//      case empty: AimType if (empty.equals(Aim.EMPTY)) ⇒ null
       case field: AimType                              ⇒ mergeRow(mergeColumnIndex(c))
     })
   }

@@ -28,9 +28,9 @@ class GroupScannerTransformTest extends FlatSpec with Matchers {
     partition.add(s2)
 
     val scan = new GroupScanner(partition, "at_id(group value where column='addthis_id'),value,user_uid", "column='pageview'", "*")
-    scan.nextResultAsString should be("AT1234 {www.ebay.com} 37b22cfb-a29e-42c3-a3d9-12d32850e103 ")
-    scan.nextResultAsString should be("AT1234 {www.auto.com} 37b22cfb-a29e-42c3-a3d9-12d32850e103 ")
-    scan.nextResultAsString should be("AT9876 {www.travel.com} a7b22cfb-a29e-42c3-a3d9-12d32850e103 ")
+    scan.nextResultAsString should be("AT1234 {www.ebay.com} 37b22cfb-a29e-42c3-a3d9-12d32850e103")
+    scan.nextResultAsString should be("AT1234 {www.auto.com} 37b22cfb-a29e-42c3-a3d9-12d32850e103")
+    scan.nextResultAsString should be("AT9876 {www.travel.com} a7b22cfb-a29e-42c3-a3d9-12d32850e103")
     an[EOFException] must be thrownBy scan.nextResultAsString
   }
 }
