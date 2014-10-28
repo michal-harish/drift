@@ -21,7 +21,8 @@ public class Scanner extends InputStream {
 
     private BlockStorage blockStorage;
     private Integer currentBlock = -1;
-    protected ByteBuffer zoom = null;
+    //TODO protected plus extends ByteBuffer instead of InputStream
+    public ByteBuffer scan = null;
     private Mark mark = null;
 
     public Scanner(BlockStorage blockStorage) {
@@ -33,7 +34,7 @@ public class Scanner extends InputStream {
     // buffers are kept in cache until marks are released
     public void mark() {
         if (!eof()) {
-            this.mark = new Mark(currentBlock, zoom.position());
+            this.mark = new Mark(currentBlock, scan.position());
         }
     }
 
@@ -44,38 +45,38 @@ public class Scanner extends InputStream {
                 currentBlock = mark.block;
                 decompress(mark.block);
             }
-            zoom.position(mark.position);
+            scan.position(mark.position);
             mark = null;
         }
     }
 
     @Override
     public int read() {
-        return eof() ? -1 : zoom.get();
+        return eof() ? -1 : scan.get();
     }
 
     public void skip(AimType t) {
-        zoom.position(zoom.position() + t.getDataType().sizeOf(zoom));
+        scan.position(scan.position() + t.getDataType().sizeOf(scan));
     }
 
     public void rewind() {
         if (currentBlock == 0 && blockStorage.numBlocks() > 0) {
             // FIXME
-            zoom.rewind();
+            scan.rewind();
             mark = null;
         } else {
             currentBlock = -1;
-            zoom = null;
+            scan = null;
         }
     }
 
     public boolean eof() {
-        if (zoom == null) {
+        if (scan == null) {
             if (!decompress(0)) {
                 return true;
             }
         }
-        if (zoom.position() == zoom.limit()) {
+        if (scan.position() == scan.limit()) {
             if (!decompress(currentBlock + 1)) {
                 return true;
             }
@@ -89,11 +90,11 @@ public class Scanner extends InputStream {
      */
     @Override
     public long skip(long skipBytes) {
-        if (skipBytes > zoom.remaining()) {
-            skipBytes = zoom.remaining();
+        if (skipBytes > scan.remaining()) {
+            skipBytes = scan.remaining();
         }
         if (skipBytes > 0) {
-            zoom.position(zoom.position() + (int) skipBytes);
+            scan.position(scan.position() + (int) skipBytes);
         }
         return skipBytes;
     }
@@ -102,29 +103,25 @@ public class Scanner extends InputStream {
      * Reads an integer at the current position but does not advance
      */
     public int asIntValue() {
-        return ByteUtils.asIntValue(zoom);
-    }
-
-    public ByteBuffer scan() {
-        return zoom;
+        return ByteUtils.asIntValue(scan);
     }
 
     public ByteBuffer slice() {
         // TODO slice as well as mark should leave underlying segments
         // uncompressed as they called for back-referencing values
-        return zoom.slice();
+        return scan.slice();
     }
 
     public int compare(Scanner otherScanner, AimType type) {
-        return TypeUtils.compare(zoom, otherScanner.zoom, type);
+        return TypeUtils.compare(scan, otherScanner.scan, type);
     }
 
     public int compare(ByteBuffer value, AimType type) {
-        return TypeUtils.compare(zoom, value, type);
+        return TypeUtils.compare(scan, value, type);
     }
 
     public boolean contains(ByteBuffer value, AimType type) {
-        return TypeUtils.contains(zoom, value, type);
+        return TypeUtils.contains(scan, value, type);
     }
 
     private boolean decompress(Integer block) {
@@ -133,9 +130,9 @@ public class Scanner extends InputStream {
                 return false;
             }
             this.currentBlock = block;
-            zoom = blockStorage.decompress(block);
+            scan = blockStorage.decompress(block);
         }
-        zoom.rewind();
+        scan.rewind();
         return true;
     }
 

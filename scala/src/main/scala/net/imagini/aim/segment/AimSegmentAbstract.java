@@ -151,6 +151,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
             subSchema = schema.subset(new String[]{schema.name(0)});
         }
 
+        final ByteBuffer[] buffers = new ByteBuffer[subSchema.size()];
         final Scanner[] scanners = new Scanner[subSchema.size()];
         int i = 0; for(String colName: subSchema.names()) {
             scanners[i++] = new Scanner(columnar.get(schema.get(colName)));
@@ -163,9 +164,10 @@ abstract public class AimSegmentAbstract implements AimSegment {
                 if (scanner.eof()) {
                     throw new EOFException();
                 }
+                buffers[c] = scanner.scan;
             }
             while(true) {
-                if (filter == null || filter.matches(scanners)) {
+                if (filter == null || filter.matches(buffers)) {
                     count++;
                 }
                 for(int c=0; c< subSchema.size(); c++) {
@@ -181,6 +183,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                     if (scanner.eof()) {
                         throw new EOFException();
                     }
+                    buffers[c] = scanner.scan;
                 }
             }
         } catch (EOFException e) {
@@ -215,6 +218,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
 
         if (filter != null) filter.updateFormula(subSchema.names());
 
+        final ByteBuffer[] buffers = new ByteBuffer[subSchema.size()];
         final Scanner[] scanners = new Scanner[subSchema.size()];
         int i = 0; for(String colName: subSchema.names()) {
             scanners[i++] = new Scanner(columnar.get(schema.get(colName)));
@@ -246,6 +250,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                 if (currentSelectColumn == -1) {
                     for(int c=0;c<subSchema.size();c++) {
                         if (scanners[c].eof()) return false;
+                        buffers[c] = scanners[c].scan;
                     }
                 } else if (read == currentReadLength) {
                     read = -1;
@@ -266,8 +271,9 @@ abstract public class AimSegmentAbstract implements AimSegment {
                             if (scanner.eof()) {
                                 return false;
                             }
+                            buffers[c] = scanners[c].scan;
                         }
-                        if (filter == null || filter.matches(scanners)) {
+                        if (filter == null || filter.matches(buffers)) {
                             skipNextRecord(true);
                             break;
                         }

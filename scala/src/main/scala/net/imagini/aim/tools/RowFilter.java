@@ -11,6 +11,7 @@ import java.util.Set;
 
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
+import net.imagini.aim.types.TypeUtils;
 import net.imagini.aim.utils.ByteUtils;
 
 import org.apache.commons.lang3.StringUtils;
@@ -115,7 +116,7 @@ public class RowFilter {
      * This is thread-safe and called in parallel for 
      * multiple segments.
      */
-    public boolean matches(Scanner[] record) {
+    public boolean matches(ByteBuffer[] record) {
         return root.matches(true, record);
     }
 
@@ -153,11 +154,11 @@ public class RowFilter {
         if (next != null) next.update(usedColumns);
     }
 
-    protected boolean matches(boolean soFar, Scanner[] record) {
+    protected boolean matches(boolean soFar, ByteBuffer[] record) {
         return next == null ? soFar : next.matches(soFar, record);
     }
 
-    protected boolean matches( Scanner value, Scanner[] record) {
+    protected boolean matches( ByteBuffer value, ByteBuffer[] record) {
         throw new IllegalAccessError(this.getClass().getSimpleName() + " cannot be matched against a value");
     }
 
@@ -170,8 +171,8 @@ public class RowFilter {
         final ByteBuffer val = ByteUtils.wrap(aimType.convert(value));
         return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "= " + aimType.escape(value) + super.toString(); }
-            @Override protected boolean matches(Scanner value, Scanner[] record) {
-                boolean match = super.matches(value.compare(val,aimType)==0, record);
+            @Override protected boolean matches(ByteBuffer value, ByteBuffer[] record) {
+                boolean match = super.matches(TypeUtils.compare(value,val,aimType)==0, record);
                 return match;
             }
         };
@@ -198,7 +199,7 @@ public class RowFilter {
     public RowFilter not() {
         return next = new RowFilter(root, aimType, next) {
             @Override public String toString() { return "NOT" + super.toString(); }
-            @Override protected boolean matches(boolean soFar, Scanner[] record) {
+            @Override protected boolean matches(boolean soFar, ByteBuffer[] record) {
                 return !next.matches(soFar, record);
             }
         };
@@ -209,8 +210,8 @@ public class RowFilter {
         final ByteBuffer val = ByteUtils.wrap(aimType.convert(value));
         return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "CONTAINS " + aimType.escape(value) + super.toString(); }
-            @Override protected boolean matches(Scanner value,  Scanner[] record) {
-                return super.matches(value.contains(val,aimType.getDataType()), record);
+            @Override protected boolean matches(ByteBuffer value,  ByteBuffer[] record) {
+                return super.matches(TypeUtils.contains(value, val,aimType.getDataType()), record);
             }
         };
     }
@@ -220,8 +221,8 @@ public class RowFilter {
         final ByteBuffer val = ByteUtils.wrap(aimType.convert(value));
         return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "> " + aimType.escape(value) + super.toString(); }
-            @Override protected boolean matches(Scanner value, Scanner[] data) {
-                return super.matches(value.compare(val,aimType) > 0, data);
+            @Override protected boolean matches(ByteBuffer value, ByteBuffer[] data) {
+                return super.matches(TypeUtils.compare(value,val,aimType) > 0, data);
             }
         };
     }
@@ -231,8 +232,8 @@ public class RowFilter {
         final ByteBuffer val = ByteUtils.wrap(aimType.convert(value));
         return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "< " + aimType.escape(value) +super.toString(); }
-            @Override protected boolean matches(Scanner value, Scanner[] data) {
-                return super.matches(value.compare(val,aimType) < 0, data);
+            @Override protected boolean matches(ByteBuffer value, ByteBuffer[] data) {
+                return super.matches(TypeUtils.compare(value, val,aimType) < 0, data);
             }
         };
     }
@@ -245,10 +246,10 @@ public class RowFilter {
         }
         return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "IN (" + StringUtils.join(values, ",") +")" + super.toString(); }
-            @Override protected boolean matches(Scanner value, Scanner[] data) {
+            @Override protected boolean matches(ByteBuffer value, ByteBuffer[] data) {
                 boolean localResult = false;
                 for(ByteBuffer val: vals) {
-                    if (value.compare(val,aimType)==0) {
+                    if (TypeUtils.compare(value, val,aimType)==0) {
                         localResult = true;
                         break;
                     }
@@ -278,7 +279,7 @@ public class RowFilter {
                 throw new IllegalArgumentException("Unknwon filter column " + colName);
             }
         }
-        @Override protected boolean matches(boolean soFar, Scanner[] data) {
+        @Override protected boolean matches(boolean soFar, ByteBuffer[] data) {
             return next.matches(data[colIndex], data);
         }
         @Override public String toString() {
@@ -293,7 +294,7 @@ public class RowFilter {
             next = RowFilter.proxy(root, root.schema,expression);
         }
         @Override
-        protected boolean matches(boolean soFar, Scanner[] data) {
+        protected boolean matches(boolean soFar, ByteBuffer[] data) {
             return compare(soFar, next.matches(true, data));
         }
         abstract protected boolean compare(boolean a, boolean b);

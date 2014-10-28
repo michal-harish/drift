@@ -28,14 +28,16 @@ class MergeScanner(val partition: AimPartition, val selectFields: Array[String],
     RowFilter.fromString(partition.schema, rowFilterStatement))
   def this(partition: AimPartition) = this(partition, "*", "*")
 
-  val keyField: String = partition.schema.name(0)
-  val sortOrder = SortOrder.ASC
   override val schema: AimSchema = partition.schema.subset(selectFields)
+  val keyField: String = partition.schema.name(0)
+  override val keyColumn = schema.get(keyField)
+  override val keyType = schema.get(keyColumn)
+  val sortOrder = SortOrder.ASC
 
   private val scanSchema: AimSchema = partition.schema.subset(selectFields ++ rowFilter.getColumns :+ keyField)
   private val scanners: Seq[Array[Scanner]] = partition.segments.map(segment ⇒ segment.wrapScanners(scanSchema))
-  private val scanKeyColumn: Int = scanSchema.get(keyField)
-  private val keyType = scanSchema.get(scanKeyColumn)
+  private val scanColumnIndex: Array[Int] = schema.names.map(n ⇒ scanSchema.get(n))
+  private val scanKeyColumnIndex: Int = scanSchema.get(keyField)
   rowFilter.updateFormula(scanSchema.names)
 
   private var currentSegment = -1
@@ -47,25 +49,23 @@ class MergeScanner(val partition: AimPartition, val selectFields: Array[String],
     currentSegment = -1
   }
 
-  def selectCurrentKey: ByteBuffer = scanCurrentRow(scanKeyColumn).scan()
-
-  override def selectCurrentRow: Seq[ByteBuffer] = {
-    nextRow
-    val buffers = schema.names.map(f ⇒ scanCurrentRow(scanSchema.get(f)).scan())
-    buffers
-  }
-
-  override def skipCurrentRow = {
+  override def skipRow = {
     for ((t, s) ← (scanSchema.fields zip scanners(currentSegment))) s.skip(t.getDataType)
     currentSegment = -1
   }
 
-  //TODO private  requires reafctoring filters to receive Array[ByteBuffer] as input
-  def scanCurrentRow: Array[Scanner] = {
+  override def selectRow: Array[ByteBuffer] = {
     if (currentSegment == -1) {
       for (s ← (0 to scanners.size - 1)) {
-        if (scanners(s).forall(columnScanner ⇒ !columnScanner.eof)) {
-          if (currentSegment == -1 || ((sortOrder == SortOrder.ASC ^ scanners(s)(scanKeyColumn).compare(scanners(currentSegment)(scanKeyColumn), keyType) > 0))) {
+        //filter
+        var segmentHasData = scanners(s).forall(columnScanner ⇒ !columnScanner.eof)
+        while (segmentHasData && !rowFilter.matches(scanners(s).map(_.scan))) {
+          for ((t, scanner) ← (scanSchema.fields zip scanners(s))) scanner.skip(t.getDataType)
+          segmentHasData = scanners(s).forall(columnScanner ⇒ !columnScanner.eof)
+        }
+        //merge sort
+        if (segmentHasData) {
+          if (currentSegment == -1 || ((sortOrder == SortOrder.ASC ^ scanners(s)(scanKeyColumnIndex).compare(scanners(currentSegment)(scanKeyColumnIndex), keyType) > 0))) {
             currentSegment = s
           }
         }
@@ -73,11 +73,8 @@ class MergeScanner(val partition: AimPartition, val selectFields: Array[String],
     }
     currentSegment match {
       case -1     ⇒ throw new EOFException
-      case s: Int ⇒ scanners(s)
+      case s: Int ⇒ scanColumnIndex.map(i ⇒ scanners(s)(i).scan)
     }
   }
-
-  //TODO private
-  def nextRow = while (!rowFilter.matches(scanCurrentRow)) skipCurrentRow
 
 }

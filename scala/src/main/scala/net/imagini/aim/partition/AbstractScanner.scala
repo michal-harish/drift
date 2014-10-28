@@ -8,24 +8,26 @@ import net.imagini.aim.types.AimType
 trait AbstractScanner {
 
   val schema: AimSchema
+  val keyType: AimType
+  val keyColumn: Int
 
-  def selectCurrentKey: ByteBuffer
+  final def selectKey: ByteBuffer = selectRow(keyColumn)
 
-  def selectCurrentRow: Seq[ByteBuffer]
+  def selectRow: Array[ByteBuffer]
 
-  def skipCurrentRow
+  def skipRow
 
   def mark
 
   def reset
 
-  protected[aim] def currentRowAsString: String = {
-    (schema.fields, selectCurrentRow).zipped.map((t, b) ⇒ t.asString(b)).foldLeft("")(_ + _ + " ")
+  final protected[aim] def selectRowAsString: String = {
+    (schema.fields, selectRow).zipped.map((t, b) ⇒ t.asString(b)).foldLeft("")(_ + _ + " ")
   }
 
-  protected[aim] def nextResultAsString: String = {
-    val result = currentRowAsString
-    skipCurrentRow
+  final protected[aim] def nextResultAsString: String = {
+    val result = selectRowAsString
+    skipRow
     result
   }
 
