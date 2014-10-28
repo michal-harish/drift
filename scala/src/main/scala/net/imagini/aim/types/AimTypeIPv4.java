@@ -2,6 +2,7 @@ package net.imagini.aim.types;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class AimTypeIPv4 extends AimTypeAbstract {
@@ -35,6 +36,14 @@ public class AimTypeIPv4 extends AimTypeAbstract {
     @Override public String convert(byte[] value) {
         try {
             return InetAddress.getByAddress(value).toString();
+        } catch (UnknownHostException e) {
+            return null;
+        }
+    }
+
+    @Override public String asString(ByteBuffer value) {
+        try {
+            return InetAddress.getByAddress(Arrays.copyOfRange(value.array(), value.arrayOffset() + value.position(), 4)).toString();
         } catch (UnknownHostException e) {
             return null;
         }

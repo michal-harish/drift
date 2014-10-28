@@ -38,4 +38,7 @@ public class AimTypeUUID extends AimTypeAbstract {
         return new UUID(ByteUtils.getLongValue(value,0) , ByteUtils.getLongValue(value,8)).toString();
     }
 
+    @Override public String asString(ByteBuffer value) {
+        return new UUID(ByteUtils.asLongValue(value) , ByteUtils.asLongValue(value,8)).toString();
+    }
 }

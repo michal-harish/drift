@@ -131,18 +131,51 @@ public class ByteUtils {
         bb.order(ENDIAN);
         return bb;
     }
-    static public int asIntValue(ByteBuffer value) {
+    static public int asIntValue(final ByteBuffer value) {
         int offset = value.position();
         if (ENDIAN.equals(ByteOrder.LITTLE_ENDIAN)) {
-            return ((((int) value.get(offset + 3)) << 24)
+            return (
+                    (((int) value.get(offset + 3)) << 24)
                     + (((int) value.get(offset + 2) & 0xff) << 16)
-                    + (((int) value.get(offset + 1) & 0xff) << 8) + (((int) value
-                    .get(offset + 0) & 0xff) << 0));
+                    + (((int) value.get(offset + 1) & 0xff) << 8) 
+                    + (((int) value.get(offset + 0) & 0xff) << 0)
+                    );
         } else {
-            return ((((int) value.get(offset + 0)) << 24)
+            return (
+                    (((int) value.get(offset + 0)) << 24)
                     + (((int) value.get(offset + 1) & 0xff) << 16)
-                    + (((int) value.get(offset + 2) & 0xff) << 8) + (((int) value
-                    .get(offset + 3) & 0xff) << 0));
+                    + (((int) value.get(offset + 2) & 0xff) << 8) 
+                    + (((int) value.get(offset + 3) & 0xff) << 0)
+                    );
+        }
+    }
+    static public long asLongValue(final ByteBuffer value) {
+        return asLongValue(value, 0);
+    }
+    static public long asLongValue(final ByteBuffer value, final int ofs) {
+        int offset = value.position() + ofs;
+        if (ENDIAN.equals(ByteOrder.LITTLE_ENDIAN)) {
+            return (
+                    (((long) value.get(offset + 7) & 0xff) << 56)
+                    + (((long) value.get(offset + 6) & 0xff) << 48)
+                    + (((long) value.get(offset + 5) & 0xff) << 40)
+                    + (((long) value.get(offset + 4) & 0xff) << 32)
+                    + (((long) value.get(offset + 3) & 0xff) << 24)
+                    + (((long) value.get(offset + 2) & 0xff) << 16)
+                    + (((long) value.get(offset + 1) & 0xff) << 8) 
+                    + (((long) value.get(offset + 0) & 0xff) << 0)
+                    );
+        } else {
+            return (
+                    (((long) value.get(offset + 0) & 0xff) << 56)
+                    + (((long) value.get(offset + 1) & 0xff) << 48)
+                    + (((long) value.get(offset + 2) & 0xff) << 40)
+                    + (((long) value.get(offset + 3) & 0xff) << 32)
+                    + (((long) value.get(offset + 4) & 0xff) << 24)
+                    + (((long) value.get(offset + 5) & 0xff) << 16)
+                    + (((long) value.get(offset + 6) & 0xff) << 8) 
+                    + (((long) value.get(offset + 7) & 0xff) << 0)
+                    );
         }
     }
 

@@ -12,13 +12,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.imagini.aim.tools.PipeUtils;
 import net.imagini.aim.tools.RowFilter;
 import net.imagini.aim.tools.Scanner;
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
+import net.imagini.aim.types.TypeUtils;
 import net.imagini.aim.utils.BlockStorage;
 
 /**
@@ -82,7 +82,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
 
         recordBuffer.clear();
         for(int col = 0; col < schema.size() ; col++) {
-            PipeUtils.write(schema.get(col).getDataType(), record[col], recordBuffer);
+            TypeUtils.copy(record[col], schema.get(col).getDataType(), recordBuffer);
         }
         recordBuffer.flip();
         return appendRecord(recordBuffer);
@@ -104,7 +104,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                     block.clear();
                 }
                 originalSize.addAndGet(
-                    PipeUtils.copy(record, type, block)
+                    TypeUtils.copy(record, type, block)
                 );
             }
             count.incrementAndGet();

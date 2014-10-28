@@ -1,9 +1,12 @@
 package net.imagini.aim.types;
 
+import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import net.imagini.aim.utils.ByteUtils;
 
 public class AimTypeTIME extends AimTypeAbstract {
 
@@ -53,6 +56,17 @@ public class AimTypeTIME extends AimTypeAbstract {
             DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd H:mm:ss");
             return formatter.format(Long.valueOf(Aim.LONG.convert(value)));
         }
-        return "";
+        throw new IllegalArgumentException();
     }
+
+    @Override public String asString(ByteBuffer value) {
+        if (dataType.equals(Aim.STRING)) {
+            return dataType.asString(value);
+        } else if (dataType.equals(Aim.LONG)) {
+            DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd H:mm:ss");
+            return formatter.format(ByteUtils.asLongValue(value));
+        }
+        throw new IllegalArgumentException();
+    }
+
 }

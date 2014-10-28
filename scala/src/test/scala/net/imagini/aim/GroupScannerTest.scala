@@ -33,9 +33,9 @@ class GroupScannerTest extends FlatSpec with Matchers {
     groupScan.nextResultAsString should be("{www.travel.com} a7b22cfb-a29e-42c3-a3d9-12d32850e103 ")
     an[EOFException] must be thrownBy groupScan.nextResultAsString
 
-    val gropuScan2 = new GroupScanner(partition, "*", "column='pageview'", "column='addthis_id' and value='AT9876'")
-    gropuScan2.nextResultAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.travel.com} ")
-    an[EOFException] must be thrownBy gropuScan2.nextResultAsString
+//    val gropuScan2 = new GroupScanner(partition, "*", "column='pageview'", "column='addthis_id' and value='AT9876'")
+//    gropuScan2.nextResultAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.travel.com} ")
+//    an[EOFException] must be thrownBy gropuScan2.nextResultAsString
 
   }
 }

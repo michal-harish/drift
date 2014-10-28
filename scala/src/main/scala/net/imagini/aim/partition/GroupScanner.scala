@@ -3,7 +3,6 @@ package net.imagini.aim.partition
 import net.imagini.aim.tools.RowFilter
 import java.io.EOFException
 import java.util.Arrays
-import net.imagini.aim.utils.BlockStorageRaw
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimTypeAbstract
 import net.imagini.aim.tools.Scanner
@@ -14,9 +13,11 @@ import net.imagini.aim.types.Aim
 import scala.collection.JavaConverters._
 import net.imagini.aim.tools.PipeUtils
 import net.imagini.aim.utils.ByteUtils
+import java.nio.ByteBuffer
+import net.imagini.aim.types.TypeUtils
 
 class GroupScanner(val partition: AimPartition, val groupSelectStatement: String, val rowFilterStatement: String, val groupFilterStatement: String) {
-  //
+
   val selectDef = if (groupSelectStatement.contains("*")) partition.schema.names else groupSelectStatement.split(",").map(_.trim)
   val selectRef = selectDef.filter(partition.schema.has(_))
   val selectSchema: AimSchema = new AimSchema(new LinkedHashMap(ListMap[String, AimType](
@@ -30,7 +31,7 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
   val groupFilter = RowFilter.fromString(partition.schema, groupFilterStatement)
   val groupFunctions: Seq[AimTypeGROUP] = selectSchema.fields.filter(_.isInstanceOf[AimTypeGROUP]).map(_.asInstanceOf[AimTypeGROUP])
 
-  val requiredColumns = selectRef ++ groupFilter.getColumns ++ groupFunctions.flatMap(_.filter.getColumns) ++ groupFunctions.map(_.field)
+  val requiredColumns = selectRef ++ rowFilter.getColumns ++ groupFilter.getColumns ++ groupFunctions.flatMap(_.filter.getColumns) ++ groupFunctions.map(_.field)
 
   val merge = new MergeScanner(partition, requiredColumns, RowFilter.fromString(partition.schema, "*"))
 
@@ -38,22 +39,22 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
   groupFilter.updateFormula(merge.schema.names)
   groupFunctions.map(_.filter.updateFormula(merge.schema.names))
 
-  //FIXME
-  private var currentGroupKey: Array[Byte] = null
+  //TODO work on storage and scanner is required to keep the buffers decompressed if marked
+  private var currentKey: ByteBuffer = null
 
   def selectCurrentFilteredGroup = {
     var satisfiesFilter = groupFilter.isEmptyFilter
     groupFunctions.map(_.reset)
     do {
       merge.mark
-      currentGroupKey = merge.currentRow(merge.keyColumn).asAimValue(merge.keyType)
+      currentKey = merge.currentRow(merge.keyColumn).slice
       try {
-        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && Arrays.equals(merge.currentRow(merge.keyColumn).asAimValue(merge.keyType), currentGroupKey)) {
+        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && merge.currentRow(merge.keyColumn).equals(currentKey, merge.keyType)) {
           if (!satisfiesFilter && groupFilter.matches(merge.currentRow)) {
             satisfiesFilter = true
           }
           groupFunctions.filter(f ⇒ !f.satisfied && f.filter.matches(merge.currentRow)).foreach(f ⇒ {
-            f.satisfy(merge.currentRow(merge.schema.get(f.field)).asAimValue(f.dataType))
+            f.satisfy(merge.currentRow(merge.schema.get(f.field)).scan())
           })
           if (!satisfiesFilter || !groupFunctions.forall(_.satisfied)) {
             merge.skipCurrentRow
@@ -67,8 +68,8 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
   }
 
   def selectNextFilteredGroup = {
-    if (currentGroupKey != null) {
-      while (Arrays.equals(merge.currentRow(merge.keyColumn).asAimValue(merge.keyType), currentGroupKey)) {
+    if (currentKey != null) {
+      while (merge.currentRow(merge.keyColumn).equals(currentKey, merge.keyType)) {
         merge.skipCurrentRow
       }
     }
@@ -76,11 +77,11 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
   }
 
   def selectNextGroupRow: Boolean = {
-    if (currentGroupKey == null) {
+    if (currentKey == null) {
       false
     } else {
       merge.selectNextFilteredRow
-      if (Arrays.equals(merge.currentRow(merge.keyColumn).asAimValue(merge.keyType), currentGroupKey)) {
+      if (merge.currentRow(merge.keyColumn).equals(currentKey, merge.keyType)) {
         true
       } else {
         false
@@ -88,24 +89,26 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
     }
   }
 
-  def nextResult: Seq[Scanner] = {
-    while(!selectNextGroupRow || !rowFilter.matches(merge.currentRow)) {
+  def scanCurrentRow: Seq[ByteBuffer] = {
+    while (!selectNextGroupRow || !rowFilter.matches(merge.currentRow)) {
       if (!selectNextGroupRow) selectNextFilteredGroup else merge.skipCurrentRow
     }
-    val streams: Seq[Scanner] = selectSchema.names.map(f ⇒ selectSchema.field(f) match {
-      case function: AimTypeGROUP                      ⇒ function.toScanner
+    val buffers: Seq[ByteBuffer] = selectSchema.names.map(f ⇒ selectSchema.field(f) match {
+      case function: AimTypeGROUP                      ⇒ function.toByteBuffer
       case empty: AimType if (empty.equals(Aim.EMPTY)) ⇒ null
-      case field: AimType                              ⇒ merge.currentRow(merge.schema.get(f))
+      case field: AimType                              ⇒ merge.currentRow(merge.schema.get(f)).scan()
     })
-    merge.schema.names.filter(!selectSchema.has(_)).map(n =>{
-      val hiddenColumn = merge.schema.get(n)
-      PipeUtils.skip(merge.currentRow(hiddenColumn), merge.schema.dataType(hiddenColumn))
-    })
-    merge.consumed
-    streams
+    buffers
   }
-  protected[aim] def nextResultAsString: String = rowAsString(nextResult)
-  protected[aim] def rowAsString(streams: Seq[Scanner]): String = (selectSchema.fields, streams).zipped.map((t, s) ⇒ t.convert(PipeUtils.read(s, t.getDataType))).foldLeft("")(_ + _ + " ")
+  protected[aim] def currentRowAsString: String = {
+    (selectSchema.fields, scanCurrentRow).zipped.map((t, b) ⇒ t.asString(b)).foldLeft("")(_ + _ + " ")
+  }
+
+  protected[aim] def nextResultAsString: String = {
+    val result = currentRowAsString
+    merge.skipCurrentRow
+    result
+  }
 
 }
 
@@ -115,15 +118,15 @@ class AimTypeGROUP(val schema: AimSchema, val definition: String) extends AimTyp
   val field = body.substring(0, body.indexOf(" "))
   val dataType = schema.field(field).getDataType
   val filter = RowFilter.fromString(schema, body.substring(body.indexOf(" where ") + 7).trim)
-  private var storage = new BlockStorageRaw
-  private val scanner = new Scanner(storage)
-  def reset = { storage.clear; scanner.rewind }
-  def satisfied = storage.numBlocks > 0
-  def satisfy(value: Array[Byte]) = storage.addBlock(ByteUtils.wrap(value))
-  def toScanner = { scanner.rewind; scanner }
+  private var buffer: ByteBuffer = null
+  def reset = buffer = null
+  def satisfied = buffer != null
+  def satisfy(value: ByteBuffer) = buffer = value.slice()
+  def toByteBuffer = { buffer.rewind(); buffer }
   override def getDataType = dataType
   override def toString = "GROUP[" + field + " WHERE" + filter + "]"
   override def convert(value: String): Array[Byte] = dataType.convert(value)
   override def convert(value: Array[Byte]): String = dataType.convert(value)
+  override def asString(value: ByteBuffer): String = dataType.asString(value)
   def typeTuple: (String, AimTypeGROUP) = alias -> this
 }

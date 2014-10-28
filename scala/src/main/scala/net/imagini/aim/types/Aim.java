@@ -61,22 +61,35 @@ public enum Aim implements AimDataType {
     }
 
     @Override
+    public int sizeOf(ByteBuffer value) {
+        switch(this) {
+        case STRING: return ByteUtils.asIntValue(value) + size;
+        default: return size;
+    }
+    }
+
+    @Override
     public String convert(byte[] value) {
-        if (this.equals(Aim.EMPTY)) {
-            return "-";
-        } else if (this.equals(Aim.BOOL)) {
-            return String.valueOf(value[0]>0);
-        } else if (this.equals(Aim.BYTE)) {
-            return String.valueOf(value[0]);
-        } else if (this.equals(Aim.INT)) {
-            return String.valueOf(ByteUtils.getIntValue(value));
-        } else if (this.equals(Aim.LONG)) {
-            return String.valueOf(ByteUtils.getLongValue(value,0));
-        } else if (this.equals(Aim.STRING)) {
-            int size = ByteUtils.getIntValue(value);
-            return new String(value, 4, size);
-        } else {
-            throw new IllegalArgumentException("Unknown type " + this);
+        switch(this) {
+            case EMPTY: return "-";
+            case BOOL: return String.valueOf(value[0]>0);
+            case BYTE: return String.valueOf(value[0]);
+            case INT: return String.valueOf(ByteUtils.getIntValue(value));
+            case LONG: return String.valueOf(ByteUtils.getLongValue(value,0));
+            case STRING: return new String(value, 4, ByteUtils.getIntValue(value));
+            default: throw new IllegalArgumentException("Unknown type " + this);
+        }
+    }
+
+    @Override public String asString(ByteBuffer value) {
+        switch(this) {
+            case EMPTY: return "";
+            case BOOL: return String.valueOf(value.get(value.position()));
+            case BYTE: return String.valueOf(value.position());
+            case INT: return String.valueOf(ByteUtils.asIntValue(value));
+            case LONG: return String.valueOf(ByteUtils.asLongValue(value));
+            case STRING: return new String(value.array(), value.arrayOffset() + value.position()+4, ByteUtils.asIntValue(value));
+            default: return "";
         }
     }
 

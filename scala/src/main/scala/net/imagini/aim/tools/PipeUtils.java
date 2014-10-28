@@ -3,7 +3,6 @@ package net.imagini.aim.tools;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
@@ -88,48 +87,6 @@ public class PipeUtils {
         }
         ByteUtils.read(in, buf, offset, size);
         return offset + size;
-    }
-
-    public static long copy(ByteBuffer src, AimDataType type, ByteBuffer dest) {
-        int size;
-        int head = 0;
-        if (type.equals(Aim.STRING)) {
-            size = src.getInt();
-            dest.putInt(size);
-            head = 4;
-        } else {
-            size = type.getSize();
-        }
-        // FIXME array buffer specific code should be done with slice instead
-        int o = dest.arrayOffset();
-        o += dest.position();
-        src.get(dest.array(), o, size);
-        dest.position(dest.position() + size);
-        return head + size;
-    }
-
-    public static int sizeOf(ByteBuffer in, AimDataType type) {
-        int size;
-        if (type.equals(Aim.STRING)) {
-            size = ByteUtils.asIntValue(in) + 4;
-        } else {
-            size = type.getSize();
-        }
-        return size;
-    }
-
-    static public int write(AimDataType type, byte[] value, ByteBuffer out)
-            throws IOException {
-        int size = 0;
-        if (type.equals(Aim.STRING)) {
-            size = ByteUtils.getIntValue(value);
-            out.put(value, 0, size + 4);
-            return size + 4;
-        } else {
-            size = type.getSize();
-        }
-        out.put(value, 0, size);
-        return size;
     }
 
 }

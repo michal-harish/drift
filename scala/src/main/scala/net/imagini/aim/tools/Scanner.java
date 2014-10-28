@@ -2,11 +2,10 @@ package net.imagini.aim.tools;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 import net.imagini.aim.types.Aim;
-import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimType;
+import net.imagini.aim.types.TypeUtils;
 import net.imagini.aim.utils.BlockStorage;
 import net.imagini.aim.utils.ByteUtils;
 
@@ -47,6 +46,10 @@ public class Scanner extends InputStream {
     }
     @Override public int read() {
         return eof() ? -1 : zoom.get();
+    }
+
+    public void skip(AimType t) {
+        zoom.position(zoom.position() + t.getDataType().sizeOf(zoom));
     }
 
     public void rewind() {
@@ -95,81 +98,32 @@ public class Scanner extends InputStream {
         return ByteUtils.asIntValue(zoom);
     }
 
+    public ByteBuffer scan() {
+        return zoom;
+    }
 
-    //FIXME intead of copyOfRange it should be just a view of ByteBuffer
-    public byte[] asAimValue(AimType t) {
-        int size = PipeUtils.sizeOf(zoom, t.getDataType());
-        return Arrays.copyOfRange(zoom.array(), zoom.position(), zoom.position() + size);
+    public ByteBuffer slice() {
+        return zoom.slice();
     }
 
     public int compare(Scanner otherScanner, AimType type) {
-        return compare(otherScanner.zoom, type);
+        return TypeUtils.compare(zoom, otherScanner.zoom, type);
     }
-    /**
-     * Compares the current buffer position if treated as given type with the given value
-     * but does not advance
-     */
+
     public int compare(ByteBuffer value, AimType type) {
-
-        int ni;
-        int i = zoom.position();
-        int nj;
-        int j = value.position();
-        int n;
-        int k = 0;
-        if (type.equals(Aim.STRING)) {
-            ni = ByteUtils.asIntValue(zoom) + 4;
-            i += 4;
-            nj = ByteUtils.asIntValue(value) + 4;
-            j += 4;
-            n = Math.min(ni, nj);
-            k += 4;
-        } else {
-            n = ni = nj = type.getDataType().getSize();
-        }
-        if (ni == nj) {
-            for (; k < n; k++, i++, j++) {
-                int cmp = ByteUtils.compareUnisgned(zoom.get(i), value.get(j));
-                if (cmp != 0) {
-                    return cmp;
-                }
-            }
-        }
-        return ni - nj;
+        return TypeUtils.compare(zoom, value, type);
     }
 
-    /**
-     * Checks if the current buffer position if treated as given type would contain the given value
-     * but does not advance
-     */
-    public boolean contains(ByteBuffer value, AimDataType type) {
-        int ni;
-        int i = zoom.position();
-        int nj;
-        int j = 0;
-        if (type.equals(Aim.STRING)) {
-            ni = ByteUtils.asIntValue(zoom) + 4;
-            i += 4;
-            nj = ByteUtils.asIntValue(value) + 4;
-            j += 4;
-        } else {
-            ni = nj = type.getSize();
-        }
-        if (nj > ni) {
-            return false;
-        } else {
-            ni += zoom.position();
-            int v = j;
-            for (; i < ni; i++) {
-                byte b = zoom.get(i);
-                if (value.get(v) != b) {
-                    v = j;
-                } else if (++v == value.limit()) {
-                    return true;
-                }
-            }
-            return false;
-        }
+    public boolean equals(Scanner otherScanner, AimType type) {
+        return compare(otherScanner, type) == 0;
+    }
+
+    public boolean equals(ByteBuffer value, AimType type) {
+        return compare(value, type) == 0;
+    }
+
+    public boolean contains(ByteBuffer value, AimType type) {
+        return TypeUtils.contains(zoom, value, type);
     }
 
     private boolean decompress(Integer block) {

@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.imagini.aim.tools.PipeUtils;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.SortOrder;
@@ -45,7 +44,7 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
             ByteKey sortValue = new ByteKey(
                 Arrays.copyOfRange(record.array(), 
                 record.position(), 
-                record.position() + PipeUtils.sizeOf(record, sortType)) 
+                record.position() + sortType.sizeOf(record)) 
             );
 
             // close record

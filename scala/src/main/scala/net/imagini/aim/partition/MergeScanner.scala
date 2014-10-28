@@ -18,8 +18,7 @@ import net.imagini.aim.types.AimDataType
 import net.imagini.aim.types.AimTypeAbstract
 import net.imagini.aim.types.Aim
 import java.io.ByteArrayInputStream
-import scala.xml.dtd.EMPTY
-import net.imagini.aim.utils.BlockStorageRaw
+import java.nio.ByteBuffer
 
 case class Selected extends Throwable
 
@@ -42,13 +41,11 @@ class MergeScanner(val partition: AimPartition, val selectFields: Array[String],
 
   private var currentSegment = -1
 
-  def consumed = currentSegment = -1
-
   def mark = scanners.foreach(_.foreach(_.mark))
 
   def reset = {
     scanners.foreach(_.foreach(_.reset))
-    consumed
+    currentSegment = -1
   }
 
   def currentRow: Array[Scanner] = {
@@ -68,25 +65,26 @@ class MergeScanner(val partition: AimPartition, val selectFields: Array[String],
   }
 
   def skipCurrentRow = {
-    for ((t, s) ← (schema.fields zip scanners(currentSegment))) PipeUtils.skip(s, t.getDataType)
-    consumed
+    for ((t, s) ← (schema.fields zip scanners(currentSegment))) s.skip(t.getDataType)
+    currentSegment = -1
   }
 
   def selectNextFilteredRow = while (!rowFilter.matches(currentRow)) skipCurrentRow
 
-  def nextResult: Seq[Scanner] = {
+  def scanCurrentRow: Seq[ByteBuffer] = {
     selectNextFilteredRow
-    val streams: Seq[Scanner] = selectSchema.names.map(f ⇒ currentRow(schema.get(f)))
-    schema.names.filter(!selectFields.contains(_)).map(n ⇒ {
-      val hiddenColumn = schema.get(n)
-      PipeUtils.skip(currentRow(hiddenColumn), schema.dataType(hiddenColumn))
-    })
-    consumed
-    streams
+    val buffers = selectSchema.names.map(f ⇒ currentRow(schema.get(f)).scan())
+    buffers
   }
 
-  protected[aim] def nextResultAsString: String = rowAsString(nextResult)
+  protected[aim] def rowAsString: String = {
+    (selectSchema.fields, scanCurrentRow).zipped.map((t, b) ⇒ t.asString(b)).foldLeft("")(_ + _ + " ")
+  }
 
-  protected[aim] def rowAsString(streams: Seq[Scanner]): String = (selectSchema.fields, streams).zipped.map((t, s) ⇒ t.convert(PipeUtils.read(s, t.getDataType))).foldLeft("")(_ + _ + " ")
+  protected[aim] def nextResultAsString: String = {
+    val result = rowAsString
+    skipCurrentRow
+    result
+  }
 
 }

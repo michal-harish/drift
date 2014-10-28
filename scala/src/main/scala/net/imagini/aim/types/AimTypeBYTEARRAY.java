@@ -7,6 +7,7 @@ public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
     final public int size;
     public AimTypeBYTEARRAY(int size) {  this.size = size; }
     @Override public int getSize() { return size; }
+    @Override public int sizeOf(ByteBuffer value) { return size; }
     @Override public String toString() { return "BYTEARRAY["+size+"]"; }
     @Override public String escape(String value) { return "'" + value +"'"; }
 
@@ -28,5 +29,9 @@ public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
 
     @Override final public AimDataType getDataType() {
         return this;
+    }
+
+    @Override public String asString(ByteBuffer value) {
+        return new String(value.array(), value.arrayOffset() + value.position(),size);
     }
 }

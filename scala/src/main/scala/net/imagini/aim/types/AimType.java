@@ -1,5 +1,7 @@
 package net.imagini.aim.types;
 
+import java.nio.ByteBuffer;
+
 
 
 /**
@@ -17,7 +19,8 @@ public interface AimType {
     //FIXME void parse(String value, ByteBuffer into);
     public byte[] convert(String value);
 
-    //FIXME T toString(ByteBuffer value);
+    public String asString(ByteBuffer value);
+
     public String convert(byte[] value);
 
     public String escape(String value);

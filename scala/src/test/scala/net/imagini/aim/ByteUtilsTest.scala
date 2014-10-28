@@ -40,4 +40,13 @@ class ByteBufferTest extends FlatSpec with Matchers {
         println("BB2 Position="+bb2.position+", " + "Limit="+bb2.limit+", " + "Capacity="+ bb2.capacity +", ")
         subsection should equal("ABCD")
     }
+
+    "ByteBuffer long " should "get the same value it put" in {
+        val l:Long = Long.MaxValue
+        println(l)
+        val bb = ByteUtils.createLongBuffer(l)
+        bb.flip
+        ByteUtils.asLongValue(bb) should equal(l)
+        println(ByteUtils.asLongValue(bb))
+    }
 }
