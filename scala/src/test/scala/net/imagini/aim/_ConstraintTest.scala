@@ -31,7 +31,7 @@ class ConstraintTest extends FlatSpec with Matchers {
      * select user_uid, column filter column='pageview' constraint column == 'addthis_id' and value=='AT1234'
      */
     val filter = RowFilter.fromString(schema, "column='pageview' or column='ddp_id'")
-    val select = schema.subset(Array("user_uid", "value"))
+    val select = schema.subset(Array("user_uid", "column", "value"))
     val mergeSort = new StreamMerger(select, 2, Array(
       s1.select(filter, select.names),
       s2.select(filter, select.names)))

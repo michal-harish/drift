@@ -1,8 +1,6 @@
 package net.imagini.aim.partition
 
 import java.io.EOFException
-import net.imagini.aim.tools.Scanner
-import net.imagini.aim.tools.PipeUtils
 import scala.collection.mutable.LinkedList
 import net.imagini.aim.types.AimSchema
 import java.util.LinkedHashMap
@@ -12,42 +10,33 @@ import scala.collection.JavaConverters._
 import net.imagini.aim.types.TypeUtils
 import java.nio.ByteBuffer
 
-class EquiJoinScanner(val left: AbstractScanner, val leftSelect: Array[String], val right: AbstractScanner, val rightSelect: Array[String])
-  //extends AbstractScanner {
-  {
-  def this(left: AbstractScanner, leftStatement: String, right: AbstractScanner, rightStatement: String) = this(left, leftStatement.split(",").map(_.trim), right, rightStatement.split(",").map(_.trim))
+class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 
-  val keyColumn = left.schema.get(leftSelect(0))
-  val keyType = left.schema.get(keyColumn)
-  //override 
-  val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](
-    ((leftSelect.map(n ⇒ (n -> left.schema.field(n))) ++ rightSelect.map(n ⇒ (n -> right.schema.field(n)))).toMap).asJava))
-  println(schema)
+  val rightSelect = right.schema.names
+  val leftSelect = left.schema.names.filter(!right.schema.has(_))
+  override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](
+    (ListMap((leftSelect.map(n ⇒ (n -> left.schema.field(n))) ++ rightSelect.map(n ⇒ ((n) -> right.schema.field(n)))): _*).asJava)))
 
-  //    while (true) {
-  //      merges.map(_. currentGroup)
-  var cmp: Int = -1
-  do {
-    cmp = TypeUtils.compare(left.selectKey, right.selectKey, keyType)
-    if (cmp < 0) left.skipRow
-    else if (cmp > 0) right.skipRow
-  } while (cmp != 0)
+  override val keyType = right.schema.get(right.keyColumn)
+  override val keyColumn = schema.get(right.schema.name(right.keyColumn))
+  private val leftSelectIndex = leftSelect.map(f ⇒ left.schema.get(f))
 
-  println()
+  override def skipRow = right.skipRow
 
-  //    }
-//  override def scanCurrentRow:Seq[ByteBuffer] = {
-    //        for (merge ← merges) {
-    //          try {
-    //            while (true) {
-    //              val row = merge.nextGroupRowScan
-    //              println(
-    //                (merge.scanSchema.fields, row).zipped.map((t, s) ⇒ t.convert(PipeUtils.read(s, t.getDataType))).foldLeft("")(_ + _ + " "))
-    //            }
-    //          } catch {
-    //            case e: EOFException ⇒ {}
-    //          }
-    //        }
-//  }
+  override def mark = { left.mark; right.mark }
+
+  override def reset = { left.reset; right.reset }
+
+  def selectRow: Array[ByteBuffer] = {
+    var cmp: Int = -1
+    do {
+      cmp = TypeUtils.compare(left.selectKey, right.selectKey, keyType)
+      if (cmp < 0) left.skipRow
+      else if (cmp > 0) right.skipRow
+    } while (cmp != 0)
+    val leftRow: Array[ByteBuffer] = left.selectRow
+    val rightRow: Array[ByteBuffer] = right.selectRow
+    leftSelectIndex.map(c ⇒ leftRow(c)) ++ rightRow
+  }
 
 }
