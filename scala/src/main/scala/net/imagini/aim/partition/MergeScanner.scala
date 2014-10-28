@@ -20,9 +20,8 @@ import net.imagini.aim.types.Aim
 import java.io.ByteArrayInputStream
 import java.nio.ByteBuffer
 
-case class Selected extends Throwable
-
-class MergeScanner(val partition: AimPartition, val selectFields: Array[String], val rowFilter: RowFilter) {
+class MergeScanner(val partition: AimPartition, val selectFields: Array[String], val rowFilter: RowFilter) 
+extends AbstractScanner {
   def this(partition: AimPartition, selectStatement: String, rowFilterStatement: String) = this(
     partition,
     if (selectStatement.contains("*")) partition.schema.names else selectStatement.split(",").map(_.trim),
@@ -33,7 +32,7 @@ class MergeScanner(val partition: AimPartition, val selectFields: Array[String],
   val sortOrder = SortOrder.ASC
   val selectSchema: AimSchema = partition.schema.subset(selectFields)
 
-  val schema: AimSchema = partition.schema.subset(selectFields ++ rowFilter.getColumns :+ keyField)
+  override val schema: AimSchema = partition.schema.subset(selectFields ++ rowFilter.getColumns :+ keyField)
   rowFilter.updateFormula(schema.names)
   val keyColumn: Int = schema.get(keyField)
   val keyType = schema.get(keyColumn)
@@ -48,6 +47,7 @@ class MergeScanner(val partition: AimPartition, val selectFields: Array[String],
     currentSegment = -1
   }
 
+  //TODO Array[ByteBuffer] - requires reafctoring filters
   def currentRow: Array[Scanner] = {
     if (currentSegment == -1) {
       for (s ← (0 to scanners.size - 1)) {
@@ -70,6 +70,8 @@ class MergeScanner(val partition: AimPartition, val selectFields: Array[String],
   }
 
   def selectNextFilteredRow = while (!rowFilter.matches(currentRow)) skipCurrentRow
+
+  def scanCurrentKey: ByteBuffer = currentRow(keyColumn).scan()
 
   def scanCurrentRow: Seq[ByteBuffer] = {
     selectNextFilteredRow

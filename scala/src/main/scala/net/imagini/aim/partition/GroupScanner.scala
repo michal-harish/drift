@@ -16,11 +16,12 @@ import net.imagini.aim.utils.ByteUtils
 import java.nio.ByteBuffer
 import net.imagini.aim.types.TypeUtils
 
-class GroupScanner(val partition: AimPartition, val groupSelectStatement: String, val rowFilterStatement: String, val groupFilterStatement: String) {
+class GroupScanner(val partition: AimPartition, val groupSelectStatement: String, val rowFilterStatement: String, val groupFilterStatement: String) 
+extends AbstractScanner {
 
   val selectDef = if (groupSelectStatement.contains("*")) partition.schema.names else groupSelectStatement.split(",").map(_.trim)
   val selectRef = selectDef.filter(partition.schema.has(_))
-  val selectSchema: AimSchema = new AimSchema(new LinkedHashMap(ListMap[String, AimType](
+  override val schema: AimSchema = new AimSchema(new LinkedHashMap(ListMap[String, AimType](
     selectDef.map(f ⇒ f match {
       case field: String if (partition.schema.has(field))    ⇒ (field -> partition.schema.field(field))
       case function: String if (function.contains("(group")) ⇒ new AimTypeGROUP(partition.schema, function).typeTuple
@@ -29,7 +30,7 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
 
   val rowFilter = RowFilter.fromString(partition.schema, rowFilterStatement)
   val groupFilter = RowFilter.fromString(partition.schema, groupFilterStatement)
-  val groupFunctions: Seq[AimTypeGROUP] = selectSchema.fields.filter(_.isInstanceOf[AimTypeGROUP]).map(_.asInstanceOf[AimTypeGROUP])
+  val groupFunctions: Seq[AimTypeGROUP] = schema.fields.filter(_.isInstanceOf[AimTypeGROUP]).map(_.asInstanceOf[AimTypeGROUP])
 
   val requiredColumns = selectRef ++ rowFilter.getColumns ++ groupFilter.getColumns ++ groupFunctions.flatMap(_.filter.getColumns) ++ groupFunctions.map(_.field)
 
@@ -93,7 +94,7 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
     while (!selectNextGroupRow || !rowFilter.matches(merge.currentRow)) {
       if (!selectNextGroupRow) selectNextFilteredGroup else merge.skipCurrentRow
     }
-    val buffers: Seq[ByteBuffer] = selectSchema.names.map(f ⇒ selectSchema.field(f) match {
+    val buffers: Seq[ByteBuffer] = schema.names.map(f ⇒ schema.field(f) match {
       case function: AimTypeGROUP                      ⇒ function.toByteBuffer
       case empty: AimType if (empty.equals(Aim.EMPTY)) ⇒ null
       case field: AimType                              ⇒ merge.currentRow(merge.schema.get(f)).scan()
@@ -101,7 +102,7 @@ class GroupScanner(val partition: AimPartition, val groupSelectStatement: String
     buffers
   }
   protected[aim] def currentRowAsString: String = {
-    (selectSchema.fields, scanCurrentRow).zipped.map((t, b) ⇒ t.asString(b)).foldLeft("")(_ + _ + " ")
+    (schema.fields, scanCurrentRow).zipped.map((t, b) ⇒ t.asString(b)).foldLeft("")(_ + _ + " ")
   }
 
   protected[aim] def nextResultAsString: String = {

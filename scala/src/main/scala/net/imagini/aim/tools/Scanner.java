@@ -3,7 +3,6 @@ package net.imagini.aim.tools;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimType;
 import net.imagini.aim.types.TypeUtils;
 import net.imagini.aim.utils.BlockStorage;
@@ -13,11 +12,13 @@ public class Scanner extends InputStream {
     private static class Mark {
         public final Integer block;
         public final Integer position;
+
         public Mark(Integer block, Integer position) {
             this.block = block;
             this.position = position;
         }
     }
+
     private BlockStorage blockStorage;
     private Integer currentBlock = -1;
     protected ByteBuffer zoom = null;
@@ -27,14 +28,17 @@ public class Scanner extends InputStream {
         this.blockStorage = blockStorage;
         rewind();
     }
-    //TODO mark and reset should be delegated to storage so that decompressed buffers are kept in cache until marks are released
+
+    // TODO mark and reset should be delegated to storage so that decompressed
+    // buffers are kept in cache until marks are released
     public void mark() {
         if (!eof()) {
             this.mark = new Mark(currentBlock, zoom.position());
         }
     }
 
-    @Override public void reset() {
+    @Override
+    public void reset() {
         if (mark != null) {
             if (currentBlock != mark.block) {
                 currentBlock = mark.block;
@@ -44,7 +48,9 @@ public class Scanner extends InputStream {
             mark = null;
         }
     }
-    @Override public int read() {
+
+    @Override
+    public int read() {
         return eof() ? -1 : zoom.get();
     }
 
@@ -53,8 +59,8 @@ public class Scanner extends InputStream {
     }
 
     public void rewind() {
-        if (currentBlock == 0 && blockStorage.numBlocks()>0) {
-            //FIXME
+        if (currentBlock == 0 && blockStorage.numBlocks() > 0) {
+            // FIXME
             zoom.rewind();
             mark = null;
         } else {
@@ -78,10 +84,11 @@ public class Scanner extends InputStream {
     }
 
     /**
-     * Skips the next n bytes but the caller must know that these bytes are available
-     * as this method doesn't check the block overflow
+     * Skips the next n bytes but the caller must know that these bytes are
+     * available as this method doesn't check the block overflow
      */
-    @Override public long skip(long skipBytes) {
+    @Override
+    public long skip(long skipBytes) {
         if (skipBytes > zoom.remaining()) {
             skipBytes = zoom.remaining();
         }
@@ -103,6 +110,8 @@ public class Scanner extends InputStream {
     }
 
     public ByteBuffer slice() {
+        // TODO slice as well as mark should leave underlying segments
+        // uncompressed as they called for back-referencing values
         return zoom.slice();
     }
 
@@ -136,22 +145,6 @@ public class Scanner extends InputStream {
         }
         zoom.rewind();
         return true;
-    }
-
-    public String debugValue(AimType aimType) {
-        return debugValue(zoom, aimType);
-    }
-
-    public String debugValue(ByteBuffer value, AimType aimType) {
-        int size = aimType.getDataType().getSize();
-        if (aimType.equals(Aim.STRING)) {
-            size = ByteUtils.asIntValue(value) + 4;
-        }
-        int p1 = value.position();
-        byte[] v = new byte[size];
-        value.get(v);
-        value.position(p1);
-        return aimType.convert(v);
     }
 
 }
