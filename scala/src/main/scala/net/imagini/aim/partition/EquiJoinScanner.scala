@@ -9,6 +9,7 @@ import net.imagini.aim.types.AimType
 import scala.collection.JavaConverters._
 import net.imagini.aim.types.TypeUtils
 import java.nio.ByteBuffer
+import net.imagini.aim.tools.AbstractScanner
 
 class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 

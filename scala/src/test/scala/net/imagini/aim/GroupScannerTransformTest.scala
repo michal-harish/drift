@@ -6,9 +6,9 @@ import net.imagini.aim.types.AimSchema
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.utils.BlockStorageLZ4
 import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.partition.MergeScanner
+import net.imagini.aim.segment.MergeScanner
 import java.io.EOFException
-import net.imagini.aim.partition.GroupScanner
+import net.imagini.aim.segment.GroupScanner
 
 class GroupScannerTransformTest extends FlatSpec with Matchers {
   "ScannerMerge with GroupFilter" should "return all records for filtered group" in {
@@ -27,7 +27,7 @@ class GroupScannerTransformTest extends FlatSpec with Matchers {
     partition.add(s1)
     partition.add(s2)
 
-    val scan = new GroupScanner(partition, "at_id(group value where column='addthis_id'),value,user_uid", "column='pageview'", "*")
+    val scan = new GroupScanner(partition.schema, "at_id(group value where column='addthis_id'),value,user_uid", "column='pageview'", "*", partition.segments)
     scan.nextResultAsString should be("AT1234 {www.ebay.com} 37b22cfb-a29e-42c3-a3d9-12d32850e103")
     scan.nextResultAsString should be("AT1234 {www.auto.com} 37b22cfb-a29e-42c3-a3d9-12d32850e103")
     scan.nextResultAsString should be("AT9876 {www.travel.com} a7b22cfb-a29e-42c3-a3d9-12d32850e103")

@@ -1,41 +1,32 @@
-package net.imagini.aim.partition
+package net.imagini.aim.segment
 
 import java.io.EOFException
-import net.imagini.aim.segment.AimSegment
-import net.imagini.aim.tools.PipeUtils
 import net.imagini.aim.tools.RowFilter
 import net.imagini.aim.tools.Scanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.SortOrder
-import net.imagini.aim.utils.ByteKey
-import java.util.Arrays
-import java.io.InputStream
-import java.util.LinkedHashMap
-import net.imagini.aim.types.AimType
 import scala.collection.JavaConverters._
-import scala.collection.immutable.ListMap
-import net.imagini.aim.types.AimDataType
-import net.imagini.aim.types.AimTypeAbstract
-import net.imagini.aim.types.Aim
-import java.io.ByteArrayInputStream
 import java.nio.ByteBuffer
+import net.imagini.aim.tools.AbstractScanner
+import scala.Array.canBuildFrom
+import net.imagini.aim.types.TypeUtils
 
-class MergeScanner(val partition: AimPartition, val selectFields: Array[String], val rowFilter: RowFilter)
+class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String], val rowFilter: RowFilter, val segments: Seq[AimSegment])
   extends AbstractScanner {
-  def this(partition: AimPartition, selectStatement: String, rowFilterStatement: String) = this(
-    partition,
-    if (selectStatement.contains("*")) partition.schema.names else selectStatement.split(",").map(_.trim),
-    RowFilter.fromString(partition.schema, rowFilterStatement))
-  def this(partition: AimPartition) = this(partition, "*", "*")
+  def this(sourceSchema: AimSchema, selectStatement: String, rowFilterStatement: String, segments: Seq[AimSegment]) = this(
+    sourceSchema,
+    if (selectStatement.contains("*")) sourceSchema.names else selectStatement.split(",").map(_.trim),
+    RowFilter.fromString(sourceSchema, rowFilterStatement),
+    segments)
 
-  override val schema: AimSchema = partition.schema.subset(selectFields)
-  val keyField: String = partition.schema.name(0)
+  override val schema: AimSchema = sourceSchema.subset(selectFields)
+  val keyField: String = sourceSchema.name(0)
   override val keyColumn = schema.get(keyField)
   override val keyType = schema.get(keyColumn)
   val sortOrder = SortOrder.ASC
 
-  private val scanSchema: AimSchema = partition.schema.subset(selectFields ++ rowFilter.getColumns :+ keyField)
-  private val scanners: Seq[Array[Scanner]] = partition.segments.map(segment ⇒ segment.wrapScanners(scanSchema))
+  private val scanSchema: AimSchema = sourceSchema.subset(selectFields ++ rowFilter.getColumns :+ keyField)
+  private val scanners: Seq[Array[Scanner]] = segments.map(segment ⇒ segment.wrapScanners(scanSchema))
   private val scanColumnIndex: Array[Int] = schema.names.map(n ⇒ scanSchema.get(n))
   private val scanKeyColumnIndex: Int = scanSchema.get(keyField)
   rowFilter.updateFormula(scanSchema.names)
@@ -65,7 +56,7 @@ class MergeScanner(val partition: AimPartition, val selectFields: Array[String],
         }
         //merge sort
         if (segmentHasData) {
-          if (currentSegment == -1 || ((sortOrder == SortOrder.ASC ^ scanners(s)(scanKeyColumnIndex).compare(scanners(currentSegment)(scanKeyColumnIndex), keyType) > 0))) {
+          if (currentSegment == -1 || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanners(s)(scanKeyColumnIndex).scan, scanners(currentSegment)(scanKeyColumnIndex).scan, keyType) > 0))) {
             currentSegment = s
           }
         }

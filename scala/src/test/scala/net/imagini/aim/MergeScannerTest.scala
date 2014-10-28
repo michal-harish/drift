@@ -3,7 +3,7 @@ package net.imagini.aim
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.partition.MergeScanner
+import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.tools.RowFilter
 import net.imagini.aim.types.AimSchema
@@ -32,7 +32,7 @@ class MergeScannerTest extends FlatSpec with Matchers {
     partition.add(s2)
 
     //TODO select only subset of columns: user_uid, value
-    val mergeScan = new MergeScanner(partition, "user_uid,value", "column='pageview'")
+    val mergeScan = new MergeScanner(partition.schema, "user_uid,value", "column='pageview'", partition.segments)
 
     mergeScan.nextResultAsString should be("17b22cfb-a29e-42c3-a3d9-12d32850e103 {www.music.com}")
     mergeScan.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 {www.ebay.com}")

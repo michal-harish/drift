@@ -7,6 +7,7 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable.ListMap
 import java.nio.ByteBuffer
 import net.imagini.aim.types.TypeUtils
+import net.imagini.aim.tools.AbstractScanner
 
 class InnerJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 

@@ -1,14 +1,11 @@
 package net.imagini.aim.tools;
 
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import net.imagini.aim.types.AimType;
-import net.imagini.aim.types.TypeUtils;
 import net.imagini.aim.utils.BlockStorage;
-import net.imagini.aim.utils.ByteUtils;
 
-public class Scanner extends InputStream {
+public class Scanner {
     private static class Mark {
         public final Integer block;
         public final Integer position;
@@ -38,7 +35,6 @@ public class Scanner extends InputStream {
         }
     }
 
-    @Override
     public void reset() {
         if (mark != null) {
             if (currentBlock != mark.block) {
@@ -50,7 +46,6 @@ public class Scanner extends InputStream {
         }
     }
 
-    @Override
     public int read() {
         return eof() ? -1 : scan.get();
     }
@@ -88,7 +83,7 @@ public class Scanner extends InputStream {
      * Skips the next n bytes but the caller must know that these bytes are
      * available as this method doesn't check the block overflow
      */
-    @Override
+
     public long skip(long skipBytes) {
         if (skipBytes > scan.remaining()) {
             skipBytes = scan.remaining();
@@ -97,31 +92,6 @@ public class Scanner extends InputStream {
             scan.position(scan.position() + (int) skipBytes);
         }
         return skipBytes;
-    }
-
-    /**
-     * Reads an integer at the current position but does not advance
-     */
-    public int asIntValue() {
-        return ByteUtils.asIntValue(scan);
-    }
-
-    public ByteBuffer slice() {
-        // TODO slice as well as mark should leave underlying segments
-        // uncompressed as they called for back-referencing values
-        return scan.slice();
-    }
-
-    public int compare(Scanner otherScanner, AimType type) {
-        return TypeUtils.compare(scan, otherScanner.scan, type);
-    }
-
-    public int compare(ByteBuffer value, AimType type) {
-        return TypeUtils.compare(scan, value, type);
-    }
-
-    public boolean contains(ByteBuffer value, AimType type) {
-        return TypeUtils.contains(scan, value, type);
     }
 
     private boolean decompress(Integer block) {

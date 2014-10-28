@@ -1,14 +1,18 @@
 package net.imagini.aim.partition
 
-import net.imagini.aim.types.AimSchema
-import java.util.LinkedHashMap
-import net.imagini.aim.types.AimType
-import scala.collection.JavaConverters._
-import scala.collection.immutable.ListMap
-import java.nio.ByteBuffer
-import net.imagini.aim.types.TypeUtils
-import net.imagini.aim.types.SortOrder
 import java.io.EOFException
+import java.nio.ByteBuffer
+import java.util.LinkedHashMap
+
+import scala.Array.canBuildFrom
+import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.collection.immutable.ListMap
+
+import net.imagini.aim.tools.AbstractScanner
+import net.imagini.aim.types.AimSchema
+import net.imagini.aim.types.AimType
+import net.imagini.aim.types.SortOrder
+import net.imagini.aim.types.TypeUtils
 
 class OuterJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 

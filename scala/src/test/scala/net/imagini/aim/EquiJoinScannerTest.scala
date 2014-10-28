@@ -3,7 +3,7 @@ package net.imagini.aim
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.partition.MergeScanner
+import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.tools.RowFilter
 import net.imagini.aim.types.AimSchema
@@ -35,8 +35,8 @@ class EquiJoinScannerTest extends FlatSpec with Matchers {
       .close)
 
     val joinScan = new EquiJoinScanner(
-        new MergeScanner(AS1, "user_uid, at_id", "*"), 
-        new MergeScanner(AP1, "at_id, url, timestamp", "timestamp > '2014-10-10 16:00:00' ")
+        new MergeScanner(AS1.schema, "user_uid, at_id", "*", AS1.segments), 
+        new MergeScanner(AP1.schema, "at_id, url, timestamp", "timestamp > '2014-10-10 16:00:00' ", AP1.segments)
     )
 
     joinScan.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 AT1234 www.travel.com 2014-10-10 16:00:01")
@@ -45,8 +45,8 @@ class EquiJoinScannerTest extends FlatSpec with Matchers {
     an[EOFException] must be thrownBy joinScan.nextResultAsString
 
     val joinScan2 = new EquiJoinScanner(
-        new MergeScanner(AS1, "user_uid, at_id", "*"),  
-        new MergeScanner(AP1, "at_id, url, timestamp", "*")
+        new MergeScanner(AS1.schema, "user_uid, at_id", "*", AS1.segments),  
+        new MergeScanner(AP1.schema, "at_id, url, timestamp", "*", AP1.segments)
     )
     joinScan2.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 AT1234 www.tv.com 2014-10-10 13:59:01")
     joinScan2.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 AT1234 www.auto.com/offers 2014-10-10 15:00:01")

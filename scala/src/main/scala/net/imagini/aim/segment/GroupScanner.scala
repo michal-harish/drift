@@ -1,42 +1,47 @@
-package net.imagini.aim.partition
+package net.imagini.aim.segment
 
-import net.imagini.aim.tools.RowFilter
 import java.io.EOFException
-import java.util.Arrays
-import net.imagini.aim.types.AimSchema
-import net.imagini.aim.types.AimTypeAbstract
-import net.imagini.aim.tools.Scanner
-import java.util.LinkedHashMap
-import scala.collection.immutable.ListMap
-import net.imagini.aim.types.AimType
-import net.imagini.aim.types.Aim
-import scala.collection.JavaConverters._
-import net.imagini.aim.tools.PipeUtils
-import net.imagini.aim.utils.ByteUtils
 import java.nio.ByteBuffer
+import java.util.LinkedHashMap
+
+import scala.Array.canBuildFrom
+import scala.Array.fallbackCanBuildFrom
+import scala.collection.JavaConverters.mapAsJavaMapConverter
+import scala.collection.immutable.ListMap
+
+import net.imagini.aim.tools.AbstractScanner
+import net.imagini.aim.tools.RowFilter
+import net.imagini.aim.types.AimSchema
+import net.imagini.aim.types.AimType
+import net.imagini.aim.types.AimTypeAbstract
 import net.imagini.aim.types.TypeUtils
 
-class GroupScanner(val partition: AimPartition, val groupSelectStatement: String, val rowFilterStatement: String, val groupFilterStatement: String)
+class GroupScanner(
+    val sourceSchema: AimSchema,
+    val groupSelectStatement: String, 
+    val rowFilterStatement: String, 
+    val groupFilterStatement: String,
+    val segments: Seq[AimSegment])
   extends AbstractScanner {
 
-  val selectDef = if (groupSelectStatement.contains("*")) partition.schema.names else groupSelectStatement.split(",").map(_.trim)
-  val selectRef = selectDef.filter(partition.schema.has(_))
+  val selectDef = if (groupSelectStatement.contains("*")) sourceSchema.names else groupSelectStatement.split(",").map(_.trim)
+  val selectRef = selectDef.filter(sourceSchema.has(_))
 
   override val schema: AimSchema = new AimSchema(new LinkedHashMap(ListMap[String, AimType](
     selectDef.map(f ⇒ f match {
-      case field: String if (partition.schema.has(field))    ⇒ (field -> partition.schema.field(field))
-      case function: String if (function.contains("(group")) ⇒ new AimTypeGROUP(partition.schema, function).typeTuple
+      case field: String if (sourceSchema.has(field))    ⇒ (field -> sourceSchema.field(field))
+      case function: String if (function.contains("(group")) ⇒ new AimTypeGROUP(sourceSchema, function).typeTuple
     }): _*).asJava))
 
-  override val keyColumn = schema.get(partition.schema.name(0))
-  override val keyType = partition.schema.get(0)
+  override val keyColumn = schema.get(sourceSchema.name(0))
+  override val keyType = sourceSchema.get(0)
 
-  private val rowFilter = RowFilter.fromString(partition.schema, rowFilterStatement)
-  private val groupFilter = RowFilter.fromString(partition.schema, groupFilterStatement)
+  private val rowFilter = RowFilter.fromString(sourceSchema, rowFilterStatement)
+  private val groupFilter = RowFilter.fromString(sourceSchema, groupFilterStatement)
   private val groupFunctions: Seq[AimTypeGROUP] = schema.fields.filter(_.isInstanceOf[AimTypeGROUP]).map(_.asInstanceOf[AimTypeGROUP])
 
   private val scanColumns = selectRef ++ rowFilter.getColumns ++ groupFilter.getColumns ++ groupFunctions.flatMap(_.filter.getColumns) ++ groupFunctions.map(_.field)
-  private val merge = new MergeScanner(partition, scanColumns, RowFilter.fromString(partition.schema, "*"))
+  private val merge = new MergeScanner(sourceSchema, scanColumns, RowFilter.fromString(sourceSchema, "*"), segments)
   rowFilter.updateFormula(merge.schema.names)
   groupFilter.updateFormula(merge.schema.names)
   groupFunctions.map(_.filter.updateFormula(merge.schema.names))

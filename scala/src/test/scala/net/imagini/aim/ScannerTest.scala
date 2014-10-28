@@ -13,7 +13,12 @@ import java.io.InputStream
 class ScannerTest extends FlatSpec with Matchers {
 
   val schema = AimSchema.fromString("line(STRING)")
-  def read(in: InputStream) = schema.get(0).convert(PipeUtils.read(in, schema.dataType((0))))
+  def read(in: Scanner) = {
+    in.eof 
+    val result = schema.dataType(0).asString(in.scan)
+    in.skip(schema.dataType(0))
+    result
+  }
 
   "Marking scanner" should "restore the correct block" in {
     val storage = new BlockStorageLZ4()

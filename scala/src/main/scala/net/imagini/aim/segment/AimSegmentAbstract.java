@@ -20,6 +20,7 @@ import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
 import net.imagini.aim.types.TypeUtils;
 import net.imagini.aim.utils.BlockStorage;
+import net.imagini.aim.utils.ByteUtils;
 
 /**
  * zero-copy open methods, i.e. multiple stream readers should be able to operate without 
@@ -175,7 +176,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                     Scanner scanner = scanners[c];
                     int skipLength;
                     if (type.equals(Aim.STRING)) {
-                        skipLength = 4 + scanner.asIntValue();
+                        skipLength = 4 + ByteUtils.asIntValue(scanner.scan);
                     } else {
                         skipLength  = type.getDataType().getSize();
                     }
@@ -198,6 +199,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
      * ZeroCopy
      * Not Thread-safe 
      * Filtered, Aggregate Input stream for all the selected columns in this segment.
+     * TODO AbstractScanner.asStream() instead of this method
      */
     @Override final public InputStream select(final RowFilter filter, final String[] columns) throws IOException {
         try {
@@ -284,7 +286,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                     read = 0;
                     AimType type = subSchema.get(selectColumns.get(currentSelectColumn));
                     if (type.equals(Aim.STRING)) {
-                        currentReadLength = 4 + currentSelectScanner.asIntValue();
+                        currentReadLength = 4 + ByteUtils.asIntValue(currentSelectScanner.scan);
                     } else {
                         currentReadLength = type.getDataType().getSize();
                     }
@@ -297,7 +299,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                     AimType type = subSchema.get(c);
                     int skipLength;
                     if (type.equals(Aim.STRING)) {
-                        skipLength = 4 + scanners[c].asIntValue();
+                        skipLength = 4 + ByteUtils.asIntValue(scanners[c].scan);
                     } else {
                         skipLength  = type.getDataType().getSize();
                     }

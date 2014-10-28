@@ -6,9 +6,9 @@ import net.imagini.aim.types.AimSchema
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.utils.BlockStorageLZ4
 import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.partition.MergeScanner
+import net.imagini.aim.segment.MergeScanner
 import java.io.EOFException
-import net.imagini.aim.partition.GroupScanner
+import net.imagini.aim.segment.GroupScanner
 
 class GroupScannerTest extends FlatSpec with Matchers {
   "ScannerMerge with GroupFilter" should "return all records for filtered group" in {
@@ -27,13 +27,13 @@ class GroupScannerTest extends FlatSpec with Matchers {
     partition.add(s1)
     partition.add(s2)
 
-    val groupScan = new GroupScanner(partition, "value, user_uid", "column='pageview'", "column='addthis_id'")
+    val groupScan = new GroupScanner(partition.schema, "value, user_uid", "column='pageview'", "column='addthis_id'", partition.segments)
     groupScan.nextResultAsString should be("{www.ebay.com} 37b22cfb-a29e-42c3-a3d9-12d32850e103")
     groupScan.nextResultAsString should be("{www.auto.com} 37b22cfb-a29e-42c3-a3d9-12d32850e103")
     groupScan.nextResultAsString should be("{www.travel.com} a7b22cfb-a29e-42c3-a3d9-12d32850e103")
     an[EOFException] must be thrownBy groupScan.nextResultAsString
 
-    val gropuScan2 = new GroupScanner(partition, "*", "column='pageview'", "column='addthis_id' and value='AT9876'")
+    val gropuScan2 = new GroupScanner(partition.schema, "*", "column='pageview'", "column='addthis_id' and value='AT9876'", partition.segments)
     gropuScan2.nextResultAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.travel.com}")
     an[EOFException] must be thrownBy gropuScan2.nextResultAsString
 

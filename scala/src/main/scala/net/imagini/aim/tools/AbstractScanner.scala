@@ -1,10 +1,11 @@
-package net.imagini.aim.partition
+package net.imagini.aim.tools
+
+import java.nio.ByteBuffer
+
+import scala.Array.canBuildFrom
 
 import net.imagini.aim.types.AimSchema
-import java.nio.ByteBuffer
-import net.imagini.aim.tools.Scanner
 import net.imagini.aim.types.AimType
-import org.apache.commons.lang3.StringUtils
 
 trait AbstractScanner {
 

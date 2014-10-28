@@ -7,7 +7,7 @@ import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.utils.BlockStorageLZ4
 import net.imagini.aim.partition.AimPartition
 import net.imagini.aim.partition.InnerJoinScanner
-import net.imagini.aim.partition.MergeScanner
+import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.partition.OuterJoinScanner
 import java.io.EOFException
 import net.imagini.aim.types.Aim
@@ -42,8 +42,8 @@ class InnerOuterJoinScannerTest  extends FlatSpec with Matchers {
       partitionB1.add(sB1)
 
       val outerJoin = new OuterJoinScanner(
-          new MergeScanner(partitionA1, "user_uid, url, timestamp", "*"), 
-          new MergeScanner(partitionB1, "user_uid, url, timestamp, conversion", "*")
+          new MergeScanner(partitionA1.schema, "user_uid, url, timestamp", "*", partitionA1.segments), 
+          new MergeScanner(partitionB1.schema, "user_uid, url, timestamp, conversion", "*", partitionB1.segments)
       )
       outerJoin.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 www.auto.com/mycar 2014-10-10 11:59:01 " + Aim.EMPTY)
       outerJoin.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 www.travel.com/offers 2014-10-10 12:01:02 " + Aim.EMPTY)
@@ -55,8 +55,8 @@ class InnerOuterJoinScannerTest  extends FlatSpec with Matchers {
       an[EOFException] must be thrownBy outerJoin.nextResultAsString
 
       val innerJoin = new InnerJoinScanner(
-          new MergeScanner(partitionA1, "user_uid, url, timestamp", "*"), 
-          new MergeScanner(partitionB1, "user_uid, url, timestamp, conversion", "*")
+          new MergeScanner(partitionA1.schema, "user_uid, url, timestamp", "*", partitionA1.segments), 
+          new MergeScanner(partitionB1.schema, "user_uid, url, timestamp, conversion", "*", partitionB1.segments)
       )
 
       innerJoin.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 www.auto.com/mycar 2014-10-10 11:59:01 " + Aim.EMPTY)
