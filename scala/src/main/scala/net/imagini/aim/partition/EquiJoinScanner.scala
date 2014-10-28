@@ -34,8 +34,8 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
       if (cmp < 0) left.skipRow
       else if (cmp > 0) right.skipRow
     } while (cmp != 0)
-    val leftRow: Array[ByteBuffer] = left.selectRow
-    val rightRow: Array[ByteBuffer] = right.selectRow
+    val leftRow = left.selectRow
+    val rightRow = right.selectRow
     leftSelectIndex.map(c ⇒ leftRow(c)) ++ rightRow
   }
 
