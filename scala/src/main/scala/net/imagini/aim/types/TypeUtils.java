@@ -7,11 +7,15 @@ import net.imagini.aim.utils.ByteUtils;
 
 public class TypeUtils {
 
+    final public static boolean equals(ByteBuffer left, ByteBuffer right, AimType type) {
+        return compare(left, right, type) == 0;
+    }
+
     /**
      * Compares the current buffer position if treated as given type with the given value
      * but does not advance
      */
-    public static int compare(ByteBuffer left, ByteBuffer right, AimType type) {
+    final public static int compare(ByteBuffer left, ByteBuffer right, AimType type) {
 
         int ni;
         int i = left.position();
@@ -44,7 +48,7 @@ public class TypeUtils {
      * Checks if the current buffer position if treated as given type would contain the given value
      * but does not advance
      */
-    public static boolean contains(ByteBuffer container, ByteBuffer value, AimType aimType) {
+    final public static boolean contains(ByteBuffer container, ByteBuffer value, AimType aimType) {
         int ni;
         int i = container.position();
         int nj;
@@ -74,7 +78,7 @@ public class TypeUtils {
         }
     }
 
-    public static long copy(ByteBuffer src, AimDataType type, ByteBuffer dest) {
+    final public static long copy(ByteBuffer src, AimDataType type, ByteBuffer dest) {
         int size;
         int head = 0;
         if (type.equals(Aim.STRING)) {
@@ -92,7 +96,7 @@ public class TypeUtils {
         return head + size;
     }
 
-    static public int copy(byte[] src, AimDataType type, ByteBuffer dest)
+    final static public int copy(byte[] src, AimDataType type, ByteBuffer dest)
             throws IOException {
         int size = 0;
         if (type.equals(Aim.STRING)) {

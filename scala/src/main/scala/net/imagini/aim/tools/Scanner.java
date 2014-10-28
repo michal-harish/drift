@@ -123,14 +123,6 @@ public class Scanner extends InputStream {
         return TypeUtils.compare(zoom, value, type);
     }
 
-    public boolean equals(Scanner otherScanner, AimType type) {
-        return compare(otherScanner, type) == 0;
-    }
-
-    public boolean equals(ByteBuffer value, AimType type) {
-        return compare(value, type) == 0;
-    }
-
     public boolean contains(ByteBuffer value, AimType type) {
         return TypeUtils.contains(zoom, value, type);
     }

@@ -17,11 +17,12 @@ import java.nio.ByteBuffer
 import net.imagini.aim.types.TypeUtils
 
 class GroupScanner(val partition: AimPartition, val groupSelectStatement: String, val rowFilterStatement: String, val groupFilterStatement: String) 
-extends AbstractScanner {
+//extends AbstractScanner {
+{
 
   val selectDef = if (groupSelectStatement.contains("*")) partition.schema.names else groupSelectStatement.split(",").map(_.trim)
   val selectRef = selectDef.filter(partition.schema.has(_))
-  override val schema: AimSchema = new AimSchema(new LinkedHashMap(ListMap[String, AimType](
+  val schema: AimSchema = new AimSchema(new LinkedHashMap(ListMap[String, AimType](
     selectDef.map(f ⇒ f match {
       case field: String if (partition.schema.has(field))    ⇒ (field -> partition.schema.field(field))
       case function: String if (function.contains("(group")) ⇒ new AimTypeGROUP(partition.schema, function).typeTuple
@@ -35,6 +36,7 @@ extends AbstractScanner {
   val requiredColumns = selectRef ++ rowFilter.getColumns ++ groupFilter.getColumns ++ groupFunctions.flatMap(_.filter.getColumns) ++ groupFunctions.map(_.field)
 
   val merge = new MergeScanner(partition, requiredColumns, RowFilter.fromString(partition.schema, "*"))
+  val keyType = partition.schema.get(0)
 
   rowFilter.updateFormula(merge.schema.names)
   groupFilter.updateFormula(merge.schema.names)
@@ -48,14 +50,14 @@ extends AbstractScanner {
     groupFunctions.map(_.reset)
     do {
       merge.mark
-      currentKey = merge.currentRow(merge.keyColumn).slice
+      currentKey = merge.selectCurrentKey.slice
       try {
-        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && merge.currentRow(merge.keyColumn).equals(currentKey, merge.keyType)) {
-          if (!satisfiesFilter && groupFilter.matches(merge.currentRow)) {
+        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && TypeUtils.equals(merge.selectCurrentKey, currentKey, keyType)) {
+          if (!satisfiesFilter && groupFilter.matches(merge.scanCurrentRow)) {
             satisfiesFilter = true
           }
-          groupFunctions.filter(f ⇒ !f.satisfied && f.filter.matches(merge.currentRow)).foreach(f ⇒ {
-            f.satisfy(merge.currentRow(merge.schema.get(f.field)).scan())
+          groupFunctions.filter(f ⇒ !f.satisfied && f.filter.matches(merge.scanCurrentRow)).foreach(f ⇒ {
+            f.satisfy(merge.scanCurrentRow(merge.schema.get(f.field)).scan())
           })
           if (!satisfiesFilter || !groupFunctions.forall(_.satisfied)) {
             merge.skipCurrentRow
@@ -70,7 +72,7 @@ extends AbstractScanner {
 
   def selectNextFilteredGroup = {
     if (currentKey != null) {
-      while (merge.currentRow(merge.keyColumn).equals(currentKey, merge.keyType)) {
+      while (TypeUtils.equals(merge.selectCurrentKey,currentKey, keyType)) {
         merge.skipCurrentRow
       }
     }
@@ -81,8 +83,8 @@ extends AbstractScanner {
     if (currentKey == null) {
       false
     } else {
-      merge.selectNextFilteredRow
-      if (merge.currentRow(merge.keyColumn).equals(currentKey, merge.keyType)) {
+      merge.nextRow
+      if (TypeUtils.equals(merge.selectCurrentKey,currentKey, keyType)) {
         true
       } else {
         false
@@ -90,19 +92,20 @@ extends AbstractScanner {
     }
   }
 
-  def scanCurrentRow: Seq[ByteBuffer] = {
-    while (!selectNextGroupRow || !rowFilter.matches(merge.currentRow)) {
+  def selectCurrentRow: Seq[ByteBuffer] = {
+    while (!selectNextGroupRow || !rowFilter.matches(merge.scanCurrentRow)) {
       if (!selectNextGroupRow) selectNextFilteredGroup else merge.skipCurrentRow
     }
     val buffers: Seq[ByteBuffer] = schema.names.map(f ⇒ schema.field(f) match {
       case function: AimTypeGROUP                      ⇒ function.toByteBuffer
       case empty: AimType if (empty.equals(Aim.EMPTY)) ⇒ null
-      case field: AimType                              ⇒ merge.currentRow(merge.schema.get(f)).scan()
+      case field: AimType                              ⇒ merge.scanCurrentRow(merge.schema.get(f)).scan()
     })
     buffers
   }
+
   protected[aim] def currentRowAsString: String = {
-    (schema.fields, scanCurrentRow).zipped.map((t, b) ⇒ t.asString(b)).foldLeft("")(_ + _ + " ")
+    (schema.fields, selectCurrentRow).zipped.map((t, b) ⇒ t.asString(b)).foldLeft("")(_ + _ + " ")
   }
 
   protected[aim] def nextResultAsString: String = {

@@ -10,15 +10,18 @@ import scala.collection.immutable.ListMap
 import net.imagini.aim.types.AimType
 import scala.collection.JavaConverters._
 import net.imagini.aim.types.TypeUtils
+import java.nio.ByteBuffer
 
 //TODO AbstractScanner instead of MergeScanner 
 class EquiJoinScanner(val left: MergeScanner, val leftSelect: Array[String], val right: MergeScanner, val rightSelect: Array[String])
-  extends AbstractScanner {
+  //extends AbstractScanner {
+  {
   def this(left: MergeScanner, leftStatement: String, right: MergeScanner, rightStatement: String) = this(left, leftStatement.split(",").map(_.trim), right, rightStatement.split(",").map(_.trim))
 
   val keyColumn = left.schema.get(leftSelect(0))
   val keyType = left.schema.get(keyColumn)
-  override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](
+  //override 
+  val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](
     ((leftSelect.map(n ⇒ (n -> left.schema.field(n))) ++ rightSelect.map(n ⇒ (n -> right.schema.field(n)))).toMap).asJava))
   println(schema)
 
@@ -26,15 +29,15 @@ class EquiJoinScanner(val left: MergeScanner, val leftSelect: Array[String], val
   //      merges.map(_. currentGroup)
   var cmp: Int = -1
   do {
-    cmp = TypeUtils.compare(left.scanCurrentKey, right.scanCurrentKey, keyType)
+    cmp = TypeUtils.compare(left.selectCurrentKey, right.selectCurrentKey, keyType)
     if (cmp < 0) left.skipCurrentRow
     else if (cmp > 0) right.skipCurrentRow
   } while (cmp != 0)
 
-  //      printJoinedRows()
+  println()
 
   //    }
-  def printJoinedRows() = {
+//  override def scanCurrentRow:Seq[ByteBuffer] = {
     //        for (merge ← merges) {
     //          try {
     //            while (true) {
@@ -46,6 +49,6 @@ class EquiJoinScanner(val left: MergeScanner, val leftSelect: Array[String], val
     //            case e: EOFException ⇒ {}
     //          }
     //        }
-  }
+//  }
 
 }
