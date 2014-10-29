@@ -88,7 +88,6 @@ public class TypeUtils {
         } else {
             size = type.getSize();
         }
-        // FIXME array buffer specific code should be done with slice instead
         int o = dest.arrayOffset();
         o += dest.position();
         src.get(dest.array(), o, size);

@@ -49,7 +49,7 @@ class AimPartitionServer(val partition: AimPartition, val port: Int) {
             val pipe = Pipe.open(socket)
             println("Aim Partition Server " + pipe.protocol + " connection from " + socket.getRemoteSocketAddress.toString)
             pipe.protocol match {
-              //TODO case Protocol.BINARY: new ReaderThread(); break;
+              //TODO case Protocol.DATA: new ReaderThread(); break; //for between-node communication
               //TODO case Protocol.MAPREDUCE: new ReaderThread(); break;
               case Protocol.LOADER ⇒ new AimPartitionServerLoaderSession(partition, pipe).start
               case Protocol.QUERY  ⇒ new AimPartitionServerQuerySession(partition, pipe).start

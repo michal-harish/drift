@@ -17,11 +17,11 @@ import net.imagini.aim.types.AimTypeAbstract
 import net.imagini.aim.types.TypeUtils
 
 class GroupScanner(
-    val sourceSchema: AimSchema,
-    val groupSelectStatement: String, 
-    val rowFilterStatement: String, 
-    val groupFilterStatement: String,
-    val segments: Seq[AimSegment])
+  val sourceSchema: AimSchema,
+  val groupSelectStatement: String,
+  val rowFilterStatement: String,
+  val groupFilterStatement: String,
+  val segments: Seq[AimSegment])
   extends AbstractScanner {
 
   val selectDef = if (groupSelectStatement.contains("*")) sourceSchema.names else groupSelectStatement.split(",").map(_.trim)
@@ -29,7 +29,7 @@ class GroupScanner(
 
   override val schema: AimSchema = new AimSchema(new LinkedHashMap(ListMap[String, AimType](
     selectDef.map(f ⇒ f match {
-      case field: String if (sourceSchema.has(field))    ⇒ (field -> sourceSchema.field(field))
+      case field: String if (sourceSchema.has(field))        ⇒ (field -> sourceSchema.field(field))
       case function: String if (function.contains("(group")) ⇒ new AimTypeGROUP(sourceSchema, function).typeTuple
     }): _*).asJava))
 
@@ -47,20 +47,54 @@ class GroupScanner(
   groupFunctions.map(_.filter.updateFormula(merge.schema.names))
   private val mergeColumnIndex: Array[Int] = schema.names.map(n ⇒ if (merge.schema.has(n)) merge.schema.get(n) else -1)
 
-  override def mark = merge.mark
+  override def mark = merge.mark //FIXME this needs its own mark, e.g. x = merge.mark ... merge.reset(x)
   override def reset = merge.reset
   override def skipRow = merge.skipRow
-  private var currentKey: ByteBuffer = null
-  //TODO work on storage and scanner is required to keep the buffers decompressed if marked
 
-  def selectCurrentFilteredGroup = {
+  override def selectRow: Array[ByteBuffer] = {
+    while (!selectNextGroupRow) {
+      skipToNextGroup
+    }
+    val mergeRow = merge.selectRow
+    (schema.fields, (0 to schema.fields.length)).zipped.map((f, c) ⇒ f match {
+      case function: AimTypeGROUP ⇒ function.toByteBuffer
+      case field: AimType         ⇒ mergeRow(mergeColumnIndex(c))
+    })
+  }
+
+  private var groupKey: ByteBuffer = null
+
+  def selectNextGroupRow: Boolean = {
+    if (groupKey == null) {
+      skipToNextGroup
+    }
+    while(TypeUtils.equals(merge.selectKey, groupKey, keyType)) {
+      if (rowFilter.matches(merge.selectRow)) {
+        return true
+      } else {
+        merge.skipRow
+      }
+    }
+    false
+  }
+
+  private def skipToNextGroup = {
+    if (groupKey != null) {
+      while (TypeUtils.equals(merge.selectKey, groupKey, keyType)) {
+        merge.skipRow
+      }
+    }
+    skipToNextFilteredGroup
+  }
+
+  def skipToNextFilteredGroup = {
     var satisfiesFilter = groupFilter.isEmptyFilter
     groupFunctions.map(_.reset)
     do {
+      groupKey = merge.selectKey.slice
       merge.mark
-      currentKey = merge.selectKey.slice
       try {
-        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && TypeUtils.equals(merge.selectKey, currentKey, keyType)) {
+        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && TypeUtils.equals(merge.selectKey, groupKey, keyType)) {
           if (!satisfiesFilter && groupFilter.matches(merge.selectRow)) {
             satisfiesFilter = true
           }
@@ -76,39 +110,6 @@ class GroupScanner(
       }
     } while (!satisfiesFilter || !groupFunctions.forall(_.satisfied))
     merge.reset
-  }
-
-  def selectNextFilteredGroup = {
-    if (currentKey != null) {
-      while (TypeUtils.equals(merge.selectKey, currentKey, keyType)) {
-        merge.skipRow
-      }
-    }
-    selectCurrentFilteredGroup
-  }
-
-  def selectNextGroupRow: Boolean = {
-    if (currentKey == null) {
-      false
-    } else {
-      if (TypeUtils.equals(merge.selectKey, currentKey, keyType)) {
-        true
-      } else {
-        false
-      }
-    }
-  }
-
-  override def selectRow: Array[ByteBuffer] = {
-    while (!selectNextGroupRow || !rowFilter.matches(merge.selectRow)) {
-      if (!selectNextGroupRow) selectNextFilteredGroup else merge.skipRow
-    }
-    val mergeRow = merge.selectRow
-    (schema.fields, (0 to schema.fields.length)).zipped.map((f, c) ⇒ f match {
-      case function: AimTypeGROUP                      ⇒ function.toByteBuffer
-//      case empty: AimType if (empty.equals(Aim.EMPTY)) ⇒ null
-      case field: AimType                              ⇒ mergeRow(mergeColumnIndex(c))
-    })
   }
 
 }

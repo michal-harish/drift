@@ -50,13 +50,13 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
       for (s ← (0 to scanners.size - 1)) {
         //filter
         var segmentHasData = scanners(s).forall(columnScanner ⇒ !columnScanner.eof)
-        while (segmentHasData && !rowFilter.matches(scanners(s).map(_.scan))) {
+        while (segmentHasData && !rowFilter.matches(scanners(s).map(_.buffer))) {
           for (columnScanner ← scanners(s)) columnScanner.skip
           segmentHasData = scanners(s).forall(columnScanner ⇒ !columnScanner.eof)
         }
         //merge sort
         if (segmentHasData) {
-          if (currentSegment == -1 || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanners(s)(scanKeyColumnIndex).scan, scanners(currentSegment)(scanKeyColumnIndex).scan, keyType) > 0))) {
+          if (currentSegment == -1 || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanners(s)(scanKeyColumnIndex).buffer, scanners(currentSegment)(scanKeyColumnIndex).buffer, keyType) > 0))) {
             currentSegment = s
           }
         }
@@ -64,7 +64,7 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
     }
     currentSegment match {
       case -1     ⇒ throw new EOFException
-      case s: Int ⇒ scanColumnIndex.map(i ⇒ scanners(s)(i).scan)
+      case s: Int ⇒ scanColumnIndex.map(i ⇒ scanners(s)(i).buffer)
     }
   }
 

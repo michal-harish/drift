@@ -24,7 +24,7 @@ public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
     }
 
     @Override public String convert(byte[] value) {
-        return new String(value,0,size);//TODO clean 0 bytes
+        return new String(value,0,size);
     }
 
     @Override final public AimDataType getDataType() {

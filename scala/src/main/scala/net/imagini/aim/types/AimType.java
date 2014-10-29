@@ -16,7 +16,7 @@ public interface AimType {
 
     public AimDataType getDataType();
 
-    //FIXME void parse(String value, ByteBuffer into);
+    //TODO void parse(String value, ByteBuffer into);
     public byte[] convert(String value);
 
     public String asString(ByteBuffer value);

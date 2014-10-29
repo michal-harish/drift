@@ -104,6 +104,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                     size.addAndGet(columnar.get(col).addBlock(block));
                     block.clear();
                 }
+                //TODO this could be done with slice instead of copy
                 originalSize.addAndGet(
                     TypeUtils.copy(record, type, block)
                 );
@@ -165,7 +166,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                 if (scanner.eof()) {
                     throw new EOFException();
                 }
-                buffers[c] = scanner.scan;
+                buffers[c] = scanner.buffer();
             }
             while(true) {
                 if (filter == null || filter.matches(buffers)) {
@@ -174,19 +175,10 @@ abstract public class AimSegmentAbstract implements AimSegment {
                 for(int c=0; c< subSchema.size(); c++) {
                     ColumnScanner scanner = scanners[c];
                     scanner.skip();
-//                    AimType type = subSchema.get(c);
-//                    int skipLength;
-//                    if (type.equals(Aim.STRING)) {
-//                        skipLength = 4 + ByteUtils.asIntValue(scanner.scan);
-//                    } else {
-//                        skipLength  = type.getDataType().getSize();
-//                    }
-//                    scanner.skip(skipLength);
-
                     if (scanner.eof()) {
                         throw new EOFException();
                     }
-                    buffers[c] = scanner.scan;
+                    buffers[c] = scanner.buffer();
                 }
             }
         } catch (EOFException e) {
@@ -254,7 +246,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                 if (currentSelectColumn == -1) {
                     for(int c=0;c<subSchema.size();c++) {
                         if (scanners[c].eof()) return false;
-                        buffers[c] = scanners[c].scan;
+                        buffers[c] = scanners[c].buffer();
                     }
                 } else if (read == currentReadLength) {
                     read = -1;
@@ -275,7 +267,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                             if (scanner.eof()) {
                                 return false;
                             }
-                            buffers[c] = scanners[c].scan;
+                            buffers[c] = scanners[c].buffer();
                         }
                         if (filter == null || filter.matches(buffers)) {
                             skipNextRecord(true);
@@ -288,7 +280,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                     read = 0;
                     AimType type = subSchema.get(selectColumns.get(currentSelectColumn));
                     if (type.equals(Aim.STRING)) {
-                        currentReadLength = 4 + ByteUtils.asIntValue(currentSelectScanner.scan);
+                        currentReadLength = 4 + ByteUtils.asIntValue(currentSelectScanner.buffer());
                     } else {
                         currentReadLength = type.getDataType().getSize();
                     }
@@ -301,7 +293,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                     AimType type = subSchema.get(c);
                     int skipLength;
                     if (type.equals(Aim.STRING)) {
-                        skipLength = 4 + ByteUtils.asIntValue(scanners[c].scan);
+                        skipLength = 4 + ByteUtils.asIntValue(scanners[c].buffer());
                     } else {
                         skipLength  = type.getDataType().getSize();
                     }

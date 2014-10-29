@@ -18,7 +18,7 @@ class AimPartitionServerLoaderSession(val partition: AimPartition, val pipe: Pip
   var count: Integer = 0
   var currentSegment: AimSegment = null
   /* Zero-copy support
-     * FIXME COLUMN_BUFFER_SIZE should be configurable for different schemas
+     * TODO COLUMN_BUFFER_SIZE should be configurable for different schemas
      */
   val COLUMN_BUFFER_SIZE = 2048
   val record = ByteUtils.createBuffer(COLUMN_BUFFER_SIZE * partition.schema.size)
