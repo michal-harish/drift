@@ -39,22 +39,22 @@ class EquiJoinScannerTest extends FlatSpec with Matchers {
         new MergeScanner(AP1.schema, "at_id, url, timestamp", "timestamp > '2014-10-10 16:00:00' ", AP1.segments)
     )
 
-    joinScan.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 AT1234 www.travel.com 2014-10-10 16:00:01")
-    joinScan.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 AT1234 www.bank.com 2014-10-10 18:00:01")
-    joinScan.nextResultAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e234 AT5656 www.marvel.com 2014-10-10 17:00:01")
-    an[EOFException] must be thrownBy joinScan.nextResultAsString
+    joinScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\tAT1234\twww.travel.com\t2014-10-10 16:00:01")
+    joinScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\tAT1234\twww.bank.com\t2014-10-10 18:00:01")
+    joinScan.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e234\tAT5656\twww.marvel.com\t2014-10-10 17:00:01")
+    an[EOFException] must be thrownBy joinScan.nextLine
 
     val joinScan2 = new EquiJoinScanner(
         new MergeScanner(AS1.schema, "user_uid, at_id", "*", AS1.segments),  
         new MergeScanner(AP1.schema, "at_id, url, timestamp", "*", AP1.segments)
     )
-    joinScan2.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 AT1234 www.tv.com 2014-10-10 13:59:01")
-    joinScan2.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 AT1234 www.auto.com/offers 2014-10-10 15:00:01")
-    joinScan2.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 AT1234 www.travel.com 2014-10-10 16:00:01")
-    joinScan2.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 AT1234 www.bank.com 2014-10-10 18:00:01")
-    joinScan2.nextResultAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e234 AT5656 www.auto.com 2014-10-10 14:00:01")
-    joinScan2.nextResultAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e234 AT5656 www.marvel.com 2014-10-10 17:00:01")
-    an[EOFException] must be thrownBy joinScan2.nextResultAsString
+    joinScan2.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\tAT1234\twww.tv.com\t2014-10-10 13:59:01")
+    joinScan2.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\tAT1234\twww.auto.com/offers\t2014-10-10 15:00:01")
+    joinScan2.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\tAT1234\twww.travel.com\t2014-10-10 16:00:01")
+    joinScan2.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\tAT1234\twww.bank.com\t2014-10-10 18:00:01")
+    joinScan2.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e234\tAT5656\twww.auto.com\t2014-10-10 14:00:01")
+    joinScan2.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e234\tAT5656\twww.marvel.com\t2014-10-10 17:00:01")
+    an[EOFException] must be thrownBy joinScan2.nextLine
   }
 
 }

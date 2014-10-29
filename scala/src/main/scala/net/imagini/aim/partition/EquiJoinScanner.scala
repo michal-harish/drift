@@ -13,14 +13,14 @@ import net.imagini.aim.tools.AbstractScanner
 
 class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 
-  val rightSelect = right.schema.names
-  val leftSelect = left.schema.names.filter(!right.schema.has(_))
+  val leftSelect = left.schema.names
+  val rightSelect = right.schema.names.filter(!left.schema.has(_))
   override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](
     (ListMap((leftSelect.map(n ⇒ (n -> left.schema.field(n))) ++ rightSelect.map(n ⇒ ((n) -> right.schema.field(n)))): _*).asJava)))
 
-  override val keyType = right.schema.get(right.keyColumn)
-  override val keyColumn = schema.get(right.schema.name(right.keyColumn))
-  private val leftSelectIndex = leftSelect.map(f ⇒ left.schema.get(f))
+  override val keyType = right.schema.get(left.keyColumn)
+  override val keyColumn = schema.get(left.schema.name(left.keyColumn))
+  private val rightSelectIndex = rightSelect.map(f ⇒ right.schema.get(f))
 
   override def skipRow = right.skipRow
 
@@ -39,7 +39,7 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
     //equi select
     val leftRow = left.selectRow
     val rightRow = right.selectRow
-    leftSelectIndex.map(c ⇒ leftRow(c)) ++ rightRow
+    leftRow ++ rightSelectIndex.map(c ⇒ rightRow(c)) 
   }
 
 }

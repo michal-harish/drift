@@ -28,14 +28,14 @@ class GroupScannerTest extends FlatSpec with Matchers {
     partition.add(s2)
 
     val groupScan = new GroupScanner(partition.schema, "value, user_uid", "column='pageview'", "column='addthis_id'", partition.segments)
-    groupScan.nextResultAsString should be("{www.ebay.com} 37b22cfb-a29e-42c3-a3d9-12d32850e103")
-    groupScan.nextResultAsString should be("{www.auto.com} 37b22cfb-a29e-42c3-a3d9-12d32850e103")
-    groupScan.nextResultAsString should be("{www.travel.com} a7b22cfb-a29e-42c3-a3d9-12d32850e103")
-    an[EOFException] must be thrownBy groupScan.nextResultAsString
+    groupScan.nextLine should be("{www.ebay.com}\t37b22cfb-a29e-42c3-a3d9-12d32850e103")
+    groupScan.nextLine should be("{www.auto.com}\t37b22cfb-a29e-42c3-a3d9-12d32850e103")
+    groupScan.nextLine should be("{www.travel.com}\ta7b22cfb-a29e-42c3-a3d9-12d32850e103")
+    an[EOFException] must be thrownBy groupScan.nextLine
 
     val gropuScan2 = new GroupScanner(partition.schema, "*", "column='pageview'", "column='addthis_id' and value='AT9876'", partition.segments)
-    gropuScan2.nextResultAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103 pageview {www.travel.com}")
-    an[EOFException] must be thrownBy gropuScan2.nextResultAsString
+    gropuScan2.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103\tpageview\t{www.travel.com}")
+    an[EOFException] must be thrownBy gropuScan2.nextLine
 
   }
 }

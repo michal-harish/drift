@@ -34,12 +34,12 @@ class MergeScannerTest extends FlatSpec with Matchers {
     //TODO select only subset of columns: user_uid, value
     val mergeScan = new MergeScanner(partition.schema, "user_uid,value", "column='pageview'", partition.segments)
 
-    mergeScan.nextResultAsString should be("17b22cfb-a29e-42c3-a3d9-12d32850e103 {www.music.com}")
-    mergeScan.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 {www.ebay.com}")
-    mergeScan.nextResultAsString should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 {www.auto.com}")
-    mergeScan.nextResultAsString should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103 {www.travel.com}")
+    mergeScan.nextLine should be("17b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.music.com}")
+    mergeScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.ebay.com}")
+    mergeScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.auto.com}")
+    mergeScan.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.travel.com}")
 
-    an[EOFException] must be thrownBy mergeScan.nextResultAsString
+    an[EOFException] must be thrownBy mergeScan.nextLine
   }
 
 }

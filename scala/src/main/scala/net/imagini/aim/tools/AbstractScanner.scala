@@ -23,8 +23,10 @@ trait AbstractScanner {
 
   def reset
 
-  final protected[aim] def nextResultAsString: String = {
-    val result = (schema.fields, selectRow).zipped.map((t, b) ⇒ t.asString(b)).mkString(" ")
+  final protected[aim] def nextLine: String = nextLine("\t")
+
+  final protected[aim] def nextLine(separator:String): String = {
+    val result = (schema.fields, selectRow).zipped.map((t, b) ⇒ t.asString(b)).mkString(separator)
     skipRow
     result
   }

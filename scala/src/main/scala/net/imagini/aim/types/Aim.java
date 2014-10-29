@@ -12,7 +12,7 @@ public enum Aim implements AimDataType {
     LONG(8),
     STRING(4);
 
-    final public static String EMPTY = String.valueOf((char) 0);
+    final public static String EMPTY = String.valueOf((char) 0); //
     public static AimDataType BYTEARRAY(int size) {  return new AimTypeBYTEARRAY(size); }
     public static AimType IPV4(AimDataType dataType) { return new AimTypeIPv4(dataType); }
     public static AimType UUID(AimDataType dataType) { return new AimTypeUUID(dataType); }
@@ -88,7 +88,7 @@ public enum Aim implements AimDataType {
         if (value == null) {
             return EMPTY;
         } else switch(this) {
-            case BOOL: return String.valueOf(value.get(value.position()));
+            case BOOL: return String.valueOf(value.get(value.position()) > 0);
             case BYTE: return String.valueOf(value.position());
             case INT: return String.valueOf(ByteUtils.asIntValue(value));
             case LONG: return String.valueOf(ByteUtils.asLongValue(value));
