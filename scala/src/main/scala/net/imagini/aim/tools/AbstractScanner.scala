@@ -13,11 +13,11 @@ trait AbstractScanner {
   val keyType: AimType
   val keyColumn: Int
 
-  final def selectKey: ByteBuffer = selectRow(keyColumn)
+  def next: Boolean
 
   def selectRow: Array[ByteBuffer]
 
-  def next
+  final def selectKey: ByteBuffer = selectRow(keyColumn)
 
   def mark
 
@@ -25,10 +25,8 @@ trait AbstractScanner {
 
   final protected[aim] def nextLine: String = nextLine("\t")
 
-  final protected[aim] def nextLine(separator:String): String = {
-    val result = (schema.fields, selectRow).zipped.map((t, b) ⇒ t.asString(b)).mkString(separator)
-    next
-    result
-  }
+  final protected[aim] def nextLine(separator: String): String = { next; selectLine(separator) }
+
+  final def selectLine(separator:String): String = (schema.fields, selectRow).zipped.map((t, b) ⇒ t.asString(b)).mkString(separator)
 
 }

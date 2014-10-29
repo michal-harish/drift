@@ -58,7 +58,6 @@ class InnerOuterJoinScannerTest extends FlatSpec with Matchers {
           new MergeScanner(partitionA1.schema, "user_uid, url, timestamp", "*", partitionA1.segments), 
           new MergeScanner(partitionB1.schema, "user_uid, url, timestamp, conversion", "*", partitionB1.segments)
       )
-
       innerJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.auto.com/mycar\t2014-10-10 11:59:01\t" + Aim.EMPTY)
       innerJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 12:01:02\t" + Aim.EMPTY)
       innerJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers/holiday\t2014-10-10 12:01:03\t" + Aim.EMPTY)

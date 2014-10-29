@@ -46,18 +46,12 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
       new MergeScanner(schemaATSyncs, "user_uid, at_id", "*", AS1.segments),
       new MergeScanner(schemaATPageviews, "at_id, url, timestamp", "timestamp > '2014-10-10 16:00:00' ", AP1.segments))
     val newVDNAPageviewsSegment = new AimSegmentQuickSort(schemaVDNAPageviews, classOf[BlockStorageLZ4])
-    try {
-      while (true) {
-        //TODO while(joinScan.next) ...
-        val row = joinScan.selectRow
-        newVDNAPageviewsSegment.appendRecord(Array(row(0),row(2),row(3)))
-        joinScan.next
-      }
-    } catch {
-      case e: EOFException ⇒ partitionVDNAPageviews1.add(newVDNAPageviewsSegment.close)
-    } finally {
-      //TODO joinScan.close
+    while (joinScan.next) {
+      val row = joinScan.selectRow
+      newVDNAPageviewsSegment.appendRecord(Array(row(0), row(2), row(3)))
     }
+    partitionVDNAPageviews1.add(newVDNAPageviewsSegment.close)
+    //TODO joinScan.close
 
     //scan VDNA Pageviews which should contain previous pageviews with the ones imported from AT
     val vdnaPageviewScan = new MergeScanner(schemaVDNAPageviews, "user_uid,url,timestamp", "*", partitionVDNAPageviews1.segments)

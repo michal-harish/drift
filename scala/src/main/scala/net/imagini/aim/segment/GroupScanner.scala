@@ -50,12 +50,18 @@ class GroupScanner(
   override def mark = merge.mark //FIXME this needs its own mark, e.g. x = merge.mark ... merge.reset(x)
   override def reset = merge.reset
 
-  override def next = merge.next
+  override def next: Boolean = {
+    try {
+      while (!selectNextGroupRow) {
+        skipToNextGroup
+      }
+      true
+    } catch {
+      case e: EOFException ⇒ { false }
+    }
+  }
 
   override def selectRow: Array[ByteBuffer] = {
-    while (!selectNextGroupRow) {
-      skipToNextGroup
-    }
     val mergeRow = merge.selectRow
     (schema.fields, (0 to schema.fields.length)).zipped.map((f, c) ⇒ f match {
       case function: AimTypeGROUP ⇒ function.toByteBuffer
@@ -68,8 +74,10 @@ class GroupScanner(
   def selectNextGroupRow: Boolean = {
     if (groupKey == null) {
       skipToNextGroup
+    } else {
+      merge.next
     }
-    while(TypeUtils.equals(merge.selectKey, groupKey, keyType)) {
+    while (TypeUtils.equals(merge.selectKey, groupKey, keyType)) {
       if (rowFilter.matches(merge.selectRow)) {
         return true
       } else {
@@ -91,6 +99,9 @@ class GroupScanner(
   def skipToNextFilteredGroup = {
     var satisfiesFilter = groupFilter.isEmptyFilter
     groupFunctions.map(_.reset)
+    if (groupKey == null) {
+      merge.next
+    }
     do {
       groupKey = merge.selectKey.slice
       merge.mark

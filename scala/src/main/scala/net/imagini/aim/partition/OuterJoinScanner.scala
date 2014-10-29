@@ -31,13 +31,15 @@ class OuterJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
   private var leftHasData = true
   private var rightHasData = true
 
-  override def next = if (currentLeft) left.next else right.next
-
   override def mark = { left.mark; right.mark }
 
   override def reset = { left.reset; right.reset }
 
-  def selectRow: Array[ByteBuffer] = {
+  right.next
+
+  override def next: Boolean = {
+    if (currentLeft) left.next else right.next
+
     //outer join
     try {
       left.selectKey
@@ -61,9 +63,12 @@ class OuterJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
     } else if (rightHasData) {
       currentLeft = false
     } else {
-      throw new EOFException
+      return false
     }
+    true
+  }
 
+  def selectRow: Array[ByteBuffer] = {
     //join select
     val row = if (currentLeft) left.selectRow else right.selectRow
     (if (currentLeft) leftColumnIndex else rightColumnIndex).map(c ⇒ c match {

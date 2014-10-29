@@ -32,36 +32,40 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   rowFilter.updateFormula(scanSchema.names)
 
   private var currentSegment = -1
-
-  override def mark = scanners.foreach(_.foreach(_.mark))
+  private var markCurrentSegment = -1
+  override def mark = {
+    markCurrentSegment = currentSegment
+    scanners.foreach(_.foreach(_.mark))
+  }
 
   override def reset = {
     scanners.foreach(_.foreach(_.reset))
-    currentSegment = -1
+    currentSegment = markCurrentSegment
   }
 
-  override def next = {
-    for (columnScanner ← scanners(currentSegment)) columnScanner.skip
-    currentSegment = -1
-  }
-
-  override def selectRow: Array[ByteBuffer] = {
-    if (currentSegment == -1) {
-      for (s ← (0 to scanners.size - 1)) {
-        //filter
-        var segmentHasData = scanners(s).forall(columnScanner ⇒ !columnScanner.eof)
-        while (segmentHasData && !rowFilter.matches(scanners(s).map(_.buffer))) {
-          for (columnScanner ← scanners(s)) columnScanner.skip
-          segmentHasData = scanners(s).forall(columnScanner ⇒ !columnScanner.eof)
-        }
-        //merge sort
-        if (segmentHasData) {
-          if (currentSegment == -1 || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanners(s)(scanKeyColumnIndex).buffer, scanners(currentSegment)(scanKeyColumnIndex).buffer, keyType) > 0))) {
-            currentSegment = s
-          }
+  override def next: Boolean = {
+    if (currentSegment > -1) {
+      for (columnScanner ← scanners(currentSegment)) columnScanner.skip
+      currentSegment = -1
+    }
+    for (s ← (0 to scanners.size - 1)) {
+      //filter
+      var segmentHasData = scanners(s).forall(columnScanner ⇒ !columnScanner.eof)
+      while (segmentHasData && !rowFilter.matches(scanners(s).map(_.buffer))) {
+        for (columnScanner ← scanners(s)) columnScanner.skip
+        segmentHasData = scanners(s).forall(columnScanner ⇒ !columnScanner.eof)
+      }
+      //merge sort
+      if (segmentHasData) {
+        if (currentSegment == -1 || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanners(s)(scanKeyColumnIndex).buffer, scanners(currentSegment)(scanKeyColumnIndex).buffer, keyType) > 0))) {
+          currentSegment = s
         }
       }
     }
+    return currentSegment > -1
+  }
+
+  override def selectRow: Array[ByteBuffer] = {
     currentSegment match {
       case -1     ⇒ throw new EOFException
       case s: Int ⇒ scanColumnIndex.map(i ⇒ scanners(s)(i).buffer)

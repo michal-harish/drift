@@ -38,7 +38,6 @@ class EquiJoinScannerTest extends FlatSpec with Matchers {
         new MergeScanner(AS1.schema, "user_uid, at_id", "*", AS1.segments), 
         new MergeScanner(AP1.schema, "at_id, url, timestamp", "timestamp > '2014-10-10 16:00:00' ", AP1.segments)
     )
-
     joinScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\tAT1234\twww.travel.com\t2014-10-10 16:00:01")
     joinScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\tAT1234\twww.bank.com\t2014-10-10 18:00:01")
     joinScan.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e234\tAT5656\twww.marvel.com\t2014-10-10 17:00:01")

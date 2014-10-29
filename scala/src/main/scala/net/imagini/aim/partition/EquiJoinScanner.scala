@@ -22,24 +22,34 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
   override val keyColumn = schema.get(left.schema.name(left.keyColumn))
   private val rightSelectIndex = rightSelect.map(f ⇒ right.schema.get(f))
 
-  override def next = right.next
+  left.next
+
+  override def next: Boolean = {
+    try {
+      right.next
+      //inner join
+      var cmp: Int = -1
+      do {
+        cmp = TypeUtils.compare(left.selectKey, right.selectKey, keyType)
+        if (cmp < 0) left.next
+        else if (cmp > 0) right.next
+      } while (cmp != 0)
+      true
+    } catch {
+      case e: EOFException ⇒ false
+    }
+  }
 
   override def mark = { left.mark; right.mark }
 
   override def reset = { left.reset; right.reset }
 
   def selectRow: Array[ByteBuffer] = {
-    //inner join
-    var cmp: Int = -1
-    do {
-      cmp = TypeUtils.compare(left.selectKey, right.selectKey, keyType)
-      if (cmp < 0) left.next
-      else if (cmp > 0) right.next
-    } while (cmp != 0)
+
     //equi select
     val leftRow = left.selectRow
     val rightRow = right.selectRow
-    leftRow ++ rightSelectIndex.map(c ⇒ rightRow(c)) 
+    leftRow ++ rightSelectIndex.map(c ⇒ rightRow(c))
   }
 
 }
