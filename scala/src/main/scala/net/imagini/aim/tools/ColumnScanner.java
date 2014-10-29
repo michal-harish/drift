@@ -32,8 +32,6 @@ public class ColumnScanner {
         rewind();
     }
 
-    // TODO mark and reset should be delegated to storage so that decompressed
-    // buffers are kept in cache until marks are released
     public void mark() {
         if (!eof()) {
             blockStorage.ref(currentBlock);
