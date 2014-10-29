@@ -5,18 +5,18 @@ import org.scalatest.FlatSpec
 import net.imagini.aim.utils.BlockStorageLZ4
 import java.nio.ByteBuffer
 import net.imagini.aim.utils.ByteUtils
-import net.imagini.aim.tools.Scanner
+import net.imagini.aim.tools.ColumnScanner
 import net.imagini.aim.tools.PipeUtils
 import net.imagini.aim.types.AimSchema
+import net.imagini.aim.types.Aim
 import java.io.InputStream
 
-class ScannerTest extends FlatSpec with Matchers {
+class ColumnScannerTest extends FlatSpec with Matchers {
 
-  val schema = AimSchema.fromString("line(STRING)")
-  def read(in: Scanner) = {
+  def read(in: ColumnScanner) = {
     in.eof 
-    val result = schema.dataType(0).asString(in.scan)
-    in.skip(schema.dataType(0))
+    val result = in.dataType.asString(in.scan)
+    in.skip
     result
   }
 
@@ -24,7 +24,7 @@ class ScannerTest extends FlatSpec with Matchers {
     val storage = new BlockStorageLZ4()
     storage.addBlock(ByteUtils.createStringBuffer("Hello"))
     storage.addBlock(ByteUtils.createStringBuffer("World"))
-    val scanner = new Scanner(storage)
+    val scanner = new ColumnScanner(storage, Aim.STRING)
     read(scanner) should be("Hello")
     scanner.mark
     read(scanner) should be("World")

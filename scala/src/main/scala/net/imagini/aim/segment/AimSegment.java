@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import net.imagini.aim.tools.RowFilter;
-import net.imagini.aim.tools.Scanner;
+import net.imagini.aim.tools.ColumnScanner;
 import net.imagini.aim.types.AimSchema;
 
 public interface AimSegment {
@@ -26,6 +26,6 @@ public interface AimSegment {
 
     InputStream select(RowFilter filter, String[] columnNames) throws IOException;
 
-    Scanner[] wrapScanners(AimSchema subSchema);
+    ColumnScanner[] wrapScanners(AimSchema subSchema);
 
 }

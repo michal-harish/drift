@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.imagini.aim.tools.RowFilter;
-import net.imagini.aim.tools.Scanner;
+import net.imagini.aim.tools.ColumnScanner;
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
@@ -135,10 +135,10 @@ abstract public class AimSegmentAbstract implements AimSegment {
         return count.get();
     }
 
-    @Override public Scanner[] wrapScanners(AimSchema subSchema) {
-        final Scanner[] scanners = new Scanner[subSchema.size()];
+    @Override public ColumnScanner[] wrapScanners(AimSchema subSchema) {
+        final ColumnScanner[] scanners = new ColumnScanner[subSchema.size()];
         int i = 0; for(String colName: subSchema.names()) {
-            scanners[i++] = new Scanner(columnar.get(schema.get(colName)));
+            scanners[i++] = new ColumnScanner(columnar.get(schema.get(colName)), schema.field(colName));
         }
         return scanners;
     }
@@ -153,15 +153,15 @@ abstract public class AimSegmentAbstract implements AimSegment {
         }
 
         final ByteBuffer[] buffers = new ByteBuffer[subSchema.size()];
-        final Scanner[] scanners = new Scanner[subSchema.size()];
+        final ColumnScanner[] scanners = new ColumnScanner[subSchema.size()];
         int i = 0; for(String colName: subSchema.names()) {
-            scanners[i++] = new Scanner(columnar.get(schema.get(colName)));
+            scanners[i++] = new ColumnScanner(columnar.get(schema.get(colName)), schema.field(colName));
         }
 
         long count = 0;
         try {
             for(int c=0; c < subSchema.size(); c++) {
-                Scanner scanner = scanners[c];
+                ColumnScanner scanner = scanners[c];
                 if (scanner.eof()) {
                     throw new EOFException();
                 }
@@ -172,15 +172,17 @@ abstract public class AimSegmentAbstract implements AimSegment {
                     count++;
                 }
                 for(int c=0; c< subSchema.size(); c++) {
-                    AimType type = subSchema.get(c);
-                    Scanner scanner = scanners[c];
-                    int skipLength;
-                    if (type.equals(Aim.STRING)) {
-                        skipLength = 4 + ByteUtils.asIntValue(scanner.scan);
-                    } else {
-                        skipLength  = type.getDataType().getSize();
-                    }
-                    scanner.skip(skipLength);
+                    ColumnScanner scanner = scanners[c];
+                    scanner.skip();
+//                    AimType type = subSchema.get(c);
+//                    int skipLength;
+//                    if (type.equals(Aim.STRING)) {
+//                        skipLength = 4 + ByteUtils.asIntValue(scanner.scan);
+//                    } else {
+//                        skipLength  = type.getDataType().getSize();
+//                    }
+//                    scanner.skip(skipLength);
+
                     if (scanner.eof()) {
                         throw new EOFException();
                     }
@@ -221,9 +223,9 @@ abstract public class AimSegmentAbstract implements AimSegment {
         if (filter != null) filter.updateFormula(subSchema.names());
 
         final ByteBuffer[] buffers = new ByteBuffer[subSchema.size()];
-        final Scanner[] scanners = new Scanner[subSchema.size()];
+        final ColumnScanner[] scanners = new ColumnScanner[subSchema.size()];
         int i = 0; for(String colName: subSchema.names()) {
-            scanners[i++] = new Scanner(columnar.get(schema.get(colName)));
+            scanners[i++] = new ColumnScanner(columnar.get(schema.get(colName)), schema.field(colName));
         }
         return new InputStream() {
 
@@ -245,7 +247,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
             }
 
             private int currentSelectColumn = -1;
-            private Scanner currentSelectScanner = null;
+            private ColumnScanner currentSelectScanner = null;
             private int currentReadLength = 0;
             private int read = -1;
             private boolean checkNextByte() throws IOException {
@@ -269,7 +271,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
                     currentSelectScanner = scanners[selectColumns.get(currentSelectColumn)];
                     while(true) {
                         for(int c=0; c < subSchema.size(); c++) {
-                            Scanner scanner = scanners[c];
+                            ColumnScanner scanner = scanners[c];
                             if (scanner.eof()) {
                                 return false;
                             }
