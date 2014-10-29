@@ -18,14 +18,12 @@ class InnerJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
   override val keyType = left.schema.get(left.keyColumn)
   override val keyColumn = schema.get(left.schema.name(left.keyColumn))
 
-  val leftColumnIndex = schema.names.map(f ⇒ if (left.schema.has(f)) left.schema.get(f) else -1)
-  val rightColumnIndex = schema.names.map(f ⇒ if (right.schema.has(f)) right.schema.get(f) else -1)
+  private val leftColumnIndex = schema.names.map(f ⇒ if (left.schema.has(f)) left.schema.get(f) else -1)
+  private val rightColumnIndex = schema.names.map(f ⇒ if (right.schema.has(f)) right.schema.get(f) else -1)
+  private var currentLeft = true
+  private var currentKey: ByteBuffer = null
 
-  var currentLeft = true
-  var currentKey: ByteBuffer = null
-  override def skipRow = {
-    if (currentLeft) left.skipRow else right.skipRow
-  }
+  override def next = if (currentLeft) left.next else right.next
 
   override def mark = { left.mark; right.mark }
 
@@ -39,8 +37,8 @@ class InnerJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
       var cmp: Int = -1
       do {
         cmp = TypeUtils.compare(left.selectKey, right.selectKey, keyType)
-        if (cmp < 0) left.skipRow
-        else if (cmp > 0) right.skipRow
+        if (cmp < 0) left.next
+        else if (cmp > 0) right.next
       } while (cmp != 0)
       currentKey = left.selectKey.slice
       currentLeft = true

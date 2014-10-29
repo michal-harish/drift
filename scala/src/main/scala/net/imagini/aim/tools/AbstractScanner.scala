@@ -17,7 +17,7 @@ trait AbstractScanner {
 
   def selectRow: Array[ByteBuffer]
 
-  def skipRow
+  def next
 
   def mark
 
@@ -27,7 +27,7 @@ trait AbstractScanner {
 
   final protected[aim] def nextLine(separator:String): String = {
     val result = (schema.fields, selectRow).zipped.map((t, b) ⇒ t.asString(b)).mkString(separator)
-    skipRow
+    next
     result
   }
 

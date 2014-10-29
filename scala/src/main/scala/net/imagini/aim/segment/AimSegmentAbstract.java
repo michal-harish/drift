@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.imagini.aim.tools.RowFilter;
 import net.imagini.aim.tools.ColumnScanner;
+import net.imagini.aim.tools.RowFilter;
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
@@ -61,6 +61,17 @@ abstract public class AimSegmentAbstract implements AimSegment {
         if (this.writable != canBe) {
             throw new IllegalAccessException("Segment state is not valid for the operation");
         }
+    }
+
+    final public AimSegment appendRecord(ByteBuffer[]  record) throws IOException {
+        recordBuffer.clear();
+        for(int col = 0; col < schema.size() ; col++) {
+            int mark = record[col].position();
+            TypeUtils.copy(record[col], schema.get(col).getDataType(), recordBuffer);
+            record[col].position(mark);
+        }
+        recordBuffer.flip();
+        return appendRecord(recordBuffer);
     }
 
     final public AimSegment appendRecord(String... values) throws IOException {

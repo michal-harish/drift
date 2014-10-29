@@ -16,7 +16,7 @@ import java.io.EOFException
 
 class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
 
-  "Usecase1-retroactive measured set " should "should filter one partition by co-partition from another table supllying flags" in {
+  "Usecase1-retroactive measured set " should "be possible to do by scanning joins" in {
 
     //PAGEVIEWS //TODO ttl = 10
     val schemaPageviews = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")

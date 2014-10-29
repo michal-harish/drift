@@ -40,7 +40,7 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
     currentSegment = -1
   }
 
-  override def skipRow = {
+  override def next = {
     for (columnScanner ← scanners(currentSegment)) columnScanner.skip
     currentSegment = -1
   }

@@ -22,7 +22,7 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
   override val keyColumn = schema.get(left.schema.name(left.keyColumn))
   private val rightSelectIndex = rightSelect.map(f ⇒ right.schema.get(f))
 
-  override def skipRow = right.skipRow
+  override def next = right.next
 
   override def mark = { left.mark; right.mark }
 
@@ -33,8 +33,8 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
     var cmp: Int = -1
     do {
       cmp = TypeUtils.compare(left.selectKey, right.selectKey, keyType)
-      if (cmp < 0) left.skipRow
-      else if (cmp > 0) right.skipRow
+      if (cmp < 0) left.next
+      else if (cmp > 0) right.next
     } while (cmp != 0)
     //equi select
     val leftRow = left.selectRow

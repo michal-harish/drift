@@ -49,7 +49,8 @@ class GroupScanner(
 
   override def mark = merge.mark //FIXME this needs its own mark, e.g. x = merge.mark ... merge.reset(x)
   override def reset = merge.reset
-  override def skipRow = merge.skipRow
+
+  override def next = merge.next
 
   override def selectRow: Array[ByteBuffer] = {
     while (!selectNextGroupRow) {
@@ -72,7 +73,7 @@ class GroupScanner(
       if (rowFilter.matches(merge.selectRow)) {
         return true
       } else {
-        merge.skipRow
+        merge.next
       }
     }
     false
@@ -81,7 +82,7 @@ class GroupScanner(
   private def skipToNextGroup = {
     if (groupKey != null) {
       while (TypeUtils.equals(merge.selectKey, groupKey, keyType)) {
-        merge.skipRow
+        merge.next
       }
     }
     skipToNextFilteredGroup
@@ -102,7 +103,7 @@ class GroupScanner(
             f.satisfy(merge.selectRow(merge.schema.get(f.field)))
           })
           if (!satisfiesFilter || !groupFunctions.forall(_.satisfied)) {
-            merge.skipRow
+            merge.next
           }
         }
       } catch {

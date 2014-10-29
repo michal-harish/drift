@@ -27,13 +27,11 @@ class OuterJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
   private val rightColumnIndex = schema.names.map(f ⇒ if (right.schema.has(f)) right.schema.get(f) else -1)
   private val sortOrder = SortOrder.ASC
 
-  var currentLeft = true
-  var leftHasData = true
-  var rightHasData = true
+  private var currentLeft = true
+  private var leftHasData = true
+  private var rightHasData = true
 
-  override def skipRow = {
-    if (currentLeft) left.skipRow else right.skipRow
-  }
+  override def next = if (currentLeft) left.next else right.next
 
   override def mark = { left.mark; right.mark }
 
