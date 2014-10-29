@@ -37,6 +37,7 @@ public class AimTypeTIME extends AimTypeAbstract {
                 return Aim.STRING.convert(value);
             } else if (dataType.equals(Aim.LONG)) {
                 try {
+                    //TODO joda time for thread-safe formatting and parsing
                     SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd H:mm:ss");
                     Date d = formatter.parse(value);
                     return Aim.LONG.convert(String.valueOf(d.getTime()));

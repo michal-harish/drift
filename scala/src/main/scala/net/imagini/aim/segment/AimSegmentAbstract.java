@@ -34,7 +34,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
     private LinkedHashMap<Integer,ByteBuffer> writers = null;
     private AtomicLong count = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
-    private AtomicLong originalSize = new AtomicLong(0);
+    protected AtomicLong originalSize = new AtomicLong(0);
     private String keyField;
 
     public AimSegmentAbstract(AimSchema schema, final String keyField, Class<? extends BlockStorage> storageType) throws InstantiationException, IllegalAccessException {
@@ -116,8 +116,9 @@ abstract public class AimSegmentAbstract implements AimSegment {
                     block.clear();
                 }
                 //TODO this could be done with slice instead of copy
+                long oSize = TypeUtils.copy(record, type, block);
                 originalSize.addAndGet(
-                    TypeUtils.copy(record, type, block)
+                    oSize
                 );
             }
             count.incrementAndGet();

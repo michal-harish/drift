@@ -28,6 +28,7 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
     private Map<ByteKey, List<ByteBuffer>> sortMap = new HashMap<>();
     private SortOrder sortOrder;
 
+    
     public AimSegmentQuickSort(AimSchema schema,  Class<? extends BlockStorage> storageType)
     throws InstantiationException, IllegalAccessException {
         super(schema, schema.name(0), storageType);
@@ -56,6 +57,7 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
                 //FIXME use slice and change recordBuffer to direct buffer
                 keyspace.add(ByteBuffer.wrap(Arrays.copyOfRange(record.array(),
                         0, record.limit())));
+                originalSize.addAndGet(record.limit());
             }
             return this;
         } catch (IllegalAccessException e) {
@@ -71,6 +73,7 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
         if (sortOrder.equals(SortOrder.DESC)) {
             Collections.reverse(keys);
         }
+        originalSize.set(0);
         for (ByteKey key : keys) {
             List<ByteBuffer> bucket = sortMap.get(key);
             for (ByteBuffer record : bucket) {

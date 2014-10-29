@@ -1,4 +1,4 @@
-package net.imagini.aim.tools;
+package net.imagini.aim.utils;
 
 import java.util.HashMap;
 import java.util.LinkedList;

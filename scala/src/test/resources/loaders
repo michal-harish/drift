@@ -1,4 +1,6 @@
-echo "~/kafka/bin/kafka-console-consumer.sh --zookeeper zookeeper-04.prod.visualdna.com $@" ./kafka8 && chmod a+x ./kafka8
+echo '~/kafka/bin/kafka-console-consumer.sh --zookeeper zookeeper-04.prod.visualdna.com $@' > ./kafka8 && chmod a+x ./kafka8
+
+--filename src/test/resources/datasync.json --port 4000 --schema "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)"
 
 #test datasync 
 cat src/test/resources/datasync.json \
@@ -6,17 +8,17 @@ cat src/test/resources/datasync.json \
 | java -jar target/drift-partition.jar --port 4000 --schema "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)"
 
 #stream of syncs
-~/kafka/bin/kafka8 --topic datasync \
+~/kafka8 --topic datasync \
 | jq -r 'select(.partnerUserId!=null and .userUid!=null) | .userUid,.timestamp,.idSpace,.partnerUserId' \
-| java -jar target/drift-partition.jar --port 4000 --schema "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)"
+| java -jar target/drift-partition.jar --port 4000 --schema "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)"  --segment-size 104857
 
 #test pageviews
 cat src/test/resources/pageviews.json \
 | jq -r 'select(.userUid!=null) | .userUid,.timestamp,.type,.url' \
-| java -jar target/drift-partition.jar --port 4001 --schema "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)"
+| java -jar target/drift-partition.jar --port 4001 --schema "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)" --segment-size 104857
 
 #stream of pageviews
-~/kafka/bin/kafka8 --topic pageviews \
+~/kafka8 --topic pageviews \
 | jq -r 'select(.userUid!=null and .type!=null) | .userUid,.timestamp,.type,.url' \
 | java -jar target/drift-partition.jar --port 4001 --schema "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)"
 

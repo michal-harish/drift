@@ -13,6 +13,7 @@ import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
 import net.imagini.aim.types.TypeUtils;
 import net.imagini.aim.utils.ByteUtils;
+import net.imagini.aim.utils.Tokenizer;
 
 import org.apache.commons.lang3.StringUtils;
 

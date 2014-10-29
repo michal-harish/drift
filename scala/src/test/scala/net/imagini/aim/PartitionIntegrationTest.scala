@@ -25,7 +25,7 @@ class PartitionIntegrationTest extends FlatSpec with Matchers {
     val loader = new AimPartitionLoader(host, port, schema, "\n", this.getClass.getResourceAsStream("datasync.csv"), false)
     loader.processInput should equal(3)
   }
-    def fixutreLoadPageviews = {
+  def fixutreLoadPageviews = {
     val loader = new AimPartitionLoader(host, port, schema, "\n", this.getClass.getResourceAsStream("pageviews.csv"), false)
     loader.processInput should equal(5)
   }
@@ -36,48 +36,48 @@ class PartitionIntegrationTest extends FlatSpec with Matchers {
     response shouldBe a[Some[AimResult]]
     response.get
   }
-  def select(filter:String): AimResult = {
+  def select(filter: String): AimResult = {
     val client = new AimClient(host, port)
     val response = client.select(filter)
     response shouldBe a[Some[AimResult]]
     response.get
   }
-  def fetchAll(result:AimResult): Array[String] = {
+  def fetchAll(result: AimResult): Array[String] = {
     var records = Array[String]()
-    while(result.hasNext) {
+    while (result.hasNext) {
       records :+= result.fetchRecordLine
     }
     result.close
     records
   }
 
-   "Multiple loaders" should "be merged and sorted" in {
-     val server = fixutreServer
-     fixutreLoadDataSyncs
-     fixutreLoadPageviews
-     val result = selectAll
+  "Multiple loaders" should "be merged and sorted" in {
+    val server = fixutreServer
+    fixutreLoadDataSyncs
+    fixutreLoadPageviews
+    val result = selectAll
 
-     result.hasNext should be(true)
-     result.fetchRecordStrings(0) should equal("04732d65-d530-4b18-a583-53799838731a")
-     result.hasNext should be(true)
-     result.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
-     result.hasNext should be(true)
-     result.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
-     result.hasNext should be(true)
-     result.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
-     result.hasNext should be(true)
-     result.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
-     result.hasNext should be(true)
-     result.fetchRecordStrings(0) should equal("69a82e00-3f54-b96a-8fe0-8d2a51f80a86")
-     result.hasNext should be(true)
-     result.fetchRecordStrings(0) should equal("883f5b55-a5bf-480e-9983-8bb117437eac")
-     result.hasNext should be(true)
-     result.fetchRecordStrings(0) should equal("d1d284b7-b04e-442a-b52a-ea74bc6466c5")
+    result.hasNext should be(true)
+    result.fetchRecordStrings(0) should equal("04732d65-d530-4b18-a583-53799838731a")
+    result.hasNext should be(true)
+    result.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
+    result.hasNext should be(true)
+    result.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
+    result.hasNext should be(true)
+    result.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
+    result.hasNext should be(true)
+    result.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
+    result.hasNext should be(true)
+    result.fetchRecordStrings(0) should equal("69a82e00-3f54-b96a-8fe0-8d2a51f80a86")
+    result.hasNext should be(true)
+    result.fetchRecordStrings(0) should equal("883f5b55-a5bf-480e-9983-8bb117437eac")
+    result.hasNext should be(true)
+    result.fetchRecordStrings(0) should equal("d1d284b7-b04e-442a-b52a-ea74bc6466c5")
 
-     fetchAll(result).foreach(println(_))
-     result.count should equal(8)
+    fetchAll(result).foreach(println(_))
+    result.count should equal(8)
 
-     server.close
+    server.close
   }
 
   "Partition with 1 segment" should "should return all records after selecting loaded test data" in {

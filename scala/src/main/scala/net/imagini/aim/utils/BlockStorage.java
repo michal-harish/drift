@@ -29,6 +29,8 @@ abstract public class BlockStorage {
             return compressBlock(array, offset, length);
         }
     }
+
+    //TODO provide a timeout
     final public void ref(int block) {
         synchronized(blocks) {
             if ( blocks.get(block).getAndIncrement() == 0) {

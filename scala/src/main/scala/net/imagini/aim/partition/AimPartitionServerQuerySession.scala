@@ -4,7 +4,7 @@ import net.imagini.aim.tools.Pipe
 import java.io.IOException
 import net.imagini.aim.tools.RowFilter
 import java.util.Queue
-import net.imagini.aim.tools.Tokenizer
+import net.imagini.aim.utils.Tokenizer
 import java.util.ArrayList
 import java.io.InputStream
 import net.imagini.aim.tools.PipeUtils
