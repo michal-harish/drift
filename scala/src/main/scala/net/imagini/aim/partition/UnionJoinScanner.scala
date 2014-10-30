@@ -30,6 +30,14 @@ class OuterJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
   private var leftHasData = true
   private var rightHasData = true
 
+  override def rewind = {
+    left.rewind
+    right.rewind
+    currentLeft = true
+    leftHasData = true
+    rightHasData = true
+  }
+
   override def mark = { left.mark; right.mark }
 
   override def reset = { left.reset; right.reset }

@@ -13,6 +13,8 @@ trait AbstractScanner {
   val keyColumn: Int
   final def keyType:AimType = schema.get(keyColumn)
 
+  def rewind
+
   def next: Boolean
 
   def selectRow: Array[ByteBuffer]
@@ -22,6 +24,8 @@ trait AbstractScanner {
   def mark
 
   def reset
+
+  
 
   final protected[aim] def nextLine: String = nextLine("\t")
 

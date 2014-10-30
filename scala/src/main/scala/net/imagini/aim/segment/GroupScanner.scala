@@ -46,6 +46,7 @@ class GroupScanner(
   groupFunctions.map(_.filter.updateFormula(merge.schema.names))
   private val mergeColumnIndex: Array[Int] = schema.names.map(n ⇒ if (merge.schema.has(n)) merge.schema.get(n) else -1)
 
+  override def rewind = merge.rewind
   override def mark = merge.mark //FIXME this needs its own mark, e.g. x = merge.mark ... merge.reset(x)
   override def reset = merge.reset
 

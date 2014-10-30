@@ -25,6 +25,13 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
 
   right.next
 
+  override def rewind = {
+    left.rewind
+    right.rewind
+    currentLeft = true
+    currentKey = null
+  }
+
   override def next: Boolean = {
     if (currentLeft) left.next else right.next
     //inner join

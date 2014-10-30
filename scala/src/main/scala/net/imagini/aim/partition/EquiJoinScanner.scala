@@ -30,6 +30,11 @@ class EquiJoinScanner(val selectStatement: String, val left: AbstractScanner, va
 
   left.next
 
+  override def rewind = {
+    left.rewind
+    right.rewind
+  }
+
   override def next: Boolean = {
     try {
       right.next
