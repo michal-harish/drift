@@ -1,7 +1,7 @@
 package net.imagini.aim
 
-import net.imagini.aim.cluster.AimResult
-import net.imagini.aim.cluster.AimClient
+import net.imagini.aim.client.AimResult
+import net.imagini.aim.client.AimClient
 import org.scalatest.Matchers
 import net.imagini.aim.partition.AimPartition
 import net.imagini.aim.partition.AimPartitionServer

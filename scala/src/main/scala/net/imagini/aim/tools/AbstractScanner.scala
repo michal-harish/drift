@@ -10,8 +10,8 @@ import net.imagini.aim.types.AimType
 trait AbstractScanner {
 
   val schema: AimSchema
-  val keyType: AimType
   val keyColumn: Int
+  final def keyType:AimType = schema.get(keyColumn)
 
   def next: Boolean
 

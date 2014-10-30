@@ -1,4 +1,4 @@
-package net.imagini.aim.cluster
+package net.imagini.aim.client
 
 import java.io.IOException
 import java.net.InetAddress

@@ -10,13 +10,12 @@ import net.imagini.aim.types.TypeUtils
 import net.imagini.aim.tools.AbstractScanner
 import java.io.EOFException
 
-class InnerJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
+class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 
   private val leftSelect = left.schema.names.map(n ⇒ (n -> left.schema.field(n)))
   private val rightSelect = right.schema.names.map(n ⇒ (n -> right.schema.field(n)))
   override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](
     ListMap((leftSelect ++ rightSelect): _*).asJava))
-  override val keyType = left.schema.get(left.keyColumn)
   override val keyColumn = schema.get(left.schema.name(left.keyColumn))
 
   private val leftColumnIndex = schema.names.map(f ⇒ if (left.schema.has(f)) left.schema.get(f) else -1)

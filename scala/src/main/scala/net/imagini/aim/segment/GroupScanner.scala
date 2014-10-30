@@ -34,7 +34,6 @@ class GroupScanner(
     }): _*).asJava))
 
   override val keyColumn = schema.get(sourceSchema.name(0))
-  override val keyType = sourceSchema.get(0)
 
   private val rowFilter = RowFilter.fromString(sourceSchema, rowFilterStatement)
   private val groupFilter = RowFilter.fromString(sourceSchema, groupFilterStatement)

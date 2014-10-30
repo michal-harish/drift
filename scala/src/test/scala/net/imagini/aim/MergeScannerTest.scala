@@ -40,6 +40,7 @@ class MergeScannerTest extends FlatSpec with Matchers {
     mergeScan.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.travel.com}")
 
     an[EOFException] must be thrownBy mergeScan.nextLine
+    an[EOFException] must be thrownBy mergeScan.nextLine
   }
 
 }

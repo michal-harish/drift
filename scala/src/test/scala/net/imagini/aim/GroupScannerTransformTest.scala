@@ -32,5 +32,6 @@ class GroupScannerTransformTest extends FlatSpec with Matchers {
     scan.nextLine should be("AT1234\t{www.auto.com}\t37b22cfb-a29e-42c3-a3d9-12d32850e103")
     scan.nextLine should be("AT9876\t{www.travel.com}\ta7b22cfb-a29e-42c3-a3d9-12d32850e103")
     an[EOFException] must be thrownBy scan.nextLine
+    an[EOFException] must be thrownBy scan.nextLine
   }
 }

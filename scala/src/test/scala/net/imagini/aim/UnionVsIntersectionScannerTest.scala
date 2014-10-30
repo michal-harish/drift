@@ -6,14 +6,14 @@ import net.imagini.aim.types.AimSchema
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.utils.BlockStorageLZ4
 import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.partition.InnerJoinScanner
+import net.imagini.aim.partition.IntersectionJoinScanner
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.partition.OuterJoinScanner
 import java.io.EOFException
 import net.imagini.aim.types.Aim
 
-class InnerOuterJoinScannerTest extends FlatSpec with Matchers {
-    "Inner vs Outer Join " should "return different sets" in {
+class UnionVsIntersectionScannerTest extends FlatSpec with Matchers {
+    "Union and Intersection Join " should "return different sets" in {
       //PAGEVIEWS
       val schemaA = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
       //TODO ttl = 10
@@ -53,8 +53,9 @@ class InnerOuterJoinScannerTest extends FlatSpec with Matchers {
       outerJoin.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103\twww.bank.com/myaccunt\t2014-10-10 13:59:01\t" + Aim.EMPTY)
       outerJoin.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 13:01:03\t" + Aim.EMPTY)
       an[EOFException] must be thrownBy outerJoin.nextLine
+      an[EOFException] must be thrownBy outerJoin.nextLine
 
-      val innerJoin = new InnerJoinScanner(
+      val innerJoin = new IntersectionJoinScanner(
           new MergeScanner(partitionA1.schema, "user_uid, url, timestamp", "*", partitionA1.segments), 
           new MergeScanner(partitionB1.schema, "user_uid, url, timestamp, conversion", "*", partitionB1.segments)
       )
@@ -63,6 +64,7 @@ class InnerOuterJoinScannerTest extends FlatSpec with Matchers {
       innerJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers/holiday\t2014-10-10 12:01:03\t" + Aim.EMPTY)
       innerJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.bank.com/myaccunt\t2014-10-10 13:59:01\tcheck")
       innerJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers/holiday/book\t2014-10-10 13:01:03\tbuy")
+      an[EOFException] must be thrownBy innerJoin.nextLine
       an[EOFException] must be thrownBy innerJoin.nextLine
     }
 

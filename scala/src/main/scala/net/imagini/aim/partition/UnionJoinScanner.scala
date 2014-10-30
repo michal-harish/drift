@@ -20,7 +20,6 @@ class OuterJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
   private val rightSelect = right.schema.names.map(n ⇒ (n -> right.schema.field(n)))
   override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](
     ListMap((leftSelect ++ rightSelect): _*).asJava))
-  override val keyType = left.schema.get(left.keyColumn)
   override val keyColumn = schema.get(left.schema.name(left.keyColumn))
 
   private val leftColumnIndex = schema.names.map(f ⇒ if (left.schema.has(f)) left.schema.get(f) else -1)
