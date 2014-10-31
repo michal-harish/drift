@@ -5,15 +5,13 @@ import java.io.IOException
 import net.imagini.aim.tools.Pipe
 import grizzled.slf4j.Logger
 
-class AimNodeAcceptor(listenPort: Int) extends Thread {
+class AimNodeAcceptor(val node: AimNode, listenPort: Int) extends Thread {
   val log = Logger[AimNodeAcceptor.this.type]
   val controllerListener = new ServerSocket(listenPort)
   val port = controllerListener.getLocalPort
   start
-  println("Drift Node accepting connections on port " + port)
 
-
-  def close = {
+  private[cluster] def close = {
     interrupt
     controllerListener.close
   }
@@ -28,9 +26,9 @@ class AimNodeAcceptor(listenPort: Int) extends Thread {
           pipe.protocol match {
             //TODO case Protocol.DATA: new ReaderThread(); break; //for between-node communication
             //TODO case Protocol.MAPREDUCE: new ReaderThread(); break;
-            //                      case Protocol.LOADER ⇒ new AimPartitionServerLoaderSession(partition, pipe).start
+//            case Protocol.LOADER ⇒ new AimNodeServerLoaderSession(partition, pipe).start
             //                      case Protocol.QUERY  ⇒ new AimPartitionServerQuerySession(partition, pipe).start
-            case _ ⇒ println("Unsupported protocol request " + pipe.protocol)
+            case _               ⇒ println("Unsupported protocol request " + pipe.protocol)
           }
         } catch {
           case e: IOException ⇒ {
@@ -39,6 +37,7 @@ class AimNodeAcceptor(listenPort: Int) extends Thread {
         }
       }
     } catch {
+      case e: java.net.SocketException ⇒ {}
       case e: Throwable ⇒ {
         log.error(e)
         controllerListener.close

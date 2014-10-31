@@ -1,4 +1,4 @@
-package net.imagini.aim.partition
+package net.imagini.aim.cluster
 
 import net.imagini.aim.tools.Pipe
 import java.io.IOException
@@ -7,12 +7,13 @@ import java.util.Queue
 import net.imagini.aim.utils.Tokenizer
 import java.util.ArrayList
 import java.io.InputStream
-import net.imagini.aim.tools.PipeUtils
 import java.io.EOFException
+import net.imagini.aim.partition.AimPartition
+import scala.Array.canBuildFrom
 
 class AimPartitionServerQuerySession(val partition: AimPartition, val pipe: Pipe) extends Thread {
 
-  var filter: RowFilter = null
+  var filterStatement: String = "*"
 
   def exceptionAsString(e: Throwable): String = e.getMessage + e.getStackTrace.map(trace ⇒ trace.toString).foldLeft("\n")(_ + _ + "\n")
 
@@ -54,12 +55,12 @@ class AimPartitionServerQuerySession(val partition: AimPartition, val pipe: Pipe
 
   private def handleFilter(cmd: Queue[String]) = {
     if (cmd.size > 0) {
-      filter = RowFilter.fromTokenQueue(partition.schema, cmd)
+      filterStatement = RowFilter.fromTokenQueue(partition.schema, cmd).toString
     }
     pipe.write(true);
     pipe.write("COUNT");
-    val count = partition.count(filter)
-    pipe.write(if (filter == null) null else filter.toString)
+    val count = partition.count(filterStatement)
+    pipe.write(filterStatement)
     pipe.write(count);
     pipe.write(partition.getCount)
     pipe.flush();
@@ -78,11 +79,11 @@ class AimPartitionServerQuerySession(val partition: AimPartition, val pipe: Pipe
 
   private def handleSelectRequest(cmd: Queue[String]) = {
     val schema = if (cmd.size > 0) partition.schema.subset(new ArrayList(cmd)) else partition.schema
-    val result: InputStream = partition.select(filter, schema.names);
+    val result: InputStream = partition.select(schema.names.mkString(","), filterStatement);
     pipe.write(true)
     pipe.write("RESULT")
     pipe.write(schema.toString)
-    pipe.write(if (filter == null) null else filter.toString)
+    pipe.write(filterStatement)
     var count: Long = 0
     try {
       while (true) {

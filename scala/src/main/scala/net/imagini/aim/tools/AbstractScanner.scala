@@ -11,7 +11,7 @@ trait AbstractScanner {
 
   val schema: AimSchema
   val keyColumn: Int
-  final def keyType:AimType = schema.get(keyColumn)
+  final def keyType: AimType = schema.get(keyColumn)
 
   def rewind
 
@@ -25,12 +25,35 @@ trait AbstractScanner {
 
   def reset
 
+  final def count: Long = {
+    rewind
+    var count: Long = 0
+    while (next) count += 1
+    count
+  }
   
+  def close = {
+    //TODO implement close for all scanners
+  }
 
   final protected[aim] def nextLine: String = nextLine("\t")
 
   final protected[aim] def nextLine(separator: String): String = { next; selectLine(separator) }
 
-  final def selectLine(separator:String): String = (schema.fields, selectRow).zipped.map((t, b) ⇒ t.asString(b)).mkString(separator)
+  final def selectLine(separator: String): String = (schema.fields, selectRow).zipped.map((t, b) ⇒ t.asString(b)).mkString(separator)
+
+  //  val mapreduce = Executors.newFixedThreadPool(4)
+  //  def reduce[T](filter: RowFilter, reducer:() => T): T= {
+  //    val range = defaultRange
+  //    val seg: Array[Int] = new Array(range._2 - range._1 + 1)
+  //    val results: List[Future[Long]] = seg.map(s => mapreduce.submit(new Callable[Long] {
+  //        override def call: Long = {
+  //          segments.synchronized {
+  //            segments(s).reduce(filter, reducer)
+  //          }
+  //        }
+  //      })).toList
+  //    results.foldLeft(0L)(_ + _.get)
+  //  }
 
 }

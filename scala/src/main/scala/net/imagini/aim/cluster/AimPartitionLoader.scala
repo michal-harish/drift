@@ -1,4 +1,4 @@
-package net.imagini.aim.partition
+package net.imagini.aim.cluster
 
 import java.io.BufferedReader
 import java.io.EOFException
@@ -8,11 +8,7 @@ import java.io.InputStreamReader
 import java.net.InetAddress
 import java.net.Socket
 import java.util.zip.GZIPInputStream
-
 import scala.Array.canBuildFrom
-
-import net.imagini.aim.tools.PipeLZ4
-import net.imagini.aim.tools.Protocol
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
 

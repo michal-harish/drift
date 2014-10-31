@@ -40,6 +40,12 @@ Usecases
 * Usecase 1 - retroactive data windows: Solution - two tables in the same Keyspace, i.e. co-partitioned, with ScanJoin select
 
 * Usecase 2 - combining datasets from id-spaces - two tables from different Keyspaces, with StreamJoin and key transformation (!)
+  - table 1: pageviews (STRING[16] at_id, STRING[?] url, LONG timestamp)
+  - table 2: syncs (STRING[16] at_id, UUID vdan_user_uid) 
+  - the inner join: vdna_user_uid, url, timestamp
+  - the benchmark 1) loading table 1 and 2 as quickly as possible from 2 files containing 1 days worth of data - cca half a gig
+  - the benchmark 2) counting the join
+  - the benchmark 3) scanning the join into a local csv file
 
 * Usecase 3 - id-linking from newly discovered information (?)
 

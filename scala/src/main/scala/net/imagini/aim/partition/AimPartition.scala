@@ -12,13 +12,15 @@ import scala.collection.mutable.MutableList
 import java.util.concurrent.Future
 import java.util.concurrent.Callable
 import java.io.IOException
+import net.imagini.aim.cluster.ScannerInputStream
+import net.imagini.aim.segment.MergeScanner
 
 class AimPartition(val schema: AimSchema, val segmentSizeBytes: Int) {
   val segments: ListBuffer[AimSegment] = ListBuffer()
   val numSegments = new AtomicInteger(0)
   def getNumSegments = numSegments.get
-  def defaultRange:(Int,Int) = (0, numSegments.get -1)
-  def add(segment: AimSegment):AimSegment = {
+  def defaultRange: (Int, Int) = (0, numSegments.get - 1)
+  def add(segment: AimSegment): AimSegment = {
     segments.synchronized { //TODO is this necessary
       segments += segment
       numSegments.incrementAndGet
@@ -30,47 +32,47 @@ class AimPartition(val schema: AimSchema, val segmentSizeBytes: Int) {
   def getCompressedSize: Long = segments.foldLeft(0L)(_ + _.getCompressedSize)
   def getUncompressedSize: Long = segments.foldLeft(0L)(_ + _.getOriginalSize)
 
-  //TODO select(filter: AimGroupFilter(RowFilter), columnNames:...)
-  def select(filter: RowFilter, columnNames: Array[String]): InputStream = {
+  def query(query: String) = {
+    //TODO basic state machine for parsing queries
+  }
+
+  def select(selectStatement: String, filterStatement: String): InputStream = {
     val range = defaultRange
-    val seg: Array[Int] = new Array(range._2 - range._1 + 1)
-    for (i ← (range._2 to range._2)) seg(i - range._1) = i
-    val str: Array[InputStream] = new Array(segments.size)
-    val subSchema: AimSchema = schema.subset(columnNames)
-    for (s ← (0 to seg.length - 1)) str(s) = segments(seg(s)).select(filter, columnNames)
-    new StreamMerger(subSchema, 1000, str) //TODO the queueSize=1000 varies depending on query so expose it as optimization parameter
+    val scanner = new MergeScanner(schema, selectStatement, filterStatement, (range._1 to range._2).map(segments(_)))
+    new ScannerInputStream(scanner)
   }
 
   /**
-   * Parallel count - currently hard-coded for 4-core processors, however once
+   * TODO Parallel count - currently hard-coded for 4-core processors, however once
    * the table is distributed across multiple machines this thread pool should
    * be bigger until the I/O becomes bottleneck.
    */
-  def count(filter: RowFilter): Long = {
+  def count(filterStatement: String): Long = {
     //TODO range will become part of the filter
     val range = defaultRange
     val seg: Array[Int] = new Array(range._2 - range._1 + 1)
-    val results: List[Future[Long]] = seg.map(s => mapreduce.submit(new Callable[Long] {
-        override def call: Long = {
-          segments.synchronized {
-            segments(s).count(filter)
-          }
-        }
-      })).toList
+    val results: List[Future[Long]] = seg.map(s ⇒ mapreduce.submit(new Callable[Long] {
+      override def call: Long = {
+        val scanner = new MergeScanner(schema, schema.name(0), filterStatement, Seq(segments(s)))
+        val count = scanner.count
+        scanner.close
+        count
+      }
+    })).toList
     results.foldLeft(0L)(_ + _.get)
   }
 
-//  def reduce[T](filter: RowFilter, reducer:() => T): T= {
-//    val range = defaultRange
-//    val seg: Array[Int] = new Array(range._2 - range._1 + 1)
-//    val results: List[Future[Long]] = seg.map(s => mapreduce.submit(new Callable[Long] {
-//        override def call: Long = {
-//          segments.synchronized {
-//            segments(s).reduce(filter, reducer)
-//          }
-//        }
-//      })).toList
-//    results.foldLeft(0L)(_ + _.get)
-//  }
+  //  def reduce[T](filter: RowFilter, reducer:() => T): T= {
+  //    val range = defaultRange
+  //    val seg: Array[Int] = new Array(range._2 - range._1 + 1)
+  //    val results: List[Future[Long]] = seg.map(s => mapreduce.submit(new Callable[Long] {
+  //        override def call: Long = {
+  //          segments.synchronized {
+  //            segments(s).reduce(filter, reducer)
+  //          }
+  //        }
+  //      })).toList
+  //    results.foldLeft(0L)(_ + _.get)
+  //  }
 
 }

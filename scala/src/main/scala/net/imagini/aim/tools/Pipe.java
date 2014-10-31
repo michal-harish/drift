@@ -8,6 +8,10 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import net.imagini.aim.cluster.PipeGZIP;
+import net.imagini.aim.cluster.PipeLZ4;
+import net.imagini.aim.cluster.PipeUtils;
+import net.imagini.aim.cluster.Protocol;
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.utils.ByteUtils;
@@ -23,7 +27,7 @@ public class Pipe {
     private InputStream inputPipe;
 
     public Pipe() { 
-        this.protocol = Protocol.BINARY; 
+        this.protocol = Protocol.DATA; 
     }
     public Pipe(Socket socket, Protocol protocol) throws IOException {
         this(socket.getOutputStream(), protocol);
@@ -32,7 +36,7 @@ public class Pipe {
 
     public Pipe(OutputStream out) throws IOException {
         outputPipe = createOutputStreamWrapper(out);
-        this.protocol = Protocol.BINARY;
+        this.protocol = Protocol.DATA;
     }
     public Pipe(OutputStream out, Protocol protocol) throws IOException {
         int pipe_type;
@@ -49,7 +53,7 @@ public class Pipe {
 
     public Pipe(InputStream in) throws IOException {
         inputPipe = createInputStreamWrapper(in);
-        this.protocol = Protocol.BINARY;
+        this.protocol = Protocol.DATA;
     }
 
     public Pipe(InputStream in, Protocol protocol) throws IOException {

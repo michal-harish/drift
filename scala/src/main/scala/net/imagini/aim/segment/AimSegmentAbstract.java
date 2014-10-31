@@ -1,26 +1,15 @@
 package net.imagini.aim.segment;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.imagini.aim.tools.ColumnScanner;
-import net.imagini.aim.tools.RowFilter;
-import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
-import net.imagini.aim.types.AimType;
 import net.imagini.aim.types.TypeUtils;
 import net.imagini.aim.utils.BlockStorage;
-import net.imagini.aim.utils.ByteUtils;
 
 /**
  * zero-copy open methods, i.e. multiple stream readers should be able to operate without 
@@ -35,12 +24,10 @@ abstract public class AimSegmentAbstract implements AimSegment {
     private AtomicLong count = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
     protected AtomicLong originalSize = new AtomicLong(0);
-    private String keyField;
 
-    public AimSegmentAbstract(AimSchema schema, final String keyField, Class<? extends BlockStorage> storageType) throws InstantiationException, IllegalAccessException {
+    public AimSegmentAbstract(AimSchema schema, Class<? extends BlockStorage> storageType) throws InstantiationException, IllegalAccessException {
         this.schema = schema;
         this.writable = true;
-        this.keyField = keyField;
         writers = new LinkedHashMap<>();
         for(int col=0; col < schema.size(); col++) {
             BlockStorage blockStorage = storageType.newInstance();
@@ -155,163 +142,5 @@ abstract public class AimSegmentAbstract implements AimSegment {
         }
         return scanners;
     }
-
-    @Override final public long count(RowFilter filter) throws IOException {
-        final AimSchema subSchema;
-        if (filter != null) {
-            subSchema = schema.subset(filter.getColumns());
-            filter.updateFormula(subSchema.names());
-        } else {
-            subSchema = schema.subset(new String[]{schema.name(0)});
-        }
-
-        final ByteBuffer[] buffers = new ByteBuffer[subSchema.size()];
-        final ColumnScanner[] scanners = new ColumnScanner[subSchema.size()];
-        int i = 0; for(String colName: subSchema.names()) {
-            scanners[i++] = new ColumnScanner(columnar.get(schema.get(colName)), schema.field(colName));
-        }
-
-        long count = 0;
-        try {
-            for(int c=0; c < subSchema.size(); c++) {
-                ColumnScanner scanner = scanners[c];
-                if (scanner.eof()) {
-                    throw new EOFException();
-                }
-                buffers[c] = scanner.buffer();
-            }
-            while(true) {
-                if (filter == null || filter.matches(buffers)) {
-                    count++;
-                }
-                for(int c=0; c< subSchema.size(); c++) {
-                    ColumnScanner scanner = scanners[c];
-                    scanner.skip();
-                    if (scanner.eof()) {
-                        throw new EOFException();
-                    }
-                    buffers[c] = scanner.buffer();
-                }
-            }
-        } catch (EOFException e) {
-            return count;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            throw ex;
-        }
-    }
-
-    /**
-     * ZeroCopy
-     * Not Thread-safe 
-     * Filtered, Aggregate Input stream for all the selected columns in this segment.
-     * TODO AbstractScanner.asStream() instead of this method
-     */
-    @Override final public InputStream select(final RowFilter filter, final String[] columns) throws IOException {
-        try {
-            checkWritable(false);
-        } catch (IllegalAccessException e) {
-            throw new IOException(e); 
-        }
-        Set<String> totalColumnSet = new HashSet<String>(Arrays.asList(columns));
-        if (filter != null) totalColumnSet.addAll(Arrays.asList(filter.getColumns()));
-
-        if (keyField != null) totalColumnSet.add(keyField);
-        final AimSchema subSchema = schema.subset(totalColumnSet.toArray(new String[totalColumnSet.size()]));
-        final List<Integer> allColumns = new LinkedList<Integer>(); 
-        for(String colName: subSchema.names()) allColumns.add(subSchema.get(colName));
-        final List<Integer> selectColumns = new LinkedList<Integer>();
-        for(String colName: columns) selectColumns.add(subSchema.get(colName));
-        final List<Integer> hiddenColumns = new LinkedList<Integer>(allColumns); hiddenColumns.removeAll(selectColumns);
-
-        if (filter != null) filter.updateFormula(subSchema.names());
-
-        final ByteBuffer[] buffers = new ByteBuffer[subSchema.size()];
-        final ColumnScanner[] scanners = new ColumnScanner[subSchema.size()];
-        int i = 0; for(String colName: subSchema.names()) {
-            scanners[i++] = new ColumnScanner(columnar.get(schema.get(colName)), schema.field(colName));
-        }
-        return new InputStream() {
-
-            @Override
-            public long skip(long n) throws IOException {
-                if(checkNextByte()) {
-                    long skipped = currentSelectScanner.skip(n);
-                    //TODO break n into max column lenghts
-                    read+=skipped;
-                    return skipped;
-                } else {
-                    return 0;
-                }
-            }
-
-            @Override public int read() throws IOException {
-                read++; 
-                return checkNextByte() ? currentSelectScanner.read() & 0xff : -1;
-            }
-
-            private int currentSelectColumn = -1;
-            private ColumnScanner currentSelectScanner = null;
-            private int currentReadLength = 0;
-            private int read = -1;
-            private boolean checkNextByte() throws IOException {
-                if (currentSelectColumn == -1) {
-                    for(int c=0;c<subSchema.size();c++) {
-                        if (scanners[c].eof()) return false;
-                        buffers[c] = scanners[c].buffer();
-                    }
-                } else if (read == currentReadLength) {
-                    read = -1;
-                    currentSelectColumn++;
-                    currentSelectScanner = (currentSelectColumn < columns.length) ? scanners[selectColumns.get(currentSelectColumn)] : null;
-                    if (currentSelectScanner != null && currentSelectScanner.eof()) {
-                        return false;
-                    }
-                }
-
-                if (currentSelectScanner == null) {
-                    read = -1;
-                    currentSelectColumn = 0;
-                    currentSelectScanner = scanners[selectColumns.get(currentSelectColumn)];
-                    while(true) {
-                        for(int c=0; c < subSchema.size(); c++) {
-                            ColumnScanner scanner = scanners[c];
-                            if (scanner.eof()) {
-                                return false;
-                            }
-                            buffers[c] = scanners[c].buffer();
-                        }
-                        if (filter == null || filter.matches(buffers)) {
-                            skipNextRecord(true);
-                            break;
-                        }
-                        skipNextRecord(false);
-                    }
-                } 
-                if (read == -1) {
-                    read = 0;
-                    AimType type = subSchema.get(selectColumns.get(currentSelectColumn));
-                    if (type.equals(Aim.STRING)) {
-                        currentReadLength = 4 + ByteUtils.asIntValue(currentSelectScanner.buffer());
-                    } else {
-                        currentReadLength = type.getDataType().getSize();
-                    }
-                }
-                return true;
-            }
-            private void skipNextRecord(boolean onlyHiddenColumns) throws IOException {
-                List<Integer> colNames = onlyHiddenColumns ? hiddenColumns : allColumns;
-                for(Integer c: colNames) {
-                    AimType type = subSchema.get(c);
-                    int skipLength;
-                    if (type.equals(Aim.STRING)) {
-                        skipLength = 4 + ByteUtils.asIntValue(scanners[c].buffer());
-                    } else {
-                        skipLength  = type.getDataType().getSize();
-                    }
-                    scanners[c].skip(skipLength);
-                }
-            }
-        };
-    }
+ 
 }

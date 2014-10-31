@@ -5,10 +5,10 @@ import net.imagini.aim.utils.BlockStorage;
 
 final public class AimSegmentUnsorted extends AimSegmentAbstract {
 
-
-    public AimSegmentUnsorted(AimSchema schema, Class<? extends BlockStorage> storageType) 
-    throws InstantiationException, IllegalAccessException {
-        super(schema, null, storageType);
+    public AimSegmentUnsorted(AimSchema schema,
+            Class<? extends BlockStorage> storageType)
+            throws InstantiationException, IllegalAccessException {
+        super(schema, storageType);
     }
 
 }

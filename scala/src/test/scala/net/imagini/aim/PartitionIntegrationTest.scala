@@ -4,11 +4,11 @@ import net.imagini.aim.client.AimResult
 import net.imagini.aim.client.AimClient
 import org.scalatest.Matchers
 import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.partition.AimPartitionServer
+import net.imagini.aim.cluster.AimPartitionServer
 import net.imagini.aim.types.AimSchema
 import org.scalatest.FlatSpec
 import net.imagini.aim.types.SortOrder
-import net.imagini.aim.partition.AimPartitionLoader
+import net.imagini.aim.cluster.AimPartitionLoader
 import net.imagini.aim.partition.AimPartition
 
 class PartitionIntegrationTest extends FlatSpec with Matchers {
@@ -30,12 +30,6 @@ class PartitionIntegrationTest extends FlatSpec with Matchers {
     loader.processInput should equal(5)
   }
 
-  def selectAll(): AimResult = {
-    val client = new AimClient(host, port)
-    val response = client.select()
-    response shouldBe a[Some[AimResult]]
-    response.get
-  }
   def select(filter: String): AimResult = {
     val client = new AimClient(host, port)
     val response = client.select(filter)
@@ -55,7 +49,7 @@ class PartitionIntegrationTest extends FlatSpec with Matchers {
     val server = fixutreServer
     fixutreLoadDataSyncs
     fixutreLoadPageviews
-    val result = selectAll
+    val result = select("*")
 
     result.hasNext should be(true)
     result.fetchRecordStrings(0) should equal("04732d65-d530-4b18-a583-53799838731a")
@@ -85,7 +79,7 @@ class PartitionIntegrationTest extends FlatSpec with Matchers {
     val server = fixutreServer
     fixutreLoadDataSyncs
 
-    val result = selectAll()
+    val result = select("*")
     result.hasNext should be(true)
     result.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "x", "ad36ec72-5b66-44f0-89be-668882c08ca5"))
     result.hasNext should be(true)

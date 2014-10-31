@@ -5,9 +5,9 @@ import java.net.InetAddress
 import java.net.Socket
 import scala.Array.canBuildFrom
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.tools.PipeLZ4
 import net.imagini.aim.tools.Pipe
-import net.imagini.aim.tools.Protocol
+import net.imagini.aim.cluster.PipeLZ4
+import net.imagini.aim.cluster.Protocol
 
 case class AimResult(val schema: AimSchema, val pipe: Pipe) {
   var filteredCount = 0L
@@ -48,12 +48,12 @@ class AimClient(val host: String, val port: Int) {
     pipe.write(query).flush
     processResponse(pipe)
   }
-  def select(filter: String = ""): Option[AimResult] = {
-    if (!filter.isEmpty) {
+  def select(filter: String = "*"): Option[AimResult] = {
+    if (!filter.equals("*")) {
       pipe.write(filter).flush
       processResponse(pipe) match {
         case s: Seq[_] ⇒ println(s.foldLeft("")(_ + _))
-        case x: Any    ⇒ throw new Exception("Unknown response from the Aim Server" + x.toString)
+        case x: Any    ⇒ throw new Exception("Unknown response from the Aim Server " + x.toString)
       }
     }
     pipe.write("select").flush

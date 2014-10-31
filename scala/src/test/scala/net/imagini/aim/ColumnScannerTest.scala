@@ -6,7 +6,6 @@ import net.imagini.aim.utils.BlockStorageLZ4
 import java.nio.ByteBuffer
 import net.imagini.aim.utils.ByteUtils
 import net.imagini.aim.tools.ColumnScanner
-import net.imagini.aim.tools.PipeUtils
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.Aim
 import java.io.InputStream

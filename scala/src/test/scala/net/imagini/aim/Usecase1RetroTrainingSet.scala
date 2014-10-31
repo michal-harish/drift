@@ -61,7 +61,7 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
     /**
      * TODO 
      * select 'user_uid' from flags where value='true' and flag='quizzed' or flag='cc'
-     * equi (
+     * join (
      *   select user_uid,url,timestamp from pageviews where url contains 'travel.com'
      *   union 
      *   select conversions user_uid,url,timestamp,conversion 

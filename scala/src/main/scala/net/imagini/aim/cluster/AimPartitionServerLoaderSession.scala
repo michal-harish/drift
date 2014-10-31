@@ -1,4 +1,4 @@
-package net.imagini.aim.partition
+package net.imagini.aim.cluster
 
 import net.imagini.aim.tools.Pipe
 import java.io.IOException
@@ -6,6 +6,8 @@ import net.imagini.aim.utils.ByteUtils
 import java.io.EOFException
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.segment.AimSegment
+import net.imagini.aim.utils.BlockStorageLZ4
+import net.imagini.aim.partition.AimPartition
 import net.imagini.aim.utils.BlockStorageLZ4
 
 class AimPartitionServerLoaderSession(val partition: AimPartition, val pipe: Pipe) extends Thread {
