@@ -3,7 +3,6 @@ package net.imagini.aim.cluster
 import net.imagini.aim.types.AimSchema
 import java.net.ServerSocket
 import java.io.IOException
-import net.imagini.aim.tools.Pipe
 import net.imagini.aim.partition.AimPartition
 
 object AimPartitionServer extends App {

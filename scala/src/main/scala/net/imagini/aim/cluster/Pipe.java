@@ -1,4 +1,4 @@
-package net.imagini.aim.tools;
+package net.imagini.aim.cluster;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -8,10 +8,6 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import net.imagini.aim.cluster.PipeGZIP;
-import net.imagini.aim.cluster.PipeLZ4;
-import net.imagini.aim.cluster.PipeUtils;
-import net.imagini.aim.cluster.Protocol;
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.utils.ByteUtils;
@@ -133,6 +129,9 @@ public class Pipe {
             outputPipe.write(data);
         }
         return this;
+    }
+    public int write(AimDataType type, ByteBuffer value) throws IOException {
+        return PipeUtils.write(type, value, outputPipe);
     }
     public int write(AimDataType type, byte[] value) throws IOException {
         return PipeUtils.write(type, value, outputPipe);

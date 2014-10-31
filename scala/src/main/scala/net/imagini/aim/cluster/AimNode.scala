@@ -9,6 +9,8 @@ import grizzled.slf4j.Logger
 import net.imagini.aim.types.AimSchema
 import java.util.concurrent.TimeoutException
 import net.imagini.aim.partition.AimPartition
+import net.imagini.aim.partition.StatScanner
+import net.imagini.aim.tools.AbstractScanner
 
 object AimNode extends App {
   val log = Logger[AimNode.this.type]
@@ -53,9 +55,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   private var keyspaceRefs = new ConcurrentHashMap[String, ConcurrentMap[String, AimPartition]]()
   def keyspaces: List[String] = keyspaceRefs.asScala.keys.toList
   def keyspace(k: String): Map[String, AimPartition] = keyspaceRefs.get(k).asScala.toMap
-  def count(k:String,t:String) = {
-    
-  }
+  def stats: AbstractScanner = new StatScanner(id, keyspaces.flatMap(k ⇒ {keyspace(k).map { case (t, partition) ⇒ t -> partition }}).toMap)
 
   manager.watch("/drift/nodes", (children: Map[String, String]) ⇒ {
     val newNodes = children.map(p ⇒ p._1.toInt -> new URI(p._2)).toMap

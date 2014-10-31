@@ -24,7 +24,6 @@ public interface AimType {
 
     public String escape(String value);
 
-    //TODO void parse(String value, ByteBuffer into);
     public byte[] convert(String value);
 
 }

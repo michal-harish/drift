@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
+import net.imagini.aim.cluster.Pipe;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
 import net.imagini.aim.types.TypeUtils;

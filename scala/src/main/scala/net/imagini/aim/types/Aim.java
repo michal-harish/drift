@@ -6,7 +6,7 @@ import net.imagini.aim.utils.ByteUtils;
 
 public enum Aim implements AimDataType {
 
-    BOOL(1), BYTE(1), INT(4), LONG(8), STRING(4);
+    BOOL(1), BYTE(1), INT(4), LONG(8), STRING(4); //TODO DOUBLE(8), 
 
     final public static String EMPTY = String.valueOf((char) 0); //
 

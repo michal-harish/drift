@@ -5,7 +5,7 @@ import java.net.InetAddress
 import java.net.Socket
 import scala.Array.canBuildFrom
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.tools.Pipe
+import net.imagini.aim.cluster.Pipe
 import net.imagini.aim.cluster.PipeLZ4
 import net.imagini.aim.cluster.Protocol
 

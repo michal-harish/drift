@@ -2,7 +2,6 @@ package net.imagini.aim.cluster
 
 import java.net.ServerSocket
 import java.io.IOException
-import net.imagini.aim.tools.Pipe
 import grizzled.slf4j.Logger
 
 class AimNodeAcceptor(val node: AimNode, listenPort: Int) extends Thread {

@@ -3,6 +3,7 @@ package net.imagini.aim.cluster;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
@@ -10,6 +11,20 @@ import net.imagini.aim.types.AimTypeBYTEARRAY;
 import net.imagini.aim.utils.ByteUtils;
 
 public class PipeUtils {
+
+    public static int write(AimDataType type, ByteBuffer value, OutputStream out)
+            throws IOException {
+        byte[] array = value.array();
+        int offset = value.arrayOffset() + value.position();
+        int size = 0;
+        if (type.equals(Aim.STRING)) {
+            size = ByteUtils.getIntValue(array, offset) + 4;
+        } else {
+            size = type.getSize();
+        }
+        out.write(array, offset, size);
+        return size;
+    }
 
     public static int write(AimDataType type, byte[] value, OutputStream out)
             throws IOException {

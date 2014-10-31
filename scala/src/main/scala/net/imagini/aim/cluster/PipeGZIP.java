@@ -7,8 +7,6 @@ import java.net.Socket;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import net.imagini.aim.tools.Pipe;
-
 public class PipeGZIP extends Pipe {
 
 

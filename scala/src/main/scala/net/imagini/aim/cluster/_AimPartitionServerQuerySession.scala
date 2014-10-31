@@ -1,6 +1,5 @@
 package net.imagini.aim.cluster
 
-import net.imagini.aim.tools.Pipe
 import java.io.IOException
 import net.imagini.aim.tools.RowFilter
 import java.util.Queue

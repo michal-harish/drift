@@ -2,8 +2,12 @@ package net.imagini.aim.cluster
 
 import java.io.IOException
 import net.imagini.aim.utils.Tokenizer
-import net.imagini.aim.tools.Pipe
 import java.util.Queue
+import net.imagini.aim.tools.AbstractScanner
+import net.imagini.aim.partition.StatScanner
+import java.io.EOFException
+import java.io.InputStream
+import net.imagini.aim.types.TypeUtils
 
 trait AimNodeSession extends Thread {
   def close
@@ -25,9 +29,9 @@ class AimNodeQuerySession(val node: AimNode, val pipe: Pipe) extends AimNodeSess
             val cmd = Tokenizer.tokenize(input)
             val command = cmd.poll.toUpperCase
             command.toUpperCase match {
-              case "STATS" ⇒ handleStats(cmd)
-              //            case "FILTER" ⇒ handleFilter(cmd)
-              //            case "SELECT" ⇒ handleSelectRequest(cmd)
+              case "STATS" ⇒ handleSelectStream(node.stats)
+              //            case "FILTER" ⇒ handleSelectStream(node.fitler(cmd))
+              //            case "SELECT" ⇒ handleSelectStream(node.select(cmd))
               case _       ⇒ {}
             }
             pipe.write(false)
@@ -57,29 +61,35 @@ class AimNodeQuerySession(val node: AimNode, val pipe: Pipe) extends AimNodeSess
     }
   }
 
-  private def handleStats(cmd: Queue[String]) = {
-    say("STATS")
-
-    node.keyspaces.map(k ⇒ {
-      say("KEYSPACE: " + k + ", PARTITION: " + node.id)
-      node.keyspace(k).map {
-        case (t, partition) ⇒ {
-          say("- REGION " + t + "\tSCHEMA: " + partition.schema.toString)
-          say("- REGION " + t + "\tSEGMENTS: " + partition.numSegments)
-          if (partition.getUncompressedSize > 0) {
-              say("- REGION " + t + "\tCOMPRESSION RATE: " + partition.getCompressedSize + " / " + partition.getUncompressedSize + " " + math.round(partition.getCompressedSize / partition.getUncompressedSize * 100) +  "%")
-          } else {
-             say("- REGION " + t + "\tCOMPRESSION RATE: N/A EMPTY")
-          }
-          say("- REGION " + t + "\tCOUNT(*): " + partition.count("*"))
-          //say("- TABLE" + t + "\tCOUNT(DISTINCT): " + partition.count("!"))
-        }
-      }
-    })
-  }
-  private def say(line: String) = {
+  private def handleSelectStream(scanner: AbstractScanner) = {
     pipe.write(true)
-    pipe.write(line)
-    pipe.flush
+    pipe.write("RESULT")
+    pipe.write(scanner.schema.toString)
+    pipe.write("*") //TODO remove this
+    var count: Long = 0
+    try {
+      while (scanner.next) {
+        val row = scanner.selectRow
+        pipe.write(true)
+        for ((c,t) ← ((0 to scanner.schema.size - 1) zip scanner.schema.fields)) {
+          val dataType = t.getDataType
+          pipe.write(dataType.getDataType, row(c))
+        }
+        count += 1
+      }
+      throw new EOFException
+    } catch {
+      //TODO refactor this was just copy-paste from old java code
+      case e: Throwable ⇒ {
+        pipe.write(false)
+        pipe.write(count)
+        pipe.write(0L) // TODO remove this
+        pipe.write(if (e.isInstanceOf[EOFException]) "" else exceptionAsString(e)) //success flag
+        pipe.flush
+      }
+    }
+
+
   }
+
 }
