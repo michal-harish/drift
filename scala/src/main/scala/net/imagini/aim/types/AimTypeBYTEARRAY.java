@@ -14,6 +14,19 @@ public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
     @Override public boolean equals(Object object) {
         return object instanceof AimTypeBYTEARRAY && this.size == ((AimTypeBYTEARRAY)object).getSize();
     }
+
+    @Override public String asString(ByteBuffer value) {
+        return new String(value.array(), value.arrayOffset() + value.position(),size);
+    }
+
+    @Override public int partition(ByteBuffer value, int numPartitions) {
+        int sum = 0;
+        byte[] array = value.array();
+        int start = value.arrayOffset() + value.position();
+        for (int i = start; i<start + size; i++) sum ^=  array[i];
+        return sum % numPartitions;
+    }
+
     @Override public byte[] convert(String value) {
         byte[] bytes = new byte[size];
         Arrays.fill(bytes, (byte)0);
@@ -31,7 +44,4 @@ public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
         return this;
     }
 
-    @Override public String asString(ByteBuffer value) {
-        return new String(value.array(), value.arrayOffset() + value.position(),size);
-    }
 }

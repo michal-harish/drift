@@ -69,5 +69,4 @@ public class AimTypeTIME extends AimTypeAbstract {
         }
         throw new IllegalArgumentException();
     }
-
 }

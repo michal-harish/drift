@@ -37,9 +37,9 @@ class AimClient(val host: String, val port: Int) {
   private var socket = new Socket(InetAddress.getByName(host), port)
   private var pipe = new PipeLZ4(socket, Protocol.QUERY)
   private def reconnect = {
-      socket.close
-      socket = new Socket(InetAddress.getByName(host), port)
-      pipe = new PipeLZ4(socket, Protocol.QUERY)
+    socket.close
+    socket = new Socket(InetAddress.getByName(host), port)
+    pipe = new PipeLZ4(socket, Protocol.QUERY)
   }
 
   def close = pipe.close
@@ -74,18 +74,24 @@ class AimClient(val host: String, val port: Int) {
           throw new Exception("AIM SERVER ERROR: " + pipe.read());
         }
         case "STATS" ⇒ {
-          val schema = pipe.read
-          val numRecords = pipe.readLong
-          val numSegments = pipe.readInt
-          val size: Long = pipe.readLong
-          val originalSize: Long = pipe.readLong
-          pipe.readBool
-          Seq(
-            "Schema: " + schema,
-            "Total records: " + numRecords,
-            "Total segments: " + numSegments,
-            "Total compressed/original size: " + (size / 1024 / 1024) + " Mb / " + (originalSize / 1024 / 1024),
-            if (originalSize > 0) " Mb = " + (size * 100 / originalSize) + "%" else "")
+          val lines = scala.collection.mutable.ListBuffer[String]()
+          while (pipe.readBool) {
+            val line = pipe.read
+            lines += line
+          }
+          lines.toSeq
+          //          val schema = pipe.read
+          //          val numRecords = pipe.readLong
+          //          val numSegments = pipe.readInt
+          //          val size: Long = pipe.readLong
+          //          val originalSize: Long = pipe.readLong
+          //          pipe.readBool
+          //          Seq(
+          //            "Schema: " + schema,
+          //            "Total records: " + numRecords,
+          //            "Total segments: " + numSegments,
+          //            "Total compressed/original size: " + (size / 1024 / 1024) + " Mb / " + (originalSize / 1024 / 1024),
+          //            if (originalSize > 0) " Mb = " + (size * 100 / originalSize) + "%" else "")
         }
         case "COUNT" ⇒ {
           val filter = pipe.read

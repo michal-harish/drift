@@ -6,18 +6,27 @@ import net.imagini.aim.utils.ByteUtils;
 
 public enum Aim implements AimDataType {
 
-    BOOL(1),
-    BYTE(1),
-    INT(4),
-    LONG(8),
-    STRING(4);
+    BOOL(1), BYTE(1), INT(4), LONG(8), STRING(4);
 
     final public static String EMPTY = String.valueOf((char) 0); //
-    public static AimDataType BYTEARRAY(int size) {  return new AimTypeBYTEARRAY(size); }
-    public static AimType IPV4(AimDataType dataType) { return new AimTypeIPv4(dataType); }
-    public static AimType UUID(AimDataType dataType) { return new AimTypeUUID(dataType); }
-    public static AimType TIME(AimDataType dataType) { return new AimTypeTIME(dataType); }
-    //TODO AimType UTF8(4) extends AimTypeAbstract implements AimDataType
+
+    public static AimDataType BYTEARRAY(int size) {
+        return new AimTypeBYTEARRAY(size);
+    }
+
+    public static AimType IPV4(AimDataType dataType) {
+        return new AimTypeIPv4(dataType);
+    }
+
+    public static AimType UUID(AimDataType dataType) {
+        return new AimTypeUUID(dataType);
+    }
+
+    public static AimType TIME(AimDataType dataType) {
+        return new AimTypeTIME(dataType);
+    }
+
+    // TODO AimType UTF8(4) extends AimTypeAbstract implements AimDataType
 
     private Aim(int size) {
         this.size = size;
@@ -25,16 +34,19 @@ public enum Aim implements AimDataType {
 
     final public int size;
 
-    @Override public int getSize() {
+    @Override
+    public int getSize() {
         return size;
     }
 
-    @Override final public AimDataType getDataType() {
+    @Override
+    final public AimDataType getDataType() {
         return this;
     }
 
-    @Override public String escape(String value) {
-        return this.equals(STRING) ? "'"+value+"'" : value;
+    @Override
+    public String escape(String value) {
+        return this.equals(STRING) ? "'" + value + "'" : value;
     }
 
     @Override
@@ -56,17 +68,31 @@ public enum Aim implements AimDataType {
         } else if (this.equals(Aim.STRING)) {
             bb = ByteUtils.createStringBuffer(value);
         } else {
-            throw new IllegalArgumentException("Unknown data type " + this.getClass().getSimpleName());
+            throw new IllegalArgumentException("Unknown data type "
+                    + this.getClass().getSimpleName());
         }
         return bb.array();
     }
 
     @Override
     public int sizeOf(ByteBuffer value) {
-        switch(this) {
-        case STRING: return ByteUtils.asIntValue(value) + size;
-        default: return size;
+        switch (this) {
+        case STRING:
+            return ByteUtils.asIntValue(value) + size;
+        default:
+            return size;
+        }
     }
+
+    @Override
+    public int partition(ByteBuffer value, int numPartitions) {
+        switch (this) {
+            case BOOL: case BYTE: return value.get(value.position()) % numPartitions;
+            case INT: return ByteUtils.asIntValue(value) % numPartitions;
+            case LONG: return (int)ByteUtils.asLongValue(value) % numPartitions;
+            case STRING: return ByteUtils.asIntValue(value) % numPartitions;
+            default: throw new IllegalArgumentException();
+        }
     }
 
     @Override
@@ -74,27 +100,42 @@ public enum Aim implements AimDataType {
         if (value == null) {
             return EMPTY;
         }
-        switch(this) {
-            case BOOL: return String.valueOf(value[0]>0);
-            case BYTE: return String.valueOf(value[0]);
-            case INT: return String.valueOf(ByteUtils.getIntValue(value));
-            case LONG: return String.valueOf(ByteUtils.getLongValue(value,0));
-            case STRING: return new String(value, 4, ByteUtils.getIntValue(value));
-            default: throw new IllegalArgumentException("Unknown type " + this);
+        switch (this) {
+        case BOOL:
+            return String.valueOf(value[0] > 0);
+        case BYTE:
+            return String.valueOf(value[0]);
+        case INT:
+            return String.valueOf(ByteUtils.getIntValue(value));
+        case LONG:
+            return String.valueOf(ByteUtils.getLongValue(value, 0));
+        case STRING:
+            return new String(value, 4, ByteUtils.getIntValue(value));
+        default:
+            throw new IllegalArgumentException("Unknown type " + this);
         }
     }
 
-    @Override public String asString(ByteBuffer value) {
+    @Override
+    public String asString(ByteBuffer value) {
         if (value == null) {
             return EMPTY;
-        } else switch(this) {
-            case BOOL: return String.valueOf(value.get(value.position()) > 0);
-            case BYTE: return String.valueOf(value.position());
-            case INT: return String.valueOf(ByteUtils.asIntValue(value));
-            case LONG: return String.valueOf(ByteUtils.asLongValue(value));
-            case STRING: return new String(value.array(), value.arrayOffset() + value.position()+4, ByteUtils.asIntValue(value));
-            default: return "";
-        }
+        } else
+            switch (this) {
+            case BOOL:
+                return String.valueOf(value.get(value.position()) > 0);
+            case BYTE:
+                return String.valueOf(value.position());
+            case INT:
+                return String.valueOf(ByteUtils.asIntValue(value));
+            case LONG:
+                return String.valueOf(ByteUtils.asLongValue(value));
+            case STRING:
+                return new String(value.array(), value.arrayOffset()
+                        + value.position() + 4, ByteUtils.asIntValue(value));
+            default:
+                return "";
+            }
     }
 
 }

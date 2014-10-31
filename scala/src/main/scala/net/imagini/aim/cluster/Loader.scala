@@ -12,7 +12,7 @@ import scala.Array.canBuildFrom
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
 
-class AimPartitionLoader(host: String, port: Int, val schema: AimSchema, val separator: String, val fileinput: InputStream, val gzip: Boolean) {
+class Loader(host: String, port: Int, val schema: AimSchema, val separator: String, val fileinput: InputStream, val gzip: Boolean) {
 
   def this(host: String, port: Int, schema: AimSchema, separator: String, filename: String, gzip: Boolean) 
       = this(host, port, schema, separator, if (filename == null) null else new FileInputStream(filename), gzip)

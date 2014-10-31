@@ -8,8 +8,8 @@ import net.imagini.aim.cluster.AimPartitionServer
 import net.imagini.aim.types.AimSchema
 import org.scalatest.FlatSpec
 import net.imagini.aim.types.SortOrder
-import net.imagini.aim.cluster.AimPartitionLoader
 import net.imagini.aim.partition.AimPartition
+import net.imagini.aim.cluster.Loader
 
 class PartitionIntegrationTest extends FlatSpec with Matchers {
   val host = "localhost"
@@ -22,11 +22,11 @@ class PartitionIntegrationTest extends FlatSpec with Matchers {
     server
   }
   def fixutreLoadDataSyncs = {
-    val loader = new AimPartitionLoader(host, port, schema, "\n", this.getClass.getResourceAsStream("datasync.csv"), false)
+    val loader = new Loader(host, port, schema, "\n", this.getClass.getResourceAsStream("datasync.csv"), false)
     loader.processInput should equal(3)
   }
   def fixutreLoadPageviews = {
-    val loader = new AimPartitionLoader(host, port, schema, "\n", this.getClass.getResourceAsStream("pageviews.csv"), false)
+    val loader = new Loader(host, port, schema, "\n", this.getClass.getResourceAsStream("pageviews.csv"), false)
     loader.processInput should equal(5)
   }
 

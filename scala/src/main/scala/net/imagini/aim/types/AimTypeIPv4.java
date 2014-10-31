@@ -19,6 +19,14 @@ public class AimTypeIPv4 extends AimTypeAbstract {
         return dataType;
     }
 
+    @Override public String asString(ByteBuffer value) {
+        try {
+            return InetAddress.getByAddress(Arrays.copyOfRange(value.array(), value.arrayOffset() + value.position(), 4)).toString();
+        } catch (UnknownHostException e) {
+            return null;
+        }
+    }
+
     @Override public byte[] convert(String value) {
 
         InetAddress clientIp;
@@ -41,11 +49,4 @@ public class AimTypeIPv4 extends AimTypeAbstract {
         }
     }
 
-    @Override public String asString(ByteBuffer value) {
-        try {
-            return InetAddress.getByAddress(Arrays.copyOfRange(value.array(), value.arrayOffset() + value.position(), 4)).toString();
-        } catch (UnknownHostException e) {
-            return null;
-        }
-    }
 }

@@ -142,5 +142,6 @@ class AimTypeGROUP(val schema: AimSchema, val definition: String) extends AimTyp
   override def convert(value: String): Array[Byte] = dataType.convert(value)
   override def convert(value: Array[Byte]): String = dataType.convert(value)
   override def asString(value: ByteBuffer): String = dataType.asString(value)
+  override def partition(value: ByteBuffer, numPartitions: Int): Int = throw new IllegalArgumentException
   def typeTuple: (String, AimTypeGROUP) = alias -> this
 }

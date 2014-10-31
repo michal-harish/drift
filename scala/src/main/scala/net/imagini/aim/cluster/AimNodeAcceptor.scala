@@ -10,7 +10,6 @@ class AimNodeAcceptor(val node: AimNode, listenPort: Int) extends Thread {
   val controllerListener = new ServerSocket(listenPort)
   val port = controllerListener.getLocalPort
   start
-
   private[cluster] def close = {
     interrupt
     controllerListener.close
@@ -18,22 +17,20 @@ class AimNodeAcceptor(val node: AimNode, listenPort: Int) extends Thread {
 
   override def run = {
     try {
-      while (!isInterrupted) {
+      while (!isInterrupted && !node.isShutdown) {
         val socket = controllerListener.accept
         try {
           val pipe = Pipe.open(socket)
-          println("Aim Partition Server " + pipe.protocol + " connection from " + socket.getRemoteSocketAddress.toString)
+          log.debug("Node " + pipe.protocol + " connection from " + socket.getRemoteSocketAddress.toString)
           pipe.protocol match {
             //TODO case Protocol.DATA: new ReaderThread(); break; //for between-node communication
             //TODO case Protocol.MAPREDUCE: new ReaderThread(); break;
-//            case Protocol.LOADER ⇒ new AimNodeServerLoaderSession(partition, pipe).start
-            //                      case Protocol.QUERY  ⇒ new AimPartitionServerQuerySession(partition, pipe).start
-            case _               ⇒ println("Unsupported protocol request " + pipe.protocol)
+            //            case Protocol.LOADER ⇒ new AimNodeServerLoaderSession(partition, pipe).start
+            case Protocol.QUERY ⇒ node.session(new AimNodeQuerySession(node, pipe))
+            case _              ⇒ log.debug("Unsupported protocol request " + pipe.protocol)
           }
         } catch {
-          case e: IOException ⇒ {
-            println("Aim Partition at port " + port + " failed to establish client connection: " + e.getMessage)
-          }
+          case e: IOException ⇒ log.error("Node at port " + port + " failed to establish client connection: ", e)
         }
       }
     } catch {

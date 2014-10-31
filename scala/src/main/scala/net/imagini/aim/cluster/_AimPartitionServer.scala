@@ -31,7 +31,7 @@ object AimPartitionServer extends App {
   val partition = new AimPartition(schema.get, segmentSize)
   val server = new AimPartitionServer(partition, port)
 
-  new AimPartitionLoader("localhost", port, schema.get, separator, filename, gzip).processInput
+  new Loader("localhost", port, schema.get, separator, filename, gzip).processInput
 
 }
 

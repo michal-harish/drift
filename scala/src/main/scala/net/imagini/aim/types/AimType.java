@@ -16,13 +16,15 @@ public interface AimType {
 
     public AimDataType getDataType();
 
-    //TODO void parse(String value, ByteBuffer into);
-    public byte[] convert(String value);
-
     public String asString(ByteBuffer value);
+
+    public int partition(ByteBuffer value, int numPartitions);
 
     public String convert(byte[] value);
 
     public String escape(String value);
+
+    //TODO void parse(String value, ByteBuffer into);
+    public byte[] convert(String value);
 
 }
