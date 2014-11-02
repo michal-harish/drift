@@ -4,7 +4,6 @@ import scala.Array.canBuildFrom
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import net.imagini.aim.client.AimClient
-import net.imagini.aim.client.AimResult
 import net.imagini.aim.cluster.AimNode
 import net.imagini.aim.cluster.DriftManagerLocal
 import net.imagini.aim.cluster.Loader
@@ -39,10 +38,10 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     client.query("use vdna")
     client
   }
-  def fetchAll(result: AimResult): Array[String] = {
+  def fetchAll(client: AimClient): Array[String] = {
     var records = Array[String]()
-    while (result.hasNext) {
-      records :+= result.fetchRecordLine
+    while (client.hasNext) {
+      records :+= client.fetchRecordLine
     }
     records
   }
@@ -52,28 +51,25 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     fixutreLoadDataSyncs
     fixutreLoadPageviews
     val client = newClient
-    client.query("select * from events") match {
-      case None ⇒ throw new IllegalArgumentException
-      case Some(result) ⇒ {
-        result.hasNext should be(true)
-        result.fetchRecordStrings(0) should equal("04732d65-d530-4b18-a583-53799838731a")
-        result.hasNext should be(true)
-        result.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
-        result.hasNext should be(true)
-        result.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
-        result.hasNext should be(true)
-        result.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
-        result.hasNext should be(true)
-        result.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
-        result.hasNext should be(true)
-        result.fetchRecordStrings(0) should equal("69a82e00-3f54-b96a-8fe0-8d2a51f80a86")
-        result.hasNext should be(true)
-        result.fetchRecordStrings(0) should equal("883f5b55-a5bf-480e-9983-8bb117437eac")
-        result.hasNext should be(true)
-        result.fetchRecordStrings(0) should equal("d1d284b7-b04e-442a-b52a-ea74bc6466c5")
-        result.hasNext should be(false)
-        result.count should equal(8)
-      }
+    if (client.query("select * from events")) {
+      client.hasNext should be(true)
+      client.fetchRecordStrings(0) should equal("04732d65-d530-4b18-a583-53799838731a")
+      client.hasNext should be(true)
+      client.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
+      client.hasNext should be(true)
+      client.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
+      client.hasNext should be(true)
+      client.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
+      client.hasNext should be(true)
+      client.fetchRecordStrings(0) should equal("37b22cfb-a29e-42c3-a3d9-12d32850e103")
+      client.hasNext should be(true)
+      client.fetchRecordStrings(0) should equal("69a82e00-3f54-b96a-8fe0-8d2a51f80a86")
+      client.hasNext should be(true)
+      client.fetchRecordStrings(0) should equal("883f5b55-a5bf-480e-9983-8bb117437eac")
+      client.hasNext should be(true)
+      client.fetchRecordStrings(0) should equal("d1d284b7-b04e-442a-b52a-ea74bc6466c5")
+      client.hasNext should be(false)
+      an[EOFException] must be thrownBy (client.fetchRecordStrings)
     }
     node.shutdown
   }
@@ -84,19 +80,17 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     fixutreLoadDataSyncs
 
     val client = newClient
-    val result = client.query("select * from events") match {
-      case None ⇒ throw new IllegalArgumentException
-      case Some(result) ⇒ {
-        result.hasNext should be(true)
-        result.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "x", "ad36ec72-5b66-44f0-89be-668882c08ca5"))
-        result.hasNext should be(true)
-        result.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748052", "a", "6571796330792743131"))
-        result.hasNext should be(true)
-        result.fetchRecordStrings should be(Array("d1d284b7-b04e-442a-b52a-ea74bc6466c5", "1413143748080", "ydx_vdna_id", "e9dd0b85-e3e8-f0c4-c42a-fdb0bf6cd28c"))
-        result.hasNext should be(false)
-        result.count should be(3L)
-        node.shutdown
-      }
+    if (client.query("select * from events")) {
+      client.hasNext should be(true)
+      client.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "x", "ad36ec72-5b66-44f0-89be-668882c08ca5"))
+      client.hasNext should be(true)
+      client.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748052", "a", "6571796330792743131"))
+      client.hasNext should be(true)
+      client.fetchRecordStrings should be(Array("d1d284b7-b04e-442a-b52a-ea74bc6466c5", "1413143748080", "ydx_vdna_id", "e9dd0b85-e3e8-f0c4-c42a-fdb0bf6cd28c"))
+      client.hasNext should be(false)
+      an[EOFException] must be thrownBy (client.fetchRecordStrings)
+      node.shutdown
+
     }
   }
 
@@ -106,28 +100,27 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     fixutreLoadPageviews
     val client = newClient
     client.query("select * from events where user_uid='37b22cfb-a29e-42c3-a3d9-12d32850e103'") match {
-      case None ⇒ throw new IllegalArgumentException
-      case Some(result) ⇒ {
-        result.hasNext should be(true)
-        result.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413061544595", "VDNAUserPageview", "http://zh.pad.wikia.com/wiki/Puzzle_%26_Dragons_%E4%B8%AD%E6%96%87WIKI"))
-        result.hasNext should be(true)
-        result.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413061544605", "VDNAUserPageview", "http://www.lincolnshireecho.co.uk/news"))
-        result.hasNext should be(true)
-        result.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "x", "ad36ec72-5b66-44f0-89be-668882c08ca5"))
-        result.hasNext should be(true)
-        result.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748052", "a", "6571796330792743131"))
-        result.hasNext should be(false)
-        result.count should be(4L)
-        an[EOFException] must be thrownBy (result.fetchRecordStrings)
+      case false ⇒ throw new IllegalArgumentException
+      case true ⇒ {
+        client.hasNext should be(true)
+        client.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413061544595", "VDNAUserPageview", "http://zh.pad.wikia.com/wiki/Puzzle_%26_Dragons_%E4%B8%AD%E6%96%87WIKI"))
+        client.hasNext should be(true)
+        client.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413061544605", "VDNAUserPageview", "http://www.lincolnshireecho.co.uk/news"))
+        client.hasNext should be(true)
+        client.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "x", "ad36ec72-5b66-44f0-89be-668882c08ca5"))
+        client.hasNext should be(true)
+        client.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748052", "a", "6571796330792743131"))
+        client.hasNext should be(false)
+        an[EOFException] must be thrownBy (client.fetchRecordStrings)
       }
     }
 
     client.query("select * from events where column contains 'x'") match {
-      case None ⇒ throw new IllegalArgumentException
-      case Some(result) ⇒ {
-        println(result.fetchRecordLine)
-        //val records2 = fetchAll(result2)
-        //records2.size should equal(2)
+      case false ⇒ throw new IllegalArgumentException
+      case true ⇒ {
+        client.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103","1413143748041","x","ad36ec72-5b66-44f0-89be-668882c08ca5"))
+        client.fetchRecordStrings should be(Array("d1d284b7-b04e-442a-b52a-ea74bc6466c5","1413143748080","ydx_vdna_id","e9dd0b85-e3e8-f0c4-c42a-fdb0bf6cd28c"))
+        an[EOFException] must be thrownBy (client.fetchRecordStrings)
       }
     }
 

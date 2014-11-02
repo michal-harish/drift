@@ -35,7 +35,7 @@ public class AimTypeUUID extends AimTypeAbstract {
     }
 
     @Override public String convert(byte[] value) {
-        return new UUID(ByteUtils.getLongValue(value,0) , ByteUtils.getLongValue(value,8)).toString();
+        return new UUID(ByteUtils.asLongValue(value,0) , ByteUtils.asLongValue(value,8)).toString();
     }
 
     @Override public String asString(ByteBuffer value) {

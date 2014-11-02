@@ -106,11 +106,11 @@ public enum Aim implements AimDataType {
         case BYTE:
             return String.valueOf(value[0]);
         case INT:
-            return String.valueOf(ByteUtils.getIntValue(value));
+            return String.valueOf(ByteUtils.asIntValue(value));
         case LONG:
-            return String.valueOf(ByteUtils.getLongValue(value, 0));
+            return String.valueOf(ByteUtils.asLongValue(value, 0));
         case STRING:
-            return new String(value, 4, ByteUtils.getIntValue(value));
+            return new String(value, 4, ByteUtils.asIntValue(value));
         default:
             throw new IllegalArgumentException("Unknown type " + this);
         }

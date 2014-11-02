@@ -24,11 +24,11 @@ public class ByteUtils {
      * byte array utils
      */
 
-    static public int getIntValue(byte[] value) {
-        return getIntValue(value, 0);
+    static public int asIntValue(byte[] value) {
+        return asIntValue(value, 0);
     }
 
-    static public int getIntValue(byte[] value, int offset) {
+    static public int asIntValue(byte[] value, int offset) {
         if (ENDIAN.equals(ByteOrder.LITTLE_ENDIAN)) {
             return EndianUtils.readSwappedInteger(value, 0);
         } else {
@@ -38,7 +38,7 @@ public class ByteUtils {
         }
     }
 
-    static public long getLongValue(byte[] value, int o) {
+    static public long asLongValue(byte[] value, int o) {
         if (ENDIAN.equals(ByteOrder.LITTLE_ENDIAN)) {
             return EndianUtils.readSwappedLong(value, o);
         } else {

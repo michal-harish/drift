@@ -7,8 +7,6 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-//import org.apache.commons.io.EndianUtils;
-
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimTypeBYTEARRAY;
@@ -18,11 +16,12 @@ public class StreamUtils {
 
     public static int write(AimDataType type, ByteBuffer value, OutputStream out)
             throws IOException {
+//        System.err.println("WRITE TYPE FROM BUFFER " + type + " " + type.asString(value));
         byte[] array = value.array();
         int offset = value.arrayOffset() + value.position();
         int size = 0;
         if (type.equals(Aim.STRING)) {
-            size = ByteUtils.getIntValue(array, offset) + 4;
+            size = ByteUtils.asIntValue(array, offset) + Aim.STRING.size;
         } else {
             size = type.getSize();
         }
@@ -34,17 +33,18 @@ public class StreamUtils {
             throws IOException {
         int size = 0;
         if (type.equals(Aim.STRING)) {
-            size = ByteUtils.getIntValue(value);
-            out.write(value, 0, size + 4);
-            return size + 4;
+            size = ByteUtils.asIntValue(value) + Aim.STRING.size;
         } else {
             size = type.getSize();
         }
+//        System.err.println("WRITE TYPE FROM ARRAY["+size+"] " + type + " " + type.convert(value));
         out.write(value, 0, size);
         return size;
     }
 
     static public void writeInt(OutputStream out, int v) throws IOException {
+//        System.err.println("WRITE INT " + v);
+
         if (ByteUtils.ENDIAN.equals(ByteOrder.LITTLE_ENDIAN)) {
             out.write((v >>> 0) & 0xFF);
             out.write((v >>> 8) & 0xFF);
@@ -68,9 +68,10 @@ public class StreamUtils {
                     + (((in.read() & 0xff)) << 8) + (((in.read() & 0xff)) << 0));
         }
         if (val < 0) {
+//            System.err.println("READ INT EOF");
             throw new EOFException();
         } else {
-
+//            System.err.println("READ INT " + val);
             return val;
         }
 
@@ -99,16 +100,17 @@ public class StreamUtils {
             result = new byte[size];
             read(in, result, 0, size);
         }
-        System.err.println("READ TYPE AS byte[] " + type + " " + type.convert(result));
+//        System.err.println("READ TYPE AS NEW byte[] " + type + " " + type.convert(result));
         return result;
     }
 
     static public int read(InputStream in, AimDataType type, ByteBuffer buf)
             throws IOException {
-        System.err.println("READ TYPE INTO Buffer" + type);
+//        System.err.println("READ TYPE INTO Buffer " + type);
         int size;
         if (type.equals(Aim.STRING)) {
-            size = ByteUtils.asIntValue(buf) + 4;
+            size = StreamUtils.readInt(in);
+            buf.putInt(size);
         } else {
             size = type.getSize();
         }
@@ -118,6 +120,7 @@ public class StreamUtils {
 
     static public long skip(InputStream in, AimDataType type)
             throws IOException {
+//        System.err.println("SKIP TYPE " + type);
         int skipLen = readSize(in, type);
         long totalSkipped = 0;
         while (totalSkipped < skipLen) {
@@ -127,21 +130,7 @@ public class StreamUtils {
         return totalSkipped;
     }
 
-    static public int read(InputStream in, AimDataType type, byte[] buf)
-            throws IOException {
-        int size;
-        int offset = 0;
-        if (type.equals(Aim.STRING)) {
-            read(in, buf, 0, (offset = 4));
-            size = ByteUtils.getIntValue(buf);
-        } else {
-            size = type.getSize();
-        }
-        read(in, buf, offset, size);
-        return offset + size;
-    }
-
-    static public void read(InputStream in, byte[] buf, int offset, int len)
+    static private void read(InputStream in, byte[] buf, int offset, int len)
             throws IOException {
         int totalRead = 0;
         while (totalRead < len) {
@@ -153,7 +142,7 @@ public class StreamUtils {
         }
     }
 
-    static public void read(InputStream in, ByteBuffer buf, int len)
+    static private void read(InputStream in, ByteBuffer buf, int len)
             throws IOException {
         int totalRead = 0;
         while (totalRead < len) {

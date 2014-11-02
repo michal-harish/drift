@@ -35,9 +35,10 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
             case "exit" ⇒ stopped = true
             case _ ⇒ {
               val t = System.currentTimeMillis
-              client.query(instruction) match {
-                case Some(result) ⇒ while (result.hasNext) println(result.fetchRecordLine)
-                case None => println("N/A")
+              if (client.query(instruction)) {
+                while (client.hasNext) println(client.fetchRecordLine)
+              } else {
+                println("OK")
               }
               println("Query took: " + (System.currentTimeMillis() - t) + " ms")
             }

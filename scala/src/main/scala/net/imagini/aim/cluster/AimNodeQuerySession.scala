@@ -16,6 +16,9 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
   override def accept = {
     try {
       pipe.read.trim match {
+        case command: String if (command.toUpperCase.startsWith("CLOSE")) ⇒ {
+          close
+        }
         case command: String if (command.toUpperCase.startsWith("USE")) ⇒ useKeySpace(command)
         case query: String if (query.toUpperCase.startsWith("STAT"))    ⇒ handleSelectStream(node.stats)
         case query: String ⇒ keyspace match {
@@ -27,7 +30,6 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
       case e: Throwable ⇒ try {
         pipe.write("ERROR");
         pipe.write(exceptionAsString(e));
-        pipe.write(false);
         pipe.flush();
       } catch {
         case e1: Throwable ⇒ log.error(e)
@@ -49,9 +51,7 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
     try {
       while (scanner.next) {
         val row = scanner.selectRow
-        System.err.println("WRITE RECORD " + scanner.schema.get(0).asString(row(0)) )
-
-        pipe.write(true)
+        pipe.writeInt(scanner.schema.size)
         for ((c, t) ← ((0 to scanner.schema.size - 1) zip scanner.schema.fields)) {
           val dataType = t.getDataType
           pipe.write(dataType.getDataType, row(c))
@@ -60,7 +60,7 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
       throw new EOFException
     } catch {
       case e: Throwable ⇒ {
-        pipe.write(false)
+        pipe.writeInt(0)
         pipe.write(if (e.isInstanceOf[EOFException]) "" else exceptionAsString(e)) //success flag
         pipe.flush
       }

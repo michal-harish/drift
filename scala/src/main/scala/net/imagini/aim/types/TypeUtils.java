@@ -99,7 +99,7 @@ public class TypeUtils {
             throws IOException {
         int size = 0;
         if (type.equals(Aim.STRING)) {
-            size = ByteUtils.getIntValue(src);
+            size = ByteUtils.asIntValue(src);
             dest.put(src, 0, size + 4);
             return size + 4;
         } else {

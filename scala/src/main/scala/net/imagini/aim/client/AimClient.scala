@@ -10,67 +10,93 @@ import net.imagini.aim.cluster.PipeLZ4
 import net.imagini.aim.cluster.Protocol
 import java.io.EOFException
 
-case class AimResult(val schema: AimSchema, val pipe: Pipe) {
-  var eof = false
-  var count = 0L
-  var error: Option[String] = None
-  def hasNext: Boolean = {
-    pipe.readBool match {
-      case true ⇒ true
-      case false ⇒ {
-        eof = true
-        this.error = pipe.read match { case null ⇒ None case error: String ⇒ Some(error) }
-        false
-      }
-    }
-  }
-  def fetchRecord: Array[Array[Byte]] = if (eof) throw new EOFException else {
-    count+=1
-    schema.fields.map(field ⇒ pipe.read(field.getDataType))
-  }
-  def fetchRecordStrings: Array[String] = if (eof) throw new EOFException else {
-    count+=1
-    schema.fields.map(field ⇒ {
-      System.err.println(field)
-      val value = field.convert(pipe.read(field.getDataType)) 
-      System.err.println(value)
-      value
-    })
-  }
-  def fetchRecordLine = fetchRecordStrings.foldLeft("")(_ + _ + ",")
-}
-
 class AimClient(val host: String, val port: Int) {
 
   private var socket = new Socket(InetAddress.getByName(host), port)
   private var pipe = new PipeLZ4(socket, Protocol.QUERY_LOCAL)
+  private var error: Option[String] = None
+  private var hasData: Option[Boolean] = None
+  private var schema: Option[AimSchema] = None
+
   private def reconnect = {
     socket.close
     socket = new Socket(InetAddress.getByName(host), port)
     pipe = new PipeLZ4(socket, Protocol.QUERY_LOCAL)
   }
 
-  def close = pipe.close
+  def close = {
+    pipe.write("CLOSE")
+    pipe.flush
+    pipe.close
+  }
 
-  def query(query: String): Option[AimResult] = {
+  def query(query: String): Boolean = {
+    if (hasNext) {
+      reconnect
+    }
     pipe.write(query).flush
-    System.err.println(query)
     processResponse(pipe)
   }
 
-  private def processResponse(pipe: Pipe): Option[AimResult] = {
+  def hasNext: Boolean = {
+    hasData match {
+      case Some(bool) ⇒ bool
+      case None ⇒ {
+        schema match {
+          case None ⇒ false
+          case Some(resultSchema) ⇒
+            hasData = Some(pipe.readInt match {
+              case i: Int if (i == resultSchema.size) ⇒ true
+              case i: Int if (i <= 0) ⇒ {
+                this.error = pipe.read match { case null ⇒ None case error: String ⇒ Some(error) }
+                false
+              }
+              case i: Int ⇒ throw new IllegalStateException("Invalid column number in the result stream: " + i)
+            })
+            hasData.get
+        }
+      }
+    }
+
+  }
+
+  def fetchRecordLine = fetchRecordStrings.mkString(",")
+
+  def fetchRecordStrings: Array[String] = (schema.get.fields, fetchRecord).zipped.map((t, a) ⇒ t.convert(a))
+
+  def fetchRecord: Array[Array[Byte]] = {
+    if (schema == None) {
+      throw new IllegalStateException
+    } else if (!hasNext) {
+      throw new EOFException
+    } else {
+      hasData = None
+      schema.get.fields.map(field ⇒ pipe.read(field.getDataType))
+    }
+  }
+
+  private def processResponse(pipe: Pipe) = {
     pipe.read match {
-      case "OK" ⇒ None
+      case "OK" ⇒ {
+        schema = None
+        hasData = Some(false)
+        true
+      }
       case "ERROR" ⇒ {
+        schema = None
+        hasData = Some(false)
+        val error = pipe.read();
         reconnect
-        throw new Exception("AIM SERVER ERROR: " + pipe.read());
+        throw new Exception("AIM SERVER ERROR: " + error);
       }
       case "RESULT" ⇒ {
-        val schema = AimSchema.fromString(pipe.read)
-        System.err.println("!!")
-        Some(new AimResult(schema, pipe))
+        schema = Some(AimSchema.fromString(pipe.read))
+        hasData = None
+        true
       }
       case _ ⇒ {
+        schema = None
+        hasData = Some(false)
         reconnect
         throw new IOException("Stream is curroupt, closing..")
       }
