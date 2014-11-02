@@ -23,7 +23,7 @@ public class Tokenizer {
         put(Token.STRING, Pattern.compile("^('(.*?)')")); // TODO fix escape sequence (?:\\"|.)*? OR /'(?:[^'\\]|\\.)*'/
     }};
 
-    public static Queue<String> tokenize(String input) {
+    public static Queue<String> tokenize(String input, Boolean quoteStrings) {
         Queue<String> result = new LinkedList<String>();
         int i = 0;
         main: while(i<input.length()) {
@@ -34,7 +34,11 @@ public class Tokenizer {
                     i += m.group(1).length();
                     String word = m.group(2);
                     if (!p.getKey().equals(Token.WHITESPACE)) {
-                        result.add(word);
+                        if (p.getKey().equals(Token.STRING) && quoteStrings) {
+                            result.add("'" + word +"'");
+                        } else {
+                            result.add(word);
+                        }
                     }
                     continue main;
                 }

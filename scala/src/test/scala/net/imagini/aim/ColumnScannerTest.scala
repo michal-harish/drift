@@ -9,11 +9,12 @@ import net.imagini.aim.tools.ColumnScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.Aim
 import java.io.InputStream
+import java.io.EOFException
 
 class ColumnScannerTest extends FlatSpec with Matchers {
 
   def read(in: ColumnScanner) = {
-    in.eof 
+    if (in.eof) throw new EOFException 
     val result = in.dataType.asString(in.buffer)
     in.skip
     result
@@ -29,6 +30,13 @@ class ColumnScannerTest extends FlatSpec with Matchers {
     read(scanner) should be("World")
     scanner.reset
     read(scanner) should be("World")
+    scanner.rewind
+    read(scanner) should be("Hello")
+    scanner.mark
+    read(scanner) should be("World")
+    scanner.reset
+    read(scanner) should be("World")
+    an[EOFException] must be thrownBy(read(scanner))
   }
 
 }

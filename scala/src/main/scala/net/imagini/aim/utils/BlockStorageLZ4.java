@@ -42,7 +42,7 @@ public class BlockStorageLZ4 extends BlockStorage {
         int cLen = compressor.compress(array, offset, length, compress_buffer,0);
         int inflation = (int)(Double.valueOf(maxCLen) / Double.valueOf(cLen) / 0.01) - 100;
         if (inflation > 5) {
-            //System.err.println("LZ4 estimate inflation = " + inflation + " %");
+            //log.debug("LZ4 estimate inflation = " + inflation + " %");
             compressedBlocks.add(Arrays.copyOfRange(compress_buffer, 0, cLen));
         } else {
             compressedBlocks.add(compress_buffer);

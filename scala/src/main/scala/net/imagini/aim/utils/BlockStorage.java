@@ -34,7 +34,7 @@ abstract public class BlockStorage {
     final public void ref(int block) {
         synchronized(blocks) {
             if ( blocks.get(block).getAndIncrement() == 0) {
-                //System.err.println("adding cache " + block + " refCount= " + blocks.get(block).get());
+                //log.debug("adding cache " + block + " refCount= " + blocks.get(block).get());
                 cache.put(block, decompress(block));
             }
         }
@@ -42,7 +42,7 @@ abstract public class BlockStorage {
     final public void deref(int block) {
         synchronized(blocks) {
             if (blocks.get(block).decrementAndGet() == 0) {
-                //System.err.println("removing cache " + block + " refCount= " + blocks.get(block).get());
+                //log.debug("removing cache " + block + " refCount= " + blocks.get(block).get());
                 cache.remove(block);
             }
         }

@@ -11,22 +11,26 @@ import java.util.zip.GZIPInputStream
 import scala.Array.canBuildFrom
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
+import grizzled.slf4j.Logger
 
-class Loader(host: String, port: Int, val schema: AimSchema, val separator: String, val fileinput: InputStream, val gzip: Boolean) {
+class Loader(host: String, port: Int, val keyspace: String, val table: String, val separator: String, val fileinput: InputStream, val gzip: Boolean) {
 
-  def this(host: String, port: Int, schema: AimSchema, separator: String, filename: String, gzip: Boolean) 
-      = this(host, port, schema, separator, if (filename == null) null else new FileInputStream(filename), gzip)
+  def this(host: String, port: Int, keyspace: String, table: String, separator: String, filename: String, gzip: Boolean) = this(host, port, keyspace, table, separator, if (filename == null) null else new FileInputStream(filename), gzip)
 
-  def this(host: String, port: Int, schema: AimSchema, separator: String, gzip: Boolean) 
-      = this(host, port, schema, separator, null.asInstanceOf[InputStream], gzip)
+  def this(host: String, port: Int, keyspace: String, table: String, separator: String, gzip: Boolean) = this(host, port, keyspace, table, separator, null.asInstanceOf[InputStream], gzip)
 
+  val log = Logger[Loader.this.type]
   val in: InputStream = if (fileinput == null) System.in else fileinput
   val socket = new Socket(InetAddress.getByName(host), port)
-  val out = new PipeLZ4(socket.getOutputStream(), Protocol.LOADER)
-  out.write(schema.toString)
+  val pipe = new PipeLZ4( socket, Protocol.LOADER_LOCAL)
+  pipe.write(keyspace)
+  pipe.write(table)
+  pipe.flush
+  val schemaDeclaration = pipe.read
+  val schema = AimSchema.fromString(schemaDeclaration)
 
   def close() {
-    out.close
+    pipe.close
     socket.close
   }
 
@@ -61,14 +65,13 @@ class Loader(host: String, port: Int, val schema: AimSchema, val separator: Stri
             count += 1
           } catch {
             case e: Exception ⇒ {
-              System.err.println(count + ":" + values);
-              e.printStackTrace();
+              log.error(count + ":" + values, e);
             }
           }
         }
       }
     } finally {
-      out.flush
+      pipe.flush
       close
     }
     in.close
@@ -80,12 +83,12 @@ class Loader(host: String, port: Int, val schema: AimSchema, val separator: Stri
     try {
       var i = 0
       for (t: AimType ← schema.fields) {
-        out.write(t.getDataType, record(i))
+        pipe.write(t.getDataType, record(i))
         i = i + 1
       }
     } catch {
       case e: EOFException ⇒ {
-        out.flush
+        pipe.flush
         throw e
       }
     }

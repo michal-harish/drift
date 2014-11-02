@@ -8,9 +8,10 @@ import net.imagini.aim.types.AimSchema
 import net.imagini.aim.cluster.Pipe
 import net.imagini.aim.cluster.PipeLZ4
 import net.imagini.aim.cluster.Protocol
+import java.io.EOFException
 
 case class AimResult(val schema: AimSchema, val pipe: Pipe) {
-  var filteredCount = 0L
+  var eof = false
   var count = 0L
   var error: Option[String] = None
   def close = pipe.close
@@ -18,28 +19,27 @@ case class AimResult(val schema: AimSchema, val pipe: Pipe) {
     pipe.readBool match {
       case true ⇒ true
       case false ⇒ {
-        filteredCount = pipe.readLong
+        eof = true
         count = pipe.readLong
         val error = pipe.read
-        pipe.readBool
         this.error = if (error != null) Some(error) else None
         false
       }
     }
   }
-  def fetchRecord: Array[Array[Byte]] = schema.fields.map(field ⇒ pipe.read(field.getDataType))
-  def fetchRecordStrings: Array[String] = schema.fields.map(field ⇒ field.convert(pipe.read(field.getDataType)))
+  def fetchRecord: Array[Array[Byte]] = if (eof) throw new EOFException else  schema.fields.map(field ⇒ pipe.read(field.getDataType))
+  def fetchRecordStrings: Array[String] = if (eof) throw new EOFException else schema.fields.map(field ⇒ field.convert(pipe.read(field.getDataType)))
   def fetchRecordLine = fetchRecordStrings.foldLeft("")(_ + _ + ",")
 }
 
 class AimClient(val host: String, val port: Int) {
 
   private var socket = new Socket(InetAddress.getByName(host), port)
-  private var pipe = new PipeLZ4(socket, Protocol.QUERY)
+  private var pipe = new PipeLZ4(socket, Protocol.QUERY_LOCAL)
   private def reconnect = {
     socket.close
     socket = new Socket(InetAddress.getByName(host), port)
-    pipe = new PipeLZ4(socket, Protocol.QUERY)
+    pipe = new PipeLZ4(socket, Protocol.QUERY_LOCAL)
   }
 
   def close = pipe.close
@@ -48,7 +48,8 @@ class AimClient(val host: String, val port: Int) {
     pipe.write(query).flush
     processResponse(pipe)
   }
-  def select(filter: String = "*"): Option[AimResult] = {
+
+  @deprecated  def select(filter: String = "*"): Option[AimResult] = {
     if (!filter.equals("*")) {
       pipe.write(filter).flush
       processResponse(pipe) match {
@@ -65,6 +66,7 @@ class AimClient(val host: String, val port: Int) {
   }
 
   private def processResponse(pipe: Pipe): Any = {
+    
     if (!pipe.readBool) {
       "Empty response"
     } else {
@@ -72,26 +74,6 @@ class AimClient(val host: String, val port: Int) {
         case "ERROR" ⇒ {
           reconnect
           throw new Exception("AIM SERVER ERROR: " + pipe.read());
-        }
-        case "STATS" ⇒ {
-          val lines = scala.collection.mutable.ListBuffer[String]()
-          while (pipe.readBool) {
-            val line = pipe.read
-            lines += line
-          }
-          lines.toSeq
-          //          val schema = pipe.read
-          //          val numRecords = pipe.readLong
-          //          val numSegments = pipe.readInt
-          //          val size: Long = pipe.readLong
-          //          val originalSize: Long = pipe.readLong
-          //          pipe.readBool
-          //          Seq(
-          //            "Schema: " + schema,
-          //            "Total records: " + numRecords,
-          //            "Total segments: " + numSegments,
-          //            "Total compressed/original size: " + (size / 1024 / 1024) + " Mb / " + (originalSize / 1024 / 1024),
-          //            if (originalSize > 0) " Mb = " + (size * 100 / originalSize) + "%" else "")
         }
         case "COUNT" ⇒ {
           val filter = pipe.read
@@ -102,7 +84,6 @@ class AimClient(val host: String, val port: Int) {
         }
         case "RESULT" ⇒ {
           val schema = AimSchema.fromString(pipe.read)
-          val filter = pipe.read
           new AimResult(schema, pipe)
         }
         case _ ⇒ {

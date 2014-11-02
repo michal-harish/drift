@@ -35,7 +35,7 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   private var markCurrentSegment = -1
 
   override def rewind = {
-    scanners.foreach(_.foreach(_.reset))
+    scanners.foreach(_.foreach(_.rewind))
     eof = false
     currentSegment = -1
     markCurrentSegment = -1
@@ -63,8 +63,8 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
       //filter
       var segmentHasData = scanners(s).forall(columnScanner ⇒ !columnScanner.eof)
       while (segmentHasData && !rowFilter.matches(scanners(s).map(_.buffer))) {
-        for (columnScanner ← scanners(s)) columnScanner.skip
-        segmentHasData = scanners(s).forall(columnScanner ⇒ !columnScanner.eof)
+        //for (columnScanner ← scanners(s)) 
+        segmentHasData = scanners(s).forall(columnScanner ⇒ { columnScanner.skip; !columnScanner.eof })
       }
       //merge sort
       if (segmentHasData) {

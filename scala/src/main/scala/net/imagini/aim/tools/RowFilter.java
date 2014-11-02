@@ -37,7 +37,7 @@ import org.apache.commons.lang3.StringUtils;
 public class RowFilter {
 
     public static RowFilter fromString(AimSchema schema, String declaration) {
-        return fromTokenQueue(schema, Tokenizer.tokenize(declaration));
+        return fromTokenQueue(schema, Tokenizer.tokenize(declaration, false));
     }
 
     public static RowFilter fromTokenQueue(AimSchema schema, Queue<String> cmd) {

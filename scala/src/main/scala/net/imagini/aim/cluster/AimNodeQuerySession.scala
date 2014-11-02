@@ -8,70 +8,52 @@ import net.imagini.aim.partition.StatScanner
 import java.io.EOFException
 import java.io.InputStream
 import net.imagini.aim.types.TypeUtils
+import grizzled.slf4j.Logger
 
-trait AimNodeSession extends Thread {
-  def close
-}
-class AimNodeQuerySession(val node: AimNode, val pipe: Pipe) extends AimNodeSession {
-  def exceptionAsString(e: Throwable): String = e.getMessage + e.getStackTrace.map(trace ⇒ trace.toString).foldLeft("\n")(_ + _ + "\n")
+class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
 
-  start
-  def close = {
-    interrupt
-    pipe.close
-  }
-  override def run = {
+  private var keyspace: Option[String] = None
+  override def accept = {
     try {
-      while (!node.isShutdown) {
-        try {
-          val input: String = pipe.read
-          try {
-            val cmd = Tokenizer.tokenize(input)
-            val command = cmd.poll.toUpperCase
-            command.toUpperCase match {
-              case "STATS" ⇒ handleSelectStream(node.stats)
-              //            case "FILTER" ⇒ handleSelectStream(node.fitler(cmd))
-              //            case "SELECT" ⇒ handleSelectStream(node.select(cmd))
-              case _       ⇒ {}
-            }
-            pipe.write(false)
-            pipe.flush()
-          } catch {
-            case e: Throwable ⇒ try {
-              pipe.write(true);
-              pipe.write("ERROR");
-              pipe.write(exceptionAsString(e));
-              pipe.write(false);
-              pipe.flush();
-            } catch {
-              case e1: Throwable ⇒ {
-                e.printStackTrace();
-              }
-            }
-          }
-        } catch {
-          case w: InterruptedException ⇒ {}
+      pipe.read.trim match {
+        case command: String if (command.toUpperCase.startsWith("USE")) ⇒ useKeySpace(command)
+        case query: String if (query.toUpperCase.startsWith("STAT"))    ⇒ handleSelectStream(node.stats)
+        case query: String ⇒ keyspace match {
+          case Some(k) ⇒ handleSelectStream(node.query(k, query))
+          case None    ⇒ throw new IllegalStateException("No keyspace selected, usage USE <keyspace>")
         }
-
       }
     } catch {
-      case e: IOException ⇒ {
-        try pipe.close catch { case e: IOException ⇒ e.printStackTrace }
+      case e: Throwable ⇒ try {
+        pipe.write(true);
+        pipe.write("ERROR");
+        pipe.write(exceptionAsString(e));
+        pipe.write(false);
+        pipe.flush();
+      } catch {
+        case e1: Throwable ⇒ log.error(e)
       }
     }
+  }
+
+  private def useKeySpace(command: String) = {
+    val cmd = Tokenizer.tokenize(command, false)
+    cmd.poll 
+    keyspace = Some(cmd.poll)
+    pipe.write(false)
+    pipe.flush
   }
 
   private def handleSelectStream(scanner: AbstractScanner) = {
     pipe.write(true)
     pipe.write("RESULT")
     pipe.write(scanner.schema.toString)
-    pipe.write("*") //TODO remove this
     var count: Long = 0
     try {
       while (scanner.next) {
         val row = scanner.selectRow
         pipe.write(true)
-        for ((c,t) ← ((0 to scanner.schema.size - 1) zip scanner.schema.fields)) {
+        for ((c, t) ← ((0 to scanner.schema.size - 1) zip scanner.schema.fields)) {
           val dataType = t.getDataType
           pipe.write(dataType.getDataType, row(c))
         }
@@ -83,12 +65,10 @@ class AimNodeQuerySession(val node: AimNode, val pipe: Pipe) extends AimNodeSess
       case e: Throwable ⇒ {
         pipe.write(false)
         pipe.write(count)
-        pipe.write(0L) // TODO remove this
         pipe.write(if (e.isInstanceOf[EOFException]) "" else exceptionAsString(e)) //success flag
         pipe.flush
       }
     }
-
 
   }
 

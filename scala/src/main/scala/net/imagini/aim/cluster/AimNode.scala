@@ -11,6 +11,7 @@ import java.util.concurrent.TimeoutException
 import net.imagini.aim.partition.AimPartition
 import net.imagini.aim.partition.StatScanner
 import net.imagini.aim.tools.AbstractScanner
+import net.imagini.aim.partition.QueryParser
 
 object AimNode extends App {
   val log = Logger[AimNode.this.type]
@@ -26,7 +27,7 @@ object AimNode extends App {
   }
 
   //SPAWNING CLUSTER
-  val manager = new DriftManager(zkConnect, 3)
+  val manager = new DriftManagerZk(zkConnect, 3)
   val node1 = new AimNode(1, "localhost:4000", manager)
   val node2 = new AimNode(2, "localhost:4001", manager)
   val node3 = new AimNode(3, "localhost:4002", manager)
@@ -42,11 +43,8 @@ object AimNode extends App {
 }
 
 class AimNode(val id: Int, val address: String, val manager: DriftManager) {
-  val log = Logger[AimNode.this.type]
-  val acceptor = new AimNodeAcceptor(this, new URI("drift://" + address).getPort)
-  log.info("Drift Node accepting connections on port " + acceptor.port)
-  manager.registerNode(id, address)
 
+  val log = Logger[AimNode.this.type]
   val nodes: ConcurrentMap[Int, URI] = new ConcurrentHashMap[Int, URI]()
   def peers = nodes.asScala.filter(n ⇒ n._1 != id)
 
@@ -55,7 +53,24 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   private var keyspaceRefs = new ConcurrentHashMap[String, ConcurrentMap[String, AimPartition]]()
   def keyspaces: List[String] = keyspaceRefs.asScala.keys.toList
   def keyspace(k: String): Map[String, AimPartition] = keyspaceRefs.get(k).asScala.toMap
-  def stats: AbstractScanner = new StatScanner(id, keyspaces.flatMap(k ⇒ {keyspace(k).map { case (t, partition) ⇒ t -> partition }}).toMap)
+  def stats: AbstractScanner = new StatScanner(id, keyspaces.flatMap(k ⇒ { keyspace(k).map { case (t, partition) ⇒ t -> partition } }).toMap)
+  def query(keyspaceName: String, query: String) = new QueryParser(keyspace(keyspaceName)).parse(query)
+
+  @volatile var isShutdown = false
+  private var shutDownHook: Option[AtomicBoolean] = None
+  var sessions = scala.collection.mutable.ListBuffer[AimNodeSession]()
+  def session(s: AimNodeSession) = {
+    sessions += s
+    s.start
+  }
+
+  val acceptor = new AimNodeAcceptor(this, new URI("drift://" + address).getPort)
+  log.info("Drift Node accepting connections on port " + acceptor.port)
+  manager.registerNode(id, address)
+  manager.watchData("/drift/nodes/" + id.toString, (data: Option[String]) ⇒ data match {
+    case Some(address) ⇒ {} //TODO check if address is this address
+    case None          ⇒ doShutdown
+  })
 
   manager.watch("/drift/nodes", (children: Map[String, String]) ⇒ {
     val newNodes = children.map(p ⇒ p._1.toInt -> new URI(p._2)).toMap
@@ -91,17 +106,6 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
       log.info(id + ": suspending")
     }
   }
-
-  //TODO call doShutdown when connection to zookeeper timesout
-  manager.watchData("/drift/nodes/" + id.toString, (data: Option[String]) ⇒ data match {
-    case Some(address) ⇒ {} //TODO check if address is this address
-    case None          ⇒ doShutdown
-  })
-
-  @volatile var isShutdown = false
-  private var shutDownHook: Option[AtomicBoolean] = None
-  var sessions = scala.collection.mutable.ListBuffer[AimNodeSession]()
-  def session(s: AimNodeSession) = sessions += s
 
   private def doShutdown {
     isShutdown = true

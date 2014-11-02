@@ -23,7 +23,7 @@ public class Pipe {
     private InputStream inputPipe;
 
     public Pipe() { 
-        this.protocol = Protocol.DATA; 
+        this.protocol = Protocol.RESERVED; 
     }
     public Pipe(Socket socket, Protocol protocol) throws IOException {
         this(socket.getOutputStream(), protocol);
@@ -32,7 +32,7 @@ public class Pipe {
 
     public Pipe(OutputStream out) throws IOException {
         outputPipe = createOutputStreamWrapper(out);
-        this.protocol = Protocol.DATA;
+        this.protocol = Protocol.RESERVED;
     }
     public Pipe(OutputStream out, Protocol protocol) throws IOException {
         int pipe_type;
@@ -49,7 +49,7 @@ public class Pipe {
 
     public Pipe(InputStream in) throws IOException {
         inputPipe = createInputStreamWrapper(in);
-        this.protocol = Protocol.DATA;
+        this.protocol = Protocol.RESERVED;
     }
 
     public Pipe(InputStream in, Protocol protocol) throws IOException {

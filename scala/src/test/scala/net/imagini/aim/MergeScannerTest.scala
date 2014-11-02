@@ -31,6 +31,16 @@ class MergeScannerTest extends FlatSpec with Matchers {
     partition.add(s1)
     partition.add(s2)
 
+    val scanner = new MergeScanner(partition.schema, "user_uid,column", "*", partition.segments)
+    scanner.next should be(true); scanner.selectLine(",") should be("17b22cfb-a29e-42c3-a3d9-12d32850e103,pageview")
+    scanner.next should be(true); scanner.selectLine(",") should be("17b22cfb-a29e-42c3-a3d9-12d32850e103,addthis_id")
+    scanner.next should be(true); scanner.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103,pageview")
+    scanner.next should be(true); scanner.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103,pageview")
+    scanner.next should be(true); scanner.selectLine(",") should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103,addthis_id")
+    scanner.next should be(true); scanner.selectLine(",") should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103,pageview")
+    scanner.next should be(false)
+    an[EOFException] must be thrownBy scanner.selectLine(",")
+
     //TODO select only subset of columns: user_uid, value
     val mergeScan = new MergeScanner(partition.schema, "user_uid,value", "column='pageview'", partition.segments)
 
