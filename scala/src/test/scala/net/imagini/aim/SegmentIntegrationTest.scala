@@ -10,7 +10,7 @@ import java.io.InputStream
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.cluster.PipeUtils
+import net.imagini.aim.tools.StreamUtils
 
 class SegmentIntegration extends FlatSpec with Matchers {
 
@@ -26,9 +26,9 @@ class SegmentIntegration extends FlatSpec with Matchers {
     s1.count should be(3)
 
     val in: InputStream  = p1.select("*", "column='a'")
-    schema.fields.map(t => t.convert(PipeUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be ("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
-    schema.fields.map(t => t.convert(PipeUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be ("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
-    schema.fields.map(t => t.convert(PipeUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be ("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
+    schema.fields.map(t => t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be ("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
+    schema.fields.map(t => t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be ("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
+    schema.fields.map(t => t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be ("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
     in.close
 
     p1.count("column=a") should be(3)
@@ -48,9 +48,9 @@ class SegmentIntegration extends FlatSpec with Matchers {
     p1.count("column=a") should be(3)
     p1.count("timestamp>1413143748041") should be(2)
     val in: InputStream  = p1.select("*", "column='a'")
-    schema.fields.map(t => t.convert(PipeUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be ("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
-    schema.fields.map(t => t.convert(PipeUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be ("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
-    schema.fields.map(t => t.convert(PipeUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be ("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
+    schema.fields.map(t => t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be ("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
+    schema.fields.map(t => t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be ("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
+    schema.fields.map(t => t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be ("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
     in.close
 
 

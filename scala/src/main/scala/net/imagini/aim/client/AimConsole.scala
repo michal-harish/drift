@@ -36,10 +36,8 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
             case _ ⇒ {
               val t = System.currentTimeMillis
               client.query(instruction) match {
-                case result: AimResult ⇒ while (result.hasNext) println(result.fetchRecordLine)
-                case s: String         ⇒ println(s)
-                case s: Seq[_]         ⇒ s.map(println(_))
-                case x: Any            ⇒ throw new Exception("Unknown response from the Aim Server" + x.toString)
+                case Some(result) ⇒ while (result.hasNext) println(result.fetchRecordLine)
+                case None => println("N/A")
               }
               println("Query took: " + (System.currentTimeMillis() - t) + " ms")
             }

@@ -11,12 +11,13 @@ import net.imagini.aim.tools.RowFilter
 import net.imagini.aim.tools.StreamMerger
 import java.io.EOFException
 import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.cluster.PipeUtils
+import net.imagini.aim.tools.StreamUtils
+
 
 class StreamMergeIntegrationTest extends FlatSpec with Matchers {
 
   private def readRecord(schema: AimSchema, mergeSort: StreamMerger) = {
-    schema.fields.map(t ⇒ { t.convert(PipeUtils.read(mergeSort, t.getDataType)) }).foldLeft("")(_ + _ + " ")
+    schema.fields.map(t ⇒ { t.convert(StreamUtils.read(mergeSort, t.getDataType)) }).foldLeft("")(_ + _ + " ")
   }
   "2 sorted segments" should "yield correct groups when merge-sorted" in {
     val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),column(STRING),value(STRING)")

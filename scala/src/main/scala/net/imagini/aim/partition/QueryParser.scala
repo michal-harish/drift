@@ -24,12 +24,14 @@ abstract class PBoolExp extends PExp //[Boolean]
 
 class QueryParser(val regions: Map[String, AimPartition]) extends App {
 
-  def parse(query: String): AbstractScanner = {
+  def parse(query: String): AbstractScanner = toScanner(frame(query))
+
+  def frame(query: String): PDataFrame = {
     val q = Queue[String](Tokenizer.tokenize(query, true).toArray(Array[String]()): _*)
-    toScanner(q.front.toUpperCase match {
+    q.front.toUpperCase match {
       case "SELECT" ⇒ asDataFrame(q)
       //TODO case "COUNT"
-    })
+    }   
   }
   private def toScanner(frame: PDataFrame): AbstractScanner = {
     frame match {

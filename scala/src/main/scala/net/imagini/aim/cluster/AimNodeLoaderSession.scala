@@ -34,7 +34,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
     try {
       record.clear
       for (t ← partition.schema.fields) {
-        pipe.read(t.getDataType, record)
+        pipe.readInto(t.getDataType, record)
       }
       record.flip
       currentSegment.appendRecord(record);

@@ -14,21 +14,29 @@ case class AimResult(val schema: AimSchema, val pipe: Pipe) {
   var eof = false
   var count = 0L
   var error: Option[String] = None
-  def close = pipe.close
   def hasNext: Boolean = {
     pipe.readBool match {
       case true ⇒ true
       case false ⇒ {
         eof = true
-        count = pipe.readLong
-        val error = pipe.read
-        this.error = if (error != null) Some(error) else None
+        this.error = pipe.read match { case null ⇒ None case error: String ⇒ Some(error) }
         false
       }
     }
   }
-  def fetchRecord: Array[Array[Byte]] = if (eof) throw new EOFException else  schema.fields.map(field ⇒ pipe.read(field.getDataType))
-  def fetchRecordStrings: Array[String] = if (eof) throw new EOFException else schema.fields.map(field ⇒ field.convert(pipe.read(field.getDataType)))
+  def fetchRecord: Array[Array[Byte]] = if (eof) throw new EOFException else {
+    count+=1
+    schema.fields.map(field ⇒ pipe.read(field.getDataType))
+  }
+  def fetchRecordStrings: Array[String] = if (eof) throw new EOFException else {
+    count+=1
+    schema.fields.map(field ⇒ {
+      System.err.println(field)
+      val value = field.convert(pipe.read(field.getDataType)) 
+      System.err.println(value)
+      value
+    })
+  }
   def fetchRecordLine = fetchRecordStrings.foldLeft("")(_ + _ + ",")
 }
 
@@ -44,52 +52,27 @@ class AimClient(val host: String, val port: Int) {
 
   def close = pipe.close
 
-  def query(query: String): Any = {
+  def query(query: String): Option[AimResult] = {
     pipe.write(query).flush
+    System.err.println(query)
     processResponse(pipe)
   }
 
-  @deprecated  def select(filter: String = "*"): Option[AimResult] = {
-    if (!filter.equals("*")) {
-      pipe.write(filter).flush
-      processResponse(pipe) match {
-        case s: Seq[_] ⇒ println(s.foldLeft("")(_ + _))
-        case x: Any    ⇒ throw new Exception("Unknown response from the Aim Server " + x.toString)
+  private def processResponse(pipe: Pipe): Option[AimResult] = {
+    pipe.read match {
+      case "OK" ⇒ None
+      case "ERROR" ⇒ {
+        reconnect
+        throw new Exception("AIM SERVER ERROR: " + pipe.read());
       }
-    }
-    pipe.write("select").flush
-    processResponse(pipe) match {
-      case result: AimResult ⇒ Some(result)
-      case s: Seq[_]         ⇒ throw new Exception("Unexpected response from the Aim Server" + s.foldLeft("")(_ + _))
-      case x: Any            ⇒ throw new Exception("Unknown response from the Aim Server" + x.toString)
-    }
-  }
-
-  private def processResponse(pipe: Pipe): Any = {
-    
-    if (!pipe.readBool) {
-      "Empty response"
-    } else {
-      pipe.read match {
-        case "ERROR" ⇒ {
-          reconnect
-          throw new Exception("AIM SERVER ERROR: " + pipe.read());
-        }
-        case "COUNT" ⇒ {
-          val filter = pipe.read
-          val count = pipe.readLong
-          val totalCount: Long = pipe.readLong
-          pipe.readBool
-          Seq(filter, count + "/" + totalCount)
-        }
-        case "RESULT" ⇒ {
-          val schema = AimSchema.fromString(pipe.read)
-          new AimResult(schema, pipe)
-        }
-        case _ ⇒ {
-          reconnect
-          throw new IOException("Stream is curroupt, closing..")
-        }
+      case "RESULT" ⇒ {
+        val schema = AimSchema.fromString(pipe.read)
+        System.err.println("!!")
+        Some(new AimResult(schema, pipe))
+      }
+      case _ ⇒ {
+        reconnect
+        throw new IOException("Stream is curroupt, closing..")
       }
     }
   }

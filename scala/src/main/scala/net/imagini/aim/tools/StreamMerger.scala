@@ -12,7 +12,6 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ConcurrentSkipListMap
 
 import net.imagini.aim.utils.ByteKey
-import net.imagini.aim.cluster.PipeUtils;
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.types.SortOrder._
@@ -103,7 +102,7 @@ class Fetcher(val schema: AimSchema, val in: InputStream, val executor: Executor
 
   override def run = {
     while (hasMoreData) try {
-      val record = schema.fields.map(t ⇒ PipeUtils.read(in, t.getDataType))
+      val record = schema.fields.map(t ⇒ StreamUtils.read(in, t.getDataType))
       ready.put(Some(record))
     } catch {
       case e: EOFException ⇒ hasMoreData = false; ready.offer(None)

@@ -9,15 +9,15 @@ import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorageLZ4
-import net.imagini.aim.cluster.PipeUtils
 import java.io.InputStream
+import net.imagini.aim.tools.StreamUtils
 
 class ScannerInputStreamTest extends FlatSpec with Matchers {
 
   val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
 
   private def readLine(in: InputStream) = {
-    schema.get(0).convert(PipeUtils.read(in, schema.get(0).getDataType)) + " " + schema.get(1).convert(PipeUtils.read(in, schema.get(1).getDataType))
+    schema.get(0).convert(StreamUtils.read(in, schema.get(0).getDataType)) + " " + schema.get(1).convert(StreamUtils.read(in, schema.get(1).getDataType))
   }
 
   "Partition select " should " use ScannerInputStream correctly" in {
@@ -60,11 +60,11 @@ class ScannerInputStreamTest extends FlatSpec with Matchers {
 
     val t = schemaATSyncs.field("at_id").getDataType
     val scannerStream = new ScannerInputStream(scanner)
-    t.convert(PipeUtils.read(scannerStream, t)) should be("AT1234")
-    t.convert(PipeUtils.read(scannerStream, t)) should be("AT5656")
-    t.convert(PipeUtils.read(scannerStream, t)) should be("AT7888")
+    t.convert(StreamUtils.read(scannerStream, t)) should be("AT1234")
+    t.convert(StreamUtils.read(scannerStream, t)) should be("AT5656")
+    t.convert(StreamUtils.read(scannerStream, t)) should be("AT7888")
     scannerStream.read should be(-1)
-    an[EOFException] must be thrownBy PipeUtils.read(scannerStream, t)
+    an[EOFException] must be thrownBy StreamUtils.read(scannerStream, t)
 
     scannerStream.close
 

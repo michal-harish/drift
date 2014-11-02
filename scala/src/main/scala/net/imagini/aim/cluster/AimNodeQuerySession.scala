@@ -25,7 +25,6 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
       }
     } catch {
       case e: Throwable ⇒ try {
-        pipe.write(true);
         pipe.write("ERROR");
         pipe.write(exceptionAsString(e));
         pipe.write(false);
@@ -40,31 +39,28 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
     val cmd = Tokenizer.tokenize(command, false)
     cmd.poll 
     keyspace = Some(cmd.poll)
-    pipe.write(false)
+    pipe.write("OK")
     pipe.flush
   }
 
   private def handleSelectStream(scanner: AbstractScanner) = {
-    pipe.write(true)
     pipe.write("RESULT")
     pipe.write(scanner.schema.toString)
-    var count: Long = 0
     try {
       while (scanner.next) {
         val row = scanner.selectRow
+        System.err.println("WRITE RECORD " + scanner.schema.get(0).asString(row(0)) )
+
         pipe.write(true)
         for ((c, t) ← ((0 to scanner.schema.size - 1) zip scanner.schema.fields)) {
           val dataType = t.getDataType
           pipe.write(dataType.getDataType, row(c))
         }
-        count += 1
       }
       throw new EOFException
     } catch {
-      //TODO refactor this was just copy-paste from old java code
       case e: Throwable ⇒ {
         pipe.write(false)
-        pipe.write(count)
         pipe.write(if (e.isInstanceOf[EOFException]) "" else exceptionAsString(e)) //success flag
         pipe.flush
       }

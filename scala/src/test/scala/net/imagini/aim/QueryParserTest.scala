@@ -17,6 +17,10 @@ class QueryParserTest extends FlatSpec with Matchers {
     "pageviews" -> partition)
   val parser = new QueryParser(regions)
 
+  val frame = parser.frame("select * from pageviews  where url contains 'travel'")
+ println(frame)
+  
+
   val scanner = parser.parse("select * from pageviews  where url contains 'travel'")
   scanner.next should be(true);
   scanner.next should be(true);
