@@ -1,11 +1,8 @@
 package net.imagini.aim.utils;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
 import org.apache.commons.io.EndianUtils;
 
 /**
@@ -24,7 +21,7 @@ public class ByteUtils {
     }
 
     /**
-     * 1. byte[] utils
+     * byte array utils
      */
 
     static public int getIntValue(byte[] value) {
@@ -66,65 +63,9 @@ public class ByteUtils {
         }
     }
 
-    /**
-     * 2. Stream utils
-     */
-
-    static public void write(OutputStream out, int v) throws IOException {
-        if (ENDIAN.equals(ByteOrder.LITTLE_ENDIAN)) {
-            EndianUtils.writeSwappedInteger(out, v);
-        } else {
-            out.write((v >>> 24) & 0xFF);
-            out.write((v >>> 16) & 0xFF);
-            out.write((v >>> 8) & 0xFF);
-            out.write((v >>> 0) & 0xFF);
-        }
-    }
-
-    static public void write(OutputStream out, long v) throws IOException {
-        if (ENDIAN.equals(ByteOrder.LITTLE_ENDIAN)) {
-            EndianUtils.writeSwappedLong(out, v);
-        } else {
-            out.write((byte) (v >>> 56));
-            out.write((byte) (v >>> 48));
-            out.write((byte) (v >>> 40));
-            out.write((byte) (v >>> 32));
-            out.write((byte) (v >>> 24));
-            out.write((byte) (v >>> 16));
-            out.write((byte) (v >>> 8));
-            out.write((byte) (v >>> 0));
-        }
-    }
-
-    static public void read(InputStream in, byte[] buf, int offset, int len)
-            throws IOException {
-        int totalRead = 0;
-        while (totalRead < len) {
-            int read = in.read(buf, offset + totalRead, len - totalRead);
-            if (read < 0)
-                throw new EOFException();
-            else
-                totalRead += read;
-        }
-    }
-
-    static public void read(InputStream in, ByteBuffer buf, int len)
-            throws IOException {
-        int totalRead = 0;
-        while (totalRead < len) {
-            int read = in.read(buf.array(), buf.arrayOffset() + buf.position(),
-                    len - totalRead);
-            if (read < 0)
-                throw new EOFException();
-            else {
-                buf.position(buf.position() + read);
-                totalRead += read;
-            }
-        }
-    }
 
     /**
-     * 3. nio.ByteBuffer utils
+     * nio.ByteBuffer utils
      */
     static public ByteBuffer wrap(byte[] value) {
         ByteBuffer bb = ByteBuffer.wrap(value);

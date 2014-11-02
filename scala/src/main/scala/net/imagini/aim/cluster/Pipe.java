@@ -42,7 +42,7 @@ public class Pipe {
         else throw new IOException("Unsupported pipe type " + getClass().getSimpleName());
         out.write("AIM".getBytes());
         out.write(pipe_type);
-        ByteUtils.write(out, protocol.id);
+        PipeUtils.write(out, protocol.id);
         this.protocol = protocol;
         outputPipe = createOutputStreamWrapper(out);
     }
@@ -63,14 +63,14 @@ public class Pipe {
     }
     static public Pipe open(InputStream in) throws IOException {
         byte[] sig = new byte[3];
-        ByteUtils.read(in, sig, 0, 3);
+        PipeUtils.read(in, sig, 0, 3);
         if (!Arrays.equals("AIM".getBytes(),sig)) {
             throw new IOException("Invalid pipe header signature");
         }
         byte[] pipe_type = new byte[1];
-        ByteUtils.read(in, pipe_type, 0, 1);
+        PipeUtils.read(in, pipe_type, 0, 1);
         byte[] proto = new byte[4];
-        ByteUtils.read(in, proto, 0, 4);
+        PipeUtils.read(in, proto, 0, 4);
         int pipe_protocol = ByteUtils.getIntValue(proto);
         Protocol protocol = Protocol.get(pipe_protocol);
         if (protocol == null) throw new IOException("Unknown protocol id " + pipe_protocol);
@@ -110,10 +110,10 @@ public class Pipe {
         outputPipe.write((int) value);
     }
     final public void write(int value) throws IOException {
-        ByteUtils.write(outputPipe, value);
+        PipeUtils.write(outputPipe, value);
     }
     final public void write(long value) throws IOException {
-        ByteUtils.write(outputPipe, value);
+        PipeUtils.write(outputPipe, value);
     }
 
     final public void write(byte[] bytes) throws IOException {
@@ -142,14 +142,14 @@ public class Pipe {
         int offset = 0;
         if (type.equals(Aim.STRING)) {
             buf.mark();
-            ByteUtils.read(inputPipe, buf, (offset  = 4));
+            PipeUtils.read(inputPipe, buf, (offset  = 4));
             buf.reset();
             size = ByteUtils.asIntValue(buf);
             buf.position(buf.position()+4);
         } else {
             size = type.getSize();
         }
-        ByteUtils.read(inputPipe, buf, size);
+        PipeUtils.read(inputPipe, buf, size);
         return offset + size;
     }
 
