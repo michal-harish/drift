@@ -22,7 +22,15 @@ cat src/test/resources/pageviews.json \
 
 
 
-#query transformation of vdna pageviews into the 'a' id-space
+#query transformation of vdna pageviews into the 'at_id' id-space
 use vdna
-select partner_user_id,user_uid from syncs where id_space='a' join select user_uid,url,timestamp from events
-select partner_user_id,url,timestamp from (select user_uid,partner_user_id from syncs where id_space='a' join select user_uid,url,timestamp from events)
+select partner_user_id,user_uid from syncs where id_space='at_id' join select user_uid,timestamp,url from events
+select partner_user_id,timestamp,url from (select user_uid,partner_user_id from syncs where id_space='at_id' join select user_uid,timestamp,url from events)
+
+#vdna test random access
+select user_uid,partner_user_id from syncs where id_space='at_id' and partner_user_id = '53bbab8598ab1c87'
+#test random join access
+select user_uid,partner_user_id from syncs where id_space='at_id' and partner_user_id = '53bbab8598ab1c87' join select user_uid,timestamp,url from events
+
+
+

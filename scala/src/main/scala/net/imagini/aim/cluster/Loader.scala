@@ -8,12 +8,11 @@ import java.io.InputStreamReader
 import java.net.InetAddress
 import java.net.Socket
 import java.util.zip.GZIPInputStream
-
 import scala.Array.canBuildFrom
-
 import grizzled.slf4j.Logger
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
+import java.io.IOException
 
 object Loader extends App {
   var host: String = "localhost"
@@ -22,6 +21,7 @@ object Loader extends App {
   var table: String = null
   var separator: String = "\n"
   var gzip = false
+  var file: Option[String] = None
   val argsIterator = args.iterator
   while (argsIterator.hasNext) {
     argsIterator.next match {
@@ -30,13 +30,18 @@ object Loader extends App {
       case "--keyspace"  ⇒ keyspace = argsIterator.next
       case "--table"     ⇒ table = argsIterator.next
       case "--separator" ⇒ separator = argsIterator.next
+      case "--file"      ⇒ file = Some(argsIterator.next)
       case "--gzip"      ⇒ gzip = true
       case arg: String   ⇒ println("Unknown argument " + arg)
     }
   }
-  val loader = new Loader(host, port, keyspace, table, separator, gzip)
+  val loader = file match {
+    case None           ⇒ new Loader(host, port, keyspace, table, separator, gzip)
+    case Some(filename) ⇒ new Loader(host, port, keyspace, table, separator, filename, gzip)
+  }
   loader.processInput
   loader.close
+
 }
 class Loader(host: String, port: Int, val keyspace: String, val table: String, val separator: String, val fileinput: InputStream, val gzip: Boolean) {
 
@@ -89,6 +94,10 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
             storeLoadedRecord(record)
             count += 1
           } catch {
+            case e: IOException ⇒ {
+              log.error(count + ":" + values, e);
+              eof = true
+            }
             case e: Exception ⇒ {
               log.error(count + ":" + values, e);
             }

@@ -34,7 +34,6 @@ class AimNodeAcceptor(val node: AimNode, listenPort: Int) extends Thread {
       case e: java.net.SocketException ⇒ {}
       case e: Throwable ⇒ {
         log.error(e)
-        e.printStackTrace()
         controllerListener.close
       }
     }

@@ -12,6 +12,7 @@ import net.imagini.aim.partition.AimPartition
 import net.imagini.aim.partition.StatScanner
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.partition.QueryParser
+import net.imagini.aim.client.AimConsole
 
 object AimNode extends App {
   val log = Logger[AimNode.this.type]
@@ -27,20 +28,25 @@ object AimNode extends App {
   }
 
   //SPAWNING CLUSTER
-  val manager = new DriftManagerZk(zkConnect, 3)
-  val node1 = new AimNode(1, "localhost:4000", manager)
-  val node2 = new AimNode(2, "localhost:4001", manager)
-  val node3 = new AimNode(3, "localhost:4002", manager)
+  val manager = new DriftManagerZk(zkConnect, 4)
+  new AimNode(1, "localhost:4000", manager)
+  new AimNode(2, "localhost:4001", manager)
+  new AimNode(3, "localhost:4002", manager)
+  new AimNode(4, "localhost:4003", manager)
 
   //CREATING TABLES
-  manager.createTable("addthis", "pageviews", "at_id(STRING), url(STRING), timestamp(TIME:LONG)", true)
-  manager.createTable("addthis", "syncs", "at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(TIME:LONG)", true)
+  manager.createTable("addthis", "pageviews", "at_id(STRING), url(STRING), timestamp(LONG)", true)
+  manager.createTable("addthis", "syncs", "at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(LONG)", true)
   manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), type(STRING), url(STRING)", true)
   manager.createTable("vdna", "syncs", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), id_space(STRING), partner_user_id(STRING)", true)
 
-  manager.synchronized {
-    manager.wait
-  }
+  //ATTACH CONSOLE
+  val console = new AimConsole("localhost", 4000)
+  console.start
+
+  //WAIT FOR DISTRIBUTED SHUTDOWN
+  manager.synchronized(manager.wait)
+  console.close
 
 }
 
@@ -55,7 +61,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   private var keyspaceRefs = new ConcurrentHashMap[String, ConcurrentMap[String, AimPartition]]()
   def keyspaces: List[String] = keyspaceRefs.asScala.keys.toList
   def keyspace(k: String): Map[String, AimPartition] = keyspaceRefs.get(k).asScala.toMap
-  def stats(keyspaceName:String): AbstractScanner = {
+  def stats(keyspaceName: String): AbstractScanner = {
     new StatScanner(id, keyspace(keyspaceName).map { case (t, partition) ⇒ t -> partition }.toMap)
   }
   def query(keyspaceName: String, query: String) = new QueryParser(keyspace(keyspaceName)).parse(query)
@@ -94,7 +100,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
         keyspaceRefs.get(k).asScala.keys.filter(!tables.contains(_)).map(keyspaceRefs.get(k).remove(_))
         tables.filter(t ⇒ !keyspaceRefs.get(k).containsKey(t._1)).map(t ⇒ {
           val schema = AimSchema.fromString(t._2)
-          keyspaceRefs.get(k).put(t._1, new AimPartition(schema, 1048576))
+          keyspaceRefs.get(k).put(t._1, new AimPartition(schema, 10485760 * 5))
           log.debug(id + ": " + k + "." + t._1 + " " + keyspaceRefs.get(k).get(t._1).toString)
         })
       })

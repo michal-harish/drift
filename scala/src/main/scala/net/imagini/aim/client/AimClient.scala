@@ -11,6 +11,40 @@ import net.imagini.aim.cluster.Protocol
 import java.io.EOFException
 import net.imagini.aim.types.AimQueryException
 
+object AimClient extends App {
+  
+  var host: String = "localhost"
+  var port: Int = 4000
+  var keyspace: String = null
+  var table: String = null
+  val argsIterator = args.iterator
+  var query: Option[String] = None
+  while (argsIterator.hasNext) {
+    argsIterator.next match {
+      case "--host"      ⇒ host = argsIterator.next
+      case "--port"      ⇒ port = argsIterator.next.toInt
+      case "--keyspace"  ⇒ keyspace = argsIterator.next
+      case arg: String   ⇒ query = Some(arg)
+    }
+  }
+  query match {
+    case None => println("Usage: java jar drift-client.jar --keyspace <name> [--host <localhost> --port <4000> ] '<query>'")
+    case Some(query) => {
+      val client = new AimClient(host,port)
+      client.query("USE " + keyspace)
+      client.query(query) match {
+        case None => println("Invalid DRFIT Query")
+        case Some(schema) => {
+          while(client.hasNext) {
+            println(client.fetchRecordLine)
+          }
+        }
+      }
+      client.close
+    } 
+  }
+}
+
 class AimClient(val host: String, val port: Int) {
 
   private var socket = new Socket(InetAddress.getByName(host), port)
@@ -31,12 +65,35 @@ class AimClient(val host: String, val port: Int) {
     pipe.close
   }
 
-  def query(query: String): Boolean = {
+  def resultSchema: AimSchema = schema match {
+    case None         ⇒ throw new IllegalStateException
+    case Some(schema) ⇒ schema
+  }
+
+  def printResult = {
+    val len: Array[Int] = resultSchema.names.map(n ⇒ {
+      val l = (math.max(n.length, resultSchema.dataType(n).getSize) / 4 + 1) * 4 + 1; print(" " + n.padTo(l - 1, ' ') + "|"); l
+    }).toArray
+    println("\n" + len.map(l ⇒ "-" * l).mkString("+"))
+    while (hasNext) {
+      println((0 to len.length - 1, fetchRecordStrings).zipped.map((i, v) ⇒ {
+        len(i) = math.max(len(i), (v.length / 4 + 1) * 4 + 1)
+        " " + v.padTo(len(i) - 1, ' ')
+      }).mkString("|"))
+    }
+    println()
+  }
+
+  def query(query: String): Option[AimSchema] = {
     if (hasNext) {
       reconnect
     }
     pipe.write(query).flush
-    processResponse(pipe)
+    if (processResponse(pipe)) {
+      schema
+    } else {
+      None
+    }
   }
 
   def hasNext: Boolean = {
@@ -86,7 +143,6 @@ class AimClient(val host: String, val port: Int) {
         schema = None
         hasData = Some(false)
         val error = pipe.read
-        reconnect
         throw new AimQueryException(error)
       }
       case "RESULT" ⇒ {

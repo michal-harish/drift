@@ -42,7 +42,7 @@ public class AimTypeTIME extends AimTypeAbstract {
                     Date d = formatter.parse(value);
                     return Aim.LONG.convert(String.valueOf(d.getTime()));
                 } catch (ParseException e) {
-                    e.printStackTrace();
+                    throw new AimQueryException("Could not parse timestamp " + value);
                 }
             }
         }

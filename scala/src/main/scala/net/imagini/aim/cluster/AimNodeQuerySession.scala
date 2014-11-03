@@ -9,6 +9,7 @@ import java.io.EOFException
 import java.io.InputStream
 import net.imagini.aim.types.TypeUtils
 import grizzled.slf4j.Logger
+import java.net.SocketException
 
 class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
 
@@ -34,6 +35,7 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
         }
       }
     } catch {
+      case e: SocketException => throw new EOFException
       case e: IOException ⇒ {
         log.error(e)
         pipe.write("ERROR")
@@ -41,7 +43,7 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
         pipe.flush
       }
       case e: Throwable ⇒ {
-        e.printStackTrace
+        log.error(e)
         pipe.write("ERROR")
         pipe.write(if (e.getMessage == null) e.getClass().getSimpleName() else e.getMessage) 
         pipe.flush
