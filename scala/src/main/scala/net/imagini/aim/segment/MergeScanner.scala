@@ -28,6 +28,7 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   private val scanners: Seq[Array[ColumnScanner]] = segments.map(segment ⇒ segment.wrapScanners(scanSchema))
   private val scanColumnIndex: Array[Int] = schema.names.map(n ⇒ scanSchema.get(n))
   private val scanKeyColumnIndex: Int = scanSchema.get(keyField)
+  private val scanKeyType = scanSchema.get(scanKeyColumnIndex)
   rowFilter.updateFormula(scanSchema.names)
 
   private var eof = false
@@ -72,7 +73,7 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
       }
       //merge sort
       if (segmentHasData) {
-        if (currentScanner == None || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanners(s)(scanKeyColumnIndex).buffer, currentScanner.get(scanKeyColumnIndex).buffer, keyType) > 0))) {
+        if (currentScanner == None || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanners(s)(scanKeyColumnIndex).buffer, currentScanner.get(scanKeyColumnIndex).buffer, scanKeyType) > 0))) {
           currentScanner = Some(scanners(s))
         }
       }

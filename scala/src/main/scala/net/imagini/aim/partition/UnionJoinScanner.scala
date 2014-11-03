@@ -65,7 +65,7 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
     }
 
     if (rightHasData && leftHasData) {
-      currentLeft = TypeUtils.compare(left.selectKey, right.selectKey, keyType) > 0 ^ sortOrder.equals(SortOrder.ASC)
+      currentLeft = TypeUtils.compare(left.selectKey, right.selectKey, left.keyType) > 0 ^ sortOrder.equals(SortOrder.ASC)
     } else if (rightHasData ^ leftHasData) {
       currentLeft = leftHasData
     } else {

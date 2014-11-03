@@ -15,7 +15,7 @@ import net.imagini.aim.partition.QueryParser
 import net.imagini.aim.client.AimConsole
 
 object AimNode extends App {
-  val log = Logger[AimNode.this.type]
+  val log = Logger[this.type]
   var port: Int = 4000
   var zkConnect: String = "localhost:2181"
   val argsIterator = args.iterator
@@ -52,7 +52,7 @@ object AimNode extends App {
 
 class AimNode(val id: Int, val address: String, val manager: DriftManager) {
 
-  val log = Logger[AimNode.this.type]
+  val log = Logger[this.type]
   val nodes: ConcurrentMap[Int, URI] = new ConcurrentHashMap[Int, URI]()
   def peers = nodes.asScala.filter(n ⇒ n._1 != id)
 

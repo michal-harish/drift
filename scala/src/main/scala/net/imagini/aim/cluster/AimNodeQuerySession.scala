@@ -36,13 +36,13 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
     } catch {
       case e: SocketException ⇒ throw new EOFException
       case e: IOException ⇒ {
-        log.error(e)
+        log.error(e.getMessage, e)
         pipe.write("ERROR")
         pipe.write(exceptionAsString(e))
         pipe.flush
       }
       case e: Throwable ⇒ {
-        log.error(e)
+        log.error(e.getMessage, e)
         pipe.write("ERROR")
         pipe.write(if (e.getMessage == null) e.getClass().getSimpleName() else e.getMessage)
         pipe.flush

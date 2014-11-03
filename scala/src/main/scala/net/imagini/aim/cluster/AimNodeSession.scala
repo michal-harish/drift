@@ -6,7 +6,7 @@ import grizzled.slf4j.Logger
 import net.imagini.aim.types.AimQueryException
 
 trait AimNodeSession extends Thread {
-  val log = Logger[AimNodeSession.this.type]
+  val log = Logger[this.type]
   val node: AimNode
   val pipe: Pipe
 

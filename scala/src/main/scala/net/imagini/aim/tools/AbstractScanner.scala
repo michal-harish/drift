@@ -10,7 +10,6 @@ import net.imagini.aim.types.AimType
 trait AbstractScanner {
 
   val schema: AimSchema
-   //TODO val keyColumn: Option[Int]
   val keyColumn: Int
   final def keyType: AimType = schema.get(keyColumn)
 
@@ -20,6 +19,7 @@ trait AbstractScanner {
 
   def selectRow: Array[ByteBuffer]
 
+  //TODO select key should work independently of selectRow to allow for decoupling of selection on joining
   final def selectKey: ByteBuffer = selectRow(keyColumn)
 
   def mark

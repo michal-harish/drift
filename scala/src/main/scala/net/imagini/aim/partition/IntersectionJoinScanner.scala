@@ -54,13 +54,13 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
     if (currentLeft) eof = !left.next else eof = !right.next
     if (!eof) {
       if (currentKey != None) {
-        if (currentLeft && !TypeUtils.equals(left.selectKey, currentKey.get, keyType)) currentLeft = false
-        if (!currentLeft && !TypeUtils.equals(right.selectKey, currentKey.get, keyType)) currentKey = None
+        if (currentLeft && !TypeUtils.equals(left.selectKey, currentKey.get, left.keyType)) currentLeft = false
+        if (!currentLeft && !TypeUtils.equals(right.selectKey, currentKey.get, left.keyType)) currentKey = None
       }
       if (currentKey == None) {
         var cmp: Int = -1
         do {
-          cmp = TypeUtils.compare(left.selectKey, right.selectKey, keyType)
+          cmp = TypeUtils.compare(left.selectKey, right.selectKey, left.keyType)
           if (cmp < 0) eof = !left.next
           else if (cmp > 0) eof = !right.next
         } while (!eof && cmp != 0)

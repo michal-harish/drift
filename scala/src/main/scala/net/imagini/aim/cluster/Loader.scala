@@ -49,7 +49,7 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
 
   def this(host: String, port: Int, keyspace: String, table: String, separator: String, gzip: Boolean) = this(host, port, keyspace, table, separator, null.asInstanceOf[InputStream], gzip)
 
-  val log = Logger[Loader.this.type]
+  val log = Logger[this.type]
   val in: InputStream = if (fileinput == null) System.in else fileinput
   val socket = new Socket(InetAddress.getByName(host), port)
   val pipe = new PipeLZ4(socket, Protocol.LOADER_LOCAL)

@@ -35,12 +35,19 @@ class GroupScanner(
 
   override val keyColumn = schema.get(sourceSchema.name(0))
 
+
   private val rowFilter = RowFilter.fromString(sourceSchema, rowFilterStatement)
   private val groupFilter = RowFilter.fromString(sourceSchema, groupFilterStatement)
   private val groupFunctions: Seq[AimTypeGROUP] = schema.fields.filter(_.isInstanceOf[AimTypeGROUP]).map(_.asInstanceOf[AimTypeGROUP])
 
-  private val scanColumns = selectRef ++ rowFilter.getColumns ++ groupFilter.getColumns ++ groupFunctions.flatMap(_.filter.getColumns) ++ groupFunctions.map(_.field)
+  private val scanColumns:Array[String] = 
+    selectRef ++ 
+    rowFilter.getColumns ++ 
+    groupFilter.getColumns ++ 
+    groupFunctions.flatMap(_.filter.getColumns) ++ 
+    groupFunctions.map(_.field) :+ sourceSchema.name(0)
   private val merge = new MergeScanner(sourceSchema, scanColumns, RowFilter.fromString(sourceSchema, "*"), segments)
+  private val scanKeyType = sourceSchema.get(0)
   rowFilter.updateFormula(merge.schema.names)
   groupFilter.updateFormula(merge.schema.names)
   groupFunctions.map(_.filter.updateFormula(merge.schema.names))
@@ -78,7 +85,7 @@ class GroupScanner(
     } else {
       merge.next
     }
-    while (TypeUtils.equals(merge.selectKey, groupKey, keyType)) {
+    while (TypeUtils.equals(merge.selectKey, groupKey, scanKeyType)) {
       if (rowFilter.matches(merge.selectRow)) {
         return true
       } else {
@@ -90,7 +97,7 @@ class GroupScanner(
 
   private def skipToNextGroup = {
     if (groupKey != null) {
-      while (TypeUtils.equals(merge.selectKey, groupKey, keyType)) {
+      while (TypeUtils.equals(merge.selectKey, groupKey, scanKeyType)) {
         merge.next
       }
     }
@@ -107,7 +114,7 @@ class GroupScanner(
       groupKey = merge.selectKey.slice
       merge.mark
       try {
-        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && TypeUtils.equals(merge.selectKey, groupKey, keyType)) {
+        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && TypeUtils.equals(merge.selectKey, groupKey, scanKeyType)) {
           if (!satisfiesFilter && groupFilter.matches(merge.selectRow)) {
             satisfiesFilter = true
           }

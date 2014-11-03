@@ -1,9 +1,10 @@
 package net.imagini.aim.cluster
 
 import net.imagini.aim.types.AimSchema
+import grizzled.slf4j.Logger
 
 trait DriftManager {
-
+  val log = Logger[this.type]
   protected def pathExists(path: String): Boolean
   protected def pathCreatePersistent(path: String, data: Any)
   protected def pathCreateEphemeral(path: String, data: Any)

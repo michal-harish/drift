@@ -14,7 +14,6 @@ import grizzled.slf4j.Logger
 import net.imagini.aim.types.AimSchema
 
 class DriftManagerZk(val zkConnect: String, val totalNodes: Int) extends DriftManager {
-  val log = Logger[AimNode]
   val zkClient = new ZkClient(zkConnect)
   init(totalNodes)
   override protected def pathExists(path: String) = zkClient.exists(path)

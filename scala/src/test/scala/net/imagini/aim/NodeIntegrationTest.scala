@@ -187,6 +187,8 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     scanner.next should be(true); scanner.selectLine(",") should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103, ,www.travel.com/offers,2014-10-10 13:01:03")
     scanner.next should be(false)
     an[EOFException] must be thrownBy (scanner.selectLine(","))
+    val scanner3 = parser.parse("count (SELECT user_uid,url,timestamp FROM pageviews WHERE timestamp > '2014-10-10 11:59:01' UNION SELECT * FROM conversions)")
+    scanner3.asInstanceOf[CountScanner].count should be(6L)
 
   }
 

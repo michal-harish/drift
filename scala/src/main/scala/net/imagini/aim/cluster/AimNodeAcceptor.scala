@@ -5,7 +5,7 @@ import java.io.IOException
 import grizzled.slf4j.Logger
 
 class AimNodeAcceptor(val node: AimNode, listenPort: Int) extends Thread {
-  val log = Logger[AimNodeAcceptor.this.type]
+  val log = Logger[this.type]
   val controllerListener = new ServerSocket(listenPort)
   val port = controllerListener.getLocalPort
   start

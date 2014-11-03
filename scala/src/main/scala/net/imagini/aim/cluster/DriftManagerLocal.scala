@@ -9,7 +9,6 @@ import scala.collection.mutable.HashMap
 import grizzled.slf4j.Logger
 
 class DriftManagerLocal extends DriftManager {
-  val log = Logger[DriftManagerLocal.this.type]
 
   val tree = HashMap[String, Any]()
   val dataWatchers = new HashMap[String, Set[(Option[Any]) ⇒ Unit]] with MultiMap[String, (Option[Any]) ⇒ Unit]
