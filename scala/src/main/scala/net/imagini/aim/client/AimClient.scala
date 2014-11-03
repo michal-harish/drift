@@ -10,9 +10,12 @@ import net.imagini.aim.cluster.PipeLZ4
 import net.imagini.aim.cluster.Protocol
 import java.io.EOFException
 import net.imagini.aim.types.AimQueryException
+import net.imagini.aim.tools.StreamUtils
+import net.imagini.aim.types.Aim
+import net.imagini.aim.utils.ByteUtils
 
 object AimClient extends App {
-  
+
   var host: String = "localhost"
   var port: Int = 4000
   var keyspace: String = null
@@ -21,27 +24,27 @@ object AimClient extends App {
   var query: Option[String] = None
   while (argsIterator.hasNext) {
     argsIterator.next match {
-      case "--host"      ⇒ host = argsIterator.next
-      case "--port"      ⇒ port = argsIterator.next.toInt
-      case "--keyspace"  ⇒ keyspace = argsIterator.next
-      case arg: String   ⇒ query = Some(arg)
+      case "--host"     ⇒ host = argsIterator.next
+      case "--port"     ⇒ port = argsIterator.next.toInt
+      case "--keyspace" ⇒ keyspace = argsIterator.next
+      case arg: String  ⇒ query = Some(arg)
     }
   }
   query match {
-    case None => println("Usage: java jar drift-client.jar --keyspace <name> [--host <localhost> --port <4000> ] '<query>'")
-    case Some(query) => {
-      val client = new AimClient(host,port)
+    case None ⇒ println("Usage: java jar drift-client.jar --keyspace <name> [--host <localhost> --port <4000> ] '<query>'")
+    case Some(query) ⇒ {
+      val client = new AimClient(host, port)
       client.query("USE " + keyspace)
       client.query(query) match {
-        case None => println("Invalid DRFIT Query")
-        case Some(schema) => {
-          while(client.hasNext) {
+        case None ⇒ println("Invalid DRFIT Query")
+        case Some(schema) ⇒ {
+          while (client.hasNext) {
             println(client.fetchRecordLine)
           }
         }
       }
       client.close
-    } 
+    }
   }
 }
 
@@ -52,6 +55,7 @@ class AimClient(val host: String, val port: Int) {
   private var error: Option[String] = None
   private var hasData: Option[Boolean] = None
   private var schema: Option[AimSchema] = None
+  private var count:Long = 0
 
   private def reconnect = {
     socket.close
@@ -88,6 +92,7 @@ class AimClient(val host: String, val port: Int) {
     if (hasNext) {
       reconnect
     }
+    count = 0
     pipe.write(query).flush
     if (processResponse(pipe)) {
       schema
@@ -95,6 +100,7 @@ class AimClient(val host: String, val port: Int) {
       None
     }
   }
+  def getCount: Long = count
 
   def hasNext: Boolean = {
     hasData match {
@@ -128,11 +134,12 @@ class AimClient(val host: String, val port: Int) {
       throw new EOFException
     } else {
       hasData = None
+      count += 1
       schema.get.fields.map(field ⇒ pipe.read(field.getDataType))
     }
   }
 
-  private def processResponse(pipe: Pipe) = {
+  private def processResponse(pipe: Pipe):Boolean = {
     pipe.read match {
       case "OK" ⇒ {
         schema = None
@@ -144,6 +151,10 @@ class AimClient(val host: String, val port: Int) {
         hasData = Some(false)
         val error = pipe.read
         throw new AimQueryException(error)
+      }
+      case "COUNT" ⇒ {
+        count = java.lang.Long.valueOf(pipe.read)
+        false
       }
       case "RESULT" ⇒ {
         schema = Some(AimSchema.fromString(pipe.read))

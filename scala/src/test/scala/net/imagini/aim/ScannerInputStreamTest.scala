@@ -1,16 +1,18 @@
 package net.imagini.aim
 
 import java.io.EOFException
+import java.io.InputStream
+
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
+
 import net.imagini.aim.cluster.ScannerInputStream
 import net.imagini.aim.partition.AimPartition
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.segment.MergeScanner
+import net.imagini.aim.tools.StreamUtils
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorageLZ4
-import java.io.InputStream
-import net.imagini.aim.tools.StreamUtils
 
 class ScannerInputStreamTest extends FlatSpec with Matchers {
 
@@ -29,7 +31,7 @@ class ScannerInputStreamTest extends FlatSpec with Matchers {
     sA1.appendRecord("12322cfb-a29e-42c3-a3d9-12d32850e103", "www.xyz.com", "2014-10-10 12:01:02")
     p.add(sA1.close)
 
-    val in = p.select("user_uid,url", "*")
+    val in = new ScannerInputStream(new MergeScanner(p.schema, "user_uid,url", "*", p.segments))
     readLine(in) should be("12322cfb-a29e-42c3-a3d9-12d32850e103 www.xyz.com")
     readLine(in) should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 www.auto.com/mycar")
     readLine(in) should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 www.travel.com/offers")

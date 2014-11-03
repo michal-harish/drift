@@ -10,6 +10,7 @@ import net.imagini.aim.types.AimType
 trait AbstractScanner {
 
   val schema: AimSchema
+   //TODO val keyColumn: Option[Int]
   val keyColumn: Int
   final def keyType: AimType = schema.get(keyColumn)
 
@@ -25,13 +26,6 @@ trait AbstractScanner {
 
   def reset
 
-  final def count: Long = {
-    rewind
-    var count: Long = 0
-    while (next) count += 1
-    count
-  }
-  
   def close = {
     //TODO implement close for all scanners
   }

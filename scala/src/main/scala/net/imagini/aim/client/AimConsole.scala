@@ -45,6 +45,9 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
                   case (Some(schema)) ⇒ client.printResult
                   case None           ⇒ println("OK")
                 }
+                if (client.getCount > 0)  {
+                  println("Count: " + client.getCount)
+                }
                 println("Query took: " + (System.currentTimeMillis() - t) + " ms")
               }
             }
@@ -58,6 +61,7 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
       System.out.println("Console shutting down..")
       client.close
       this.synchronized(notify)
+      System.out.println("Console shut down complete.")
     }
   }
 

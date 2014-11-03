@@ -16,26 +16,28 @@ public class TypeUtils {
      * but does not advance
      */
     final public static int compare(ByteBuffer left, ByteBuffer right, AimType type) {
-
+        AimDataType d = type.getDataType();
+        byte[] lArray = left.array();
+        byte[] rArray = right.array();
         int ni;
-        int i = left.position();
+        int i = left.position() + left.arrayOffset();
         int nj;
-        int j = right.position();
+        int j = right.position()+ right.arrayOffset();
         int n;
         int k = 0;
         if (type.equals(Aim.STRING)) {
-            ni = ByteUtils.asIntValue(left) + 4;
+            ni = ByteUtils.asIntValue(lArray, i) + 4;
             i += 4;
-            nj = ByteUtils.asIntValue(right) + 4;
+            nj = ByteUtils.asIntValue(rArray, j) + 4;
             j += 4;
             n = Math.min(ni, nj);
             k += 4;
         } else {
-            n = ni = nj = type.getDataType().getSize();
+            n = ni = nj = d.getSize();
         }
         if (ni == nj) {
             for (; k < n; k++, i++, j++) {
-                int cmp = ByteUtils.compareUnisgned(left.get(i), right.get(j));
+                int cmp = (lArray[i] & 0xFF)  - (rArray[j] & 0xFF);
                 if (cmp != 0) {
                     return cmp;
                 }
@@ -49,28 +51,31 @@ public class TypeUtils {
      * but does not advance
      */
     final public static boolean contains(ByteBuffer container, ByteBuffer value, AimType aimType) {
+        AimDataType d = aimType.getDataType();
+        byte[] cArray = container.array();
+        byte[] vArray = value.array();
+        int vLimit = value.limit() + value.arrayOffset();
         int ni;
-        int i = container.position();
+        int i = container.position() + container.arrayOffset();
         int nj;
-        int j = 0;
-        if (aimType.getDataType().equals(Aim.STRING)) {
-            ni = ByteUtils.asIntValue(container) + 4;
+        int j = value.position() + value.arrayOffset();
+        if (d.equals(Aim.STRING)) {
+            ni = ByteUtils.asIntValue(cArray, i) + 4;
             i += 4;
-            nj = ByteUtils.asIntValue(value) + 4;
+            nj = ByteUtils.asIntValue(vArray, 0) + 4;
             j += 4;
         } else {
-            ni = nj = aimType.getDataType().getSize();
+            ni = nj = d.getSize();
         }
         if (nj > ni) {
             return false;
         } else {
-            ni += container.position();
+            ni += container.position() + container.arrayOffset();
             int v = j;
             for (; i < ni; i++) {
-                byte b = container.get(i);
-                if (value.get(v) != b) {
+                if (vArray[v] != cArray[i]) {
                     v = j;
-                } else if (++v == value.limit()) {
+                } else if (++v == vLimit) {
                     return true;
                 }
             }

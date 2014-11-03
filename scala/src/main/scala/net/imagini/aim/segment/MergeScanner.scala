@@ -21,7 +21,7 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
 
   override val schema: AimSchema = sourceSchema.subset(selectFields)
   val keyField: String = sourceSchema.name(0)
-  override val keyColumn = schema.get(keyField)
+  override val keyColumn = if (schema.has(keyField)) schema.get(keyField) else -1
   val sortOrder = SortOrder.ASC
 
   private val scanSchema: AimSchema = sourceSchema.subset(selectFields ++ rowFilter.getColumns :+ keyField)

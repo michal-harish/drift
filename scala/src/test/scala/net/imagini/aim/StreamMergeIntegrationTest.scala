@@ -12,7 +12,8 @@ import net.imagini.aim.tools.StreamMerger
 import java.io.EOFException
 import net.imagini.aim.partition.AimPartition
 import net.imagini.aim.tools.StreamUtils
-
+import net.imagini.aim.cluster.ScannerInputStream
+import net.imagini.aim.segment.MergeScanner
 
 class StreamMergeIntegrationTest extends FlatSpec with Matchers {
 
@@ -37,11 +38,11 @@ class StreamMergeIntegrationTest extends FlatSpec with Matchers {
 
     val subschema = schema.subset(Array("user_uid", "value"))
 
-    val stream1 = p1.select("user_uid,value", "column='pageview'")
-    val stream2 = p2.select("user_uid,value", "column='pageview'")
+    val stream1 = new ScannerInputStream(new MergeScanner(p1.schema, "user_uid,value", "column='pageview'", p1.segments))
 
-    val mergeSort = new StreamMerger(subschema, 1, Array(stream1,stream2))
+    val stream2 = new ScannerInputStream(new MergeScanner(p2.schema, "user_uid,value", "column='pageview'", p2.segments))
 
+    val mergeSort = new StreamMerger(subschema, 1, Array(stream1, stream2))
 
     readRecord(subschema, mergeSort) should be("17b22cfb-a29e-42c3-a3d9-12d32850e103 {www.music.com} ")
     readRecord(subschema, mergeSort) should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 {www.auto.com} ")

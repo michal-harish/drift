@@ -102,6 +102,10 @@ public class Pipe {
         return inputPipe;
     }
 
+    public OutputStream getOutputStream() {
+        return outputPipe;
+    }
+
     protected OutputStream createOutputStreamWrapper(OutputStream out)
             throws IOException {
         return new DataOutputStream(out);

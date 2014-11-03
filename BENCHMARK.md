@@ -3,21 +3,24 @@
 This is a benchmark for Drift and HBase solving the same use-case with a single instance and only in-memory resources: 
 we took 2 tables containing same time frame of pageviews(cca 6m) and syncs (cca 1m) and compared load and scan query times:
 
-DRIFT 
+DRIFT - with LZ4 compression 
 71.440s: load pageviews 
-9.552s: load syncs: 
-0.724s: scan for a column value in the syncs table: select at_id,vdna_user_uid from syncs where vdna_user_uid= 'ce1e0d6b-6b11-428c-a9f7-c919721c669c'
-3.375s: scan for a url contains a pattern: select at_id,url from pageviews where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'
-33.357s: count the equi inner join between both tables: select vdna_user_uid, timestamp,url FROM ( select vdna_user_uid, at_id from syncs join select at_id,timestamp,url from pageviews) where vdna_user_uid= ' 7871462a-6cfe-48f6-85de-4af16b851d96'
+9.552s: load syncs:
+memory used:  222Mb
+0.342s: scan for a column value in the syncs table: select at_id,vdna_user_uid from syncs where vdna_user_uid= 'ce1e0d6b-6b11-428c-a9f7-c919721c669c'
+2.196s: scan for a url contains a pattern: select at_id,url from pageviews where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'
+5.954s: count the equi inner join between both tables: select vdna_user_uid, timestamp,url FROM ( select vdna_user_uid, at_id from syncs join select at_id,timestamp,url from pageviews) where vdna_user_uid= '7871462a-6cfe-48f6-85de-4af16b851d96'
 
+count (select vdna_user_uid, at_id from syncs join select at_id,timestamp,url from pageviews) 
 
 select at_id,url from pageviews where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'
 HBASE
-...: load pageviews 
-...: load syncs: 
-...: scan for a single key in the syncs table: ...vdna_user_uid= 'ce1e0d6b-6b11-428c-a9f7-c919721c669c'
-...: scan for a single key in the pageviews table: ... url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'
-...:  count the equi inner join between both tables: ...
+150s: load pageviews 
+20s: load syncs: 
+memory used:  1500Mb
+...: scan for a column value in the syncs table: ...vdna_user_uid= 'ce1e0d6b-6b11-428c-a9f7-c919721c669c'
+9.0s: scan for a single key in the pageviews table: ... url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'
+5.0s:  count the equi inner join between both tables: ...
 
 
 #hive add this pageviews  2014-10-31 15:00-16:00 (6 million records) (0.63Gb uncompressed) (0.22Gb compressed)

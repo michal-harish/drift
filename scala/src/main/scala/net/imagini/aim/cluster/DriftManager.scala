@@ -11,6 +11,13 @@ trait DriftManager {
   protected[cluster] def watchData[T](zkPath: String, listener: (Option[T] ⇒ Unit))
   protected[cluster] def watch[T](zkPath: String, listener: (Map[String, T]) ⇒ Unit)
   def close
+  final def init(totalNodes: Int) = {
+    if (!pathExists("/drift")) {
+      pathCreatePersistent("/drift", "")
+      pathCreatePersistent("/drift/nodes", totalNodes)
+      pathCreatePersistent("/drift/keyspaces", "")
+    }
+  }
 
   final def createTable(keyspace: String, name: String, schemaDeclaration: String, ifNotExists: Boolean) {
     AimSchema.fromString(schemaDeclaration)
@@ -27,11 +34,6 @@ trait DriftManager {
   }
 
   final def registerNode(id: Int, address: String): Boolean = {
-    if (!pathExists("/drift")) {
-      pathCreatePersistent("/drift", "")
-      pathCreatePersistent("/drift/nodes", 1)
-      pathCreatePersistent("/drift/keyspaces", "")
-    }
     val nodePath = "/drift/nodes/" + id.toString
     for (i ← (1 to 30)) {
       if (pathExists(nodePath)) Thread.sleep(1000) else {

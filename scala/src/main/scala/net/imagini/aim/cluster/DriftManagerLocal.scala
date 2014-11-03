@@ -14,6 +14,7 @@ class DriftManagerLocal extends DriftManager {
   val tree = HashMap[String, Any]()
   val dataWatchers = new HashMap[String, Set[(Option[Any]) ⇒ Unit]] with MultiMap[String, (Option[Any]) ⇒ Unit]
   val pathWatchers = new HashMap[String, Set[(Map[String, Any]) ⇒ Unit]] with MultiMap[String, (Map[String, Any]) ⇒ Unit]
+  init(1)
   override def close = {}
   override protected def pathExists(path: String): Boolean = {
     log.debug("EXISTS ? " + path + " " + tree.contains(path))
