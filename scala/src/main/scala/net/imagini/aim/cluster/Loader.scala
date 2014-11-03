@@ -8,11 +8,34 @@ import java.io.InputStreamReader
 import java.net.InetAddress
 import java.net.Socket
 import java.util.zip.GZIPInputStream
+
 import scala.Array.canBuildFrom
+
+import grizzled.slf4j.Logger
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
-import grizzled.slf4j.Logger
 
+object Loader extends App {
+  var host: String = "localhost"
+  var port: Int = 4000
+  var keyspace: String = null
+  var table: String = null
+  var separator: String = "\n"
+  var gzip = false
+  val argsIterator = args.iterator
+  while (argsIterator.hasNext) {
+    argsIterator.next match {
+      case "--host"      ⇒ host = argsIterator.next
+      case "--port"      ⇒ port = argsIterator.next.toInt
+      case "--keyspace"  ⇒ keyspace = argsIterator.next
+      case "--table"     ⇒ table = argsIterator.next
+      case "--separator" ⇒ separator = argsIterator.next
+      case "--gzip"      ⇒ gzip = true
+      case arg: String   ⇒ println("Unknown argument " + arg)
+    }
+  }
+  new Loader(host, port, keyspace, table, separator, gzip).processInput.close
+}
 class Loader(host: String, port: Int, val keyspace: String, val table: String, val separator: String, val fileinput: InputStream, val gzip: Boolean) {
 
   def this(host: String, port: Int, keyspace: String, table: String, separator: String, filename: String, gzip: Boolean) = this(host, port, keyspace, table, separator, if (filename == null) null else new FileInputStream(filename), gzip)
@@ -22,7 +45,7 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
   val log = Logger[Loader.this.type]
   val in: InputStream = if (fileinput == null) System.in else fileinput
   val socket = new Socket(InetAddress.getByName(host), port)
-  val pipe = new PipeLZ4( socket, Protocol.LOADER_LOCAL)
+  val pipe = new PipeLZ4(socket, Protocol.LOADER_LOCAL)
   pipe.write(keyspace)
   pipe.write(table)
   pipe.flush
@@ -34,7 +57,7 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
     socket.close
   }
 
-  def processInput: Int = {
+  def processInput: Loader = {
     var count = 0
     val reader = new InputStreamReader(if (gzip) new GZIPInputStream(in) else in)
     try {
@@ -75,7 +98,7 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
       close
     }
     in.close
-    count
+    this
   }
   def createEmptyRecord: Array[Array[Byte]] = new Array[Array[Byte]](schema.size)
 

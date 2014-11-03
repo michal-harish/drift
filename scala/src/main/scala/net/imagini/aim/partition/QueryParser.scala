@@ -1,11 +1,11 @@
 package net.imagini.aim.partition
 
 import scala.collection.mutable.Queue
-
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.tools.RowFilter
 import net.imagini.aim.utils.Tokenizer
+import net.imagini.aim.types.AimQueryException
 
 abstract class PDataFrame(val fields: PExp*)
 case class PTable(name: String) extends PDataFrame()
@@ -31,6 +31,7 @@ class QueryParser(val regions: Map[String, AimPartition]) extends App {
     q.front.toUpperCase match {
       case "SELECT" ⇒ asDataFrame(q)
       //TODO case "COUNT"
+      case _:String => throw new AimQueryException("Invalid query statment")
     }
   }
   def compile(frame: PDataFrame): AbstractScanner = {
@@ -49,7 +50,7 @@ class QueryParser(val regions: Map[String, AimPartition]) extends App {
         new SubqueryScanner(fields, filter, scanner)
       }
       case select: PSelect ⇒ {
-        val region = regions(select.table.name)
+        val region = if (!regions.contains(select.table.name)) throw new AimQueryException("Unknown table") else regions(select.table.name)
         val schema = region.schema
         val filter = RowFilter.fromString(schema, select.filter)
         val fields = compile(select.fields)

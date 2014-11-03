@@ -51,7 +51,7 @@ public enum Aim implements AimDataType {
 
     @Override
     public byte[] convert(String value) {
-        if (value.equals(EMPTY)) {
+        if (value == null || value.equals(EMPTY)) {
             return null;
         }
         ByteBuffer bb;

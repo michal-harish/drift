@@ -27,21 +27,31 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
         }
       }
     } catch {
-      case e: Throwable ⇒ try {
-        pipe.write("ERROR");
-        pipe.write(exceptionAsString(e));
-        pipe.flush();
-      } catch {
-        case e1: Throwable ⇒ log.error(e)
+      case e: IOException ⇒ {
+        log.error(e)
+        pipe.write("ERROR")
+        pipe.write(exceptionAsString(e))
+        pipe.flush
+      }
+      case e: Throwable ⇒ {
+        e.printStackTrace
+        pipe.write("ERROR")
+        pipe.write(if (e.getMessage == null) e.getClass().getSimpleName() else e.getMessage) 
+        pipe.flush
       }
     }
   }
 
   private def useKeySpace(command: String) = {
     val cmd = Tokenizer.tokenize(command, false)
-    cmd.poll 
+    cmd.poll
     keyspace = Some(cmd.poll)
-    pipe.write("OK")
+    if (node.keyspaces.contains(keyspace.get)) {
+        pipe.write("OK")
+    } else {
+      pipe.write("ERROR")
+      pipe.write("Unknown keyspace, available: " + node.keyspaces.mkString(","))
+    }
     pipe.flush
   }
 

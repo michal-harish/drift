@@ -157,6 +157,9 @@ public class AimSchema {
                 {
                     for (String colName : columns)
                         if (colName != null) {
+                            if (!colIndex.containsKey(colName)) {
+                                throw new AimQueryException("Unknown field " + colName);
+                            }
                             put(colName, def.get(colIndex.get(colName)));
                         }
                 }

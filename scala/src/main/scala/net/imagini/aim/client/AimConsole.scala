@@ -2,6 +2,7 @@ package net.imagini.aim.client
 
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import net.imagini.aim.types.AimQueryException
 
 object AimConsole extends AimConsole("localhost", 4000) with App {
 
@@ -44,6 +45,7 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
             }
           }
         } catch {
+          case e: AimQueryException => println(e.getMessage)
           case e: Throwable ⇒ e.printStackTrace
         }
       }

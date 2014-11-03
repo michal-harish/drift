@@ -9,6 +9,7 @@ import net.imagini.aim.cluster.Pipe
 import net.imagini.aim.cluster.PipeLZ4
 import net.imagini.aim.cluster.Protocol
 import java.io.EOFException
+import net.imagini.aim.types.AimQueryException
 
 class AimClient(val host: String, val port: Int) {
 
@@ -57,7 +58,6 @@ class AimClient(val host: String, val port: Int) {
         }
       }
     }
-
   }
 
   def fetchRecordLine = fetchRecordStrings.mkString(",")
@@ -85,9 +85,9 @@ class AimClient(val host: String, val port: Int) {
       case "ERROR" ⇒ {
         schema = None
         hasData = Some(false)
-        val error = pipe.read();
+        val error = pipe.read
         reconnect
-        throw new Exception("AIM SERVER ERROR: " + error);
+        throw new AimQueryException(error)
       }
       case "RESULT" ⇒ {
         schema = Some(AimSchema.fromString(pipe.read))
