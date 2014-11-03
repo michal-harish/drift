@@ -14,7 +14,7 @@ import net.imagini.aim.types.AimType
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.types.TypeUtils
 
-class OuterJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
+class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 
   private val leftSelect = left.schema.names.map(n ⇒ (n -> left.schema.field(n)))
   private val rightSelect = right.schema.names.map(n ⇒ (n -> right.schema.field(n)))
@@ -62,17 +62,20 @@ class OuterJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
     if (rightHasData && leftHasData) {
       if (TypeUtils.compare(left.selectKey, right.selectKey, keyType) > 0 ^ sortOrder.equals(SortOrder.ASC)) {
         currentLeft = true
+        true
       } else {
         currentLeft = false
+        true
       }
     } else if (leftHasData) {
       currentLeft = true
+      true
     } else if (rightHasData) {
       currentLeft = false
+      true
     } else {
-      return false
+      false
     }
-    true
   }
 
   def selectRow: Array[ByteBuffer] = {

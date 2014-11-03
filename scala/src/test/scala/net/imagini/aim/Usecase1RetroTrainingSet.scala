@@ -10,7 +10,7 @@ import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.segment.GroupScanner
 import net.imagini.aim.partition.EquiJoinScanner
 import net.imagini.aim.partition.IntersectionJoinScanner
-import net.imagini.aim.partition.OuterJoinScanner
+import net.imagini.aim.partition.UnionJoinScanner
 import net.imagini.aim.types.Aim
 import java.io.EOFException
 
@@ -68,9 +68,9 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
      * ) 
      */
     val tsetJoin = new EquiJoinScanner(
-      "user_uid,url,timestamp,conversion",
+      Array("user_uid","url","timestamp","conversion"),
       new MergeScanner(schemaUserFlags, "user_uid", "value='true' and flag='quizzed' or flag='cc'", partitionUserFlags1.segments),
-      new OuterJoinScanner(
+      new UnionJoinScanner(
           new MergeScanner(schemaPageviews, "user_uid,url,timestamp", "url contains 'travel.com'", partitionPageviews1.segments)
           ,new MergeScanner(schemaConversions, "user_uid,url,timestamp,conversion", "*", partitionConversions1.segments)
         )

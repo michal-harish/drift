@@ -35,9 +35,9 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
   override def next: Boolean = {
     if (currentLeft) left.next else right.next
     //inner join
-    if (currentKey != null && currentLeft && !TypeUtils.equals(left.selectKey, currentKey, keyType)) currentLeft = false
-    if (currentKey != null && !currentLeft && !TypeUtils.equals(right.selectKey, currentKey, keyType)) currentKey = null
     try {
+      if (currentKey != null && currentLeft && !TypeUtils.equals(left.selectKey, currentKey, keyType)) currentLeft = false
+      if (currentKey != null && !currentLeft && !TypeUtils.equals(right.selectKey, currentKey, keyType)) currentKey = null
       if (currentKey == null) {
         var cmp: Int = -1
         do {
@@ -52,7 +52,6 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
     } catch {
       case e: EOFException ⇒ false
     }
-
   }
 
   override def mark = { left.mark; right.mark }

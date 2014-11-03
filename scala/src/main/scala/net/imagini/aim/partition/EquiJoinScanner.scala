@@ -11,14 +11,14 @@ import net.imagini.aim.types.TypeUtils
 import java.nio.ByteBuffer
 import net.imagini.aim.tools.AbstractScanner
 
-class EquiJoinScanner(val selectStatement: String, val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
+class EquiJoinScanner(val select: Array[String], val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 
   val leftSelect = left.schema.names
   val rightSelect = right.schema.names.filter(!left.schema.has(_))
 
   override val keyColumn = 0
 
-  private val selectMap = ListMap(selectStatement.split(",").map(_.trim).map(_ match {
+  private val selectMap = ListMap(select.map(_ match {
     case f if (left.schema.has(f)) => f -> left.schema.field(f)
     case f if (right.schema.has(f)) => f -> right.schema.field(f)
   }):_*)
