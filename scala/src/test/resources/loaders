@@ -20,3 +20,9 @@ cat src/test/resources/pageviews.json \
 | jq -r 'select(.userUid!=null and .type!=null) | .userUid,.timestamp,.type,.url' \
 | java -jar target/drift-loader.jar --keyspace vdna --table events
 
+
+
+#query transformation of vdna pageviews into the 'a' id-space
+use vdna
+select partner_user_id,user_uid from syncs where id_space='a' join select user_uid,url,timestamp from events
+select partner_user_id,url,timestamp from (select user_uid,partner_user_id from syncs where id_space='a' join select user_uid,url,timestamp from events)

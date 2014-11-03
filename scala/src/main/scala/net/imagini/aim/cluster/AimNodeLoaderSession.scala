@@ -39,6 +39,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
       record.flip
       currentSegment.appendRecord(record);
       count += 1
+
       if (currentSegment.getOriginalSize > partition.segmentSizeBytes) {
         addCurrentSegment
       }

@@ -94,7 +94,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
         keyspaceRefs.get(k).asScala.keys.filter(!tables.contains(_)).map(keyspaceRefs.get(k).remove(_))
         tables.filter(t ⇒ !keyspaceRefs.get(k).containsKey(t._1)).map(t ⇒ {
           val schema = AimSchema.fromString(t._2)
-          keyspaceRefs.get(k).put(t._1, new AimPartition(schema, 10485760))
+          keyspaceRefs.get(k).put(t._1, new AimPartition(schema, 1048576))
           log.debug(id + ": " + k + "." + t._1 + " " + keyspaceRefs.get(k).get(t._1).toString)
         })
       })
