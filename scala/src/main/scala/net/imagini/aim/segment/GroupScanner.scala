@@ -62,6 +62,7 @@ class GroupScanner(
   }
 
   override def selectRow: Array[ByteBuffer] = {
+    //TODO optimize with var selectBuffer: Array[ByteBuffer
     val mergeRow = merge.selectRow
     (schema.fields, (0 to schema.fields.length)).zipped.map((f, c) ⇒ f match {
       case function: AimTypeGROUP ⇒ function.toByteBuffer

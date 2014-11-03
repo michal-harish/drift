@@ -8,6 +8,7 @@ import net.imagini.aim.types.AimType
 import scala.collection.immutable.ListMap
 import scala.collection.JavaConverters._
 import java.nio.ByteBuffer
+import java.io.EOFException
 
 class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val scanner: AbstractScanner) extends AbstractScanner {
 
@@ -19,21 +20,43 @@ class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val s
 
   private val selectIndex = schema.names.map(t ⇒ scanner.schema.get(t))
 
-  override def rewind = scanner.rewind
+  private val selectBuffer: Array[ByteBuffer] = new Array[ByteBuffer](schema.size)
 
-  override def next: Boolean = {
-    do {
-      if (!scanner.next) return false
-    } while (!rowFilter.matches(scanner.selectRow))
-    true
+  private var eof = false
+
+  override def rewind = {
+    scanner.rewind
+    eof = false
+    move
   }
 
   override def mark = scanner.mark
 
-  override def reset = scanner.reset
+  override def reset = {
+    scanner.reset
+    eof = false
+    move
+  }
 
-  def selectRow: Array[ByteBuffer] = {
-    val row = scanner.selectRow
-    selectIndex.map(c ⇒ row(c)).toArray
+  override def next: Boolean = {
+    do {
+      if (!scanner.next) {
+        eof = true
+        move
+        return false
+      }
+    } while (!rowFilter.matches(scanner.selectRow))
+    move
+    true
+  }
+
+  def selectRow: Array[ByteBuffer] = if (eof) throw new EOFException else selectBuffer
+
+  private def move = eof match {
+    case true ⇒ for (i ← (0 to schema.size - 1)) selectBuffer(i) = null
+    case false ⇒ {
+      val row = scanner.selectRow
+      for (i ← (0 to schema.size - 1)) selectBuffer(i) = row(selectIndex(i))
+    }
   }
 }

@@ -28,62 +28,62 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
 
   private var currentLeft = true
   private var leftHasData = true
-  private var rightHasData = true
+  private var rightHasData = right.next
+  private val selectBuffer: Array[ByteBuffer] = new Array[ByteBuffer](schema.size)
 
   override def rewind = {
     left.rewind
     right.rewind
     currentLeft = true
     leftHasData = true
-    rightHasData = true
+    rightHasData = right.next
+    move
   }
 
-  override def mark = { left.mark; right.mark }
+  override def mark = {
+    left.mark;
+    right.mark
+  }
 
-  override def reset = { left.reset; right.reset }
+  override def reset = {
+    //TODO reset should remember whether left and right have had data at mark
+    left.reset
+    right.reset
+    move
+  }
 
-  right.next
+  override def selectRow: Array[ByteBuffer] = if (!rightHasData && !leftHasData) throw new EOFException else selectBuffer
 
   override def next: Boolean = {
-    if (currentLeft) left.next else right.next
 
-    //outer join
-    try {
-      left.selectKey
-    } catch {
-      case e: EOFException ⇒ leftHasData = false
-    }
-    try {
-      right.selectKey
-    } catch {
-      case e: EOFException ⇒ rightHasData = false
+    if (!rightHasData && !leftHasData) return false
+
+    if (currentLeft) {
+      leftHasData = left.next
+    } else {
+      rightHasData = right.next
     }
 
     if (rightHasData && leftHasData) {
-      if (TypeUtils.compare(left.selectKey, right.selectKey, keyType) > 0 ^ sortOrder.equals(SortOrder.ASC)) {
-        currentLeft = true
-        true
-      } else {
-        currentLeft = false
-        true
-      }
-    } else if (leftHasData) {
-      currentLeft = true
-      true
-    } else if (rightHasData) {
-      currentLeft = false
-      true
+      currentLeft = TypeUtils.compare(left.selectKey, right.selectKey, keyType) > 0 ^ sortOrder.equals(SortOrder.ASC)
+    } else if (rightHasData ^ leftHasData) {
+      currentLeft = leftHasData
     } else {
-      false
+      move
+      return false
     }
+    move
+    true
   }
 
-  def selectRow: Array[ByteBuffer] = {
-    //join select
-    val row = if (currentLeft) left.selectRow else right.selectRow
-    (if (currentLeft) leftColumnIndex else rightColumnIndex).map(c ⇒ c match {
-      case -1     ⇒ null
-      case i: Int ⇒ row(i)
-    })
+  private def move = (rightHasData || leftHasData) match {
+    case false ⇒ for (i ← (0 to schema.size - 1)) selectBuffer(i) = null
+    case true ⇒ {
+      val row = if (currentLeft) left.selectRow else right.selectRow
+      (0 to schema.size - 1, if (currentLeft) leftColumnIndex else rightColumnIndex).zipped.map((i, c) ⇒ c match {
+        case -1     ⇒ selectBuffer(i) = null
+        case c: Int ⇒ selectBuffer(i) = row(c)
+      })
+    }
   }
 }

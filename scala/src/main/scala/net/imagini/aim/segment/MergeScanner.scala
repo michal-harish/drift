@@ -31,25 +31,27 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   rowFilter.updateFormula(scanSchema.names)
 
   private var eof = false
-  private var currentSegment = -1
-  private var markCurrentSegment = -1
+  private var currentScanner: Option[Array[ColumnScanner]] = None
+  private var markCurrentSegment: Option[Array[ColumnScanner]] = None
   private val selectBuffer: Array[ByteBuffer] = new Array[ByteBuffer](schema.size)
 
   override def rewind = {
     scanners.foreach(_.foreach(_.rewind))
+    currentScanner = None
     eof = false
-    currentSegment = -1
-    markCurrentSegment = -1
+    move
   }
 
   override def mark = {
-    markCurrentSegment = currentSegment
     scanners.foreach(_.foreach(_.mark))
+    markCurrentSegment = currentScanner
   }
 
   override def reset = {
     scanners.foreach(_.foreach(_.reset))
-    currentSegment = markCurrentSegment
+    currentScanner = markCurrentSegment
+    markCurrentSegment = None
+    eof = false
     move
   }
 
@@ -57,9 +59,9 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
     if (eof) {
       return false
     }
-    if (currentSegment > -1) {
-      for (columnScanner ← scanners(currentSegment)) columnScanner.skip
-      currentSegment = -1
+    if (currentScanner != None) {
+      for (columnScanner ← currentScanner.get) columnScanner.skip
+      currentScanner = None
     }
     for (s ← (0 to scanners.size - 1)) {
       //filter
@@ -70,18 +72,18 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
       }
       //merge sort
       if (segmentHasData) {
-        if (currentSegment == -1 || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanners(s)(scanKeyColumnIndex).buffer, scanners(currentSegment)(scanKeyColumnIndex).buffer, keyType) > 0))) {
-          currentSegment = s
+        if (currentScanner == None || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanners(s)(scanKeyColumnIndex).buffer, currentScanner.get(scanKeyColumnIndex).buffer, keyType) > 0))) {
+          currentScanner = Some(scanners(s))
         }
       }
     }
-    eof = currentSegment == -1
+    eof = currentScanner == None
     move
     !eof
   }
 
   override def selectRow: Array[ByteBuffer] = {
-    if (currentSegment == -1) {
+    if (eof || (currentScanner == None && !next)) {
       throw new EOFException
     } else {
       selectBuffer
@@ -89,11 +91,9 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   }
 
   private def move = {
-    if (currentSegment > -1) {
-      val scanner = scanners(currentSegment)
-      for (i ← (0 to schema.size - 1)) {
-        selectBuffer(i) = scanner(scanColumnIndex(i)).buffer
-      }
+    currentScanner match {
+      case None ⇒ for (i ← (0 to schema.size - 1)) selectBuffer(i) = null
+      case Some(scanner) ⇒ for (i ← (0 to schema.size - 1)) selectBuffer(i) = scanner(scanColumnIndex(i)).buffer
     }
   }
 }

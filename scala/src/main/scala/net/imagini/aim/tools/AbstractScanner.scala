@@ -17,7 +17,6 @@ trait AbstractScanner {
 
   def next: Boolean
 
-  //TODO verify that arrays are not created here for all scanners
   def selectRow: Array[ByteBuffer]
 
   final def selectKey: ByteBuffer = selectRow(keyColumn)
