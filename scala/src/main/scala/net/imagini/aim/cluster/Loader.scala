@@ -34,7 +34,9 @@ object Loader extends App {
       case arg: String   ⇒ println("Unknown argument " + arg)
     }
   }
-  new Loader(host, port, keyspace, table, separator, gzip).processInput.close
+  val loader = new Loader(host, port, keyspace, table, separator, gzip)
+  loader.processInput
+  loader.close
 }
 class Loader(host: String, port: Int, val keyspace: String, val table: String, val separator: String, val fileinput: InputStream, val gzip: Boolean) {
 
@@ -57,7 +59,7 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
     socket.close
   }
 
-  def processInput: Loader = {
+  def processInput: Int = {
     var count = 0
     val reader = new InputStreamReader(if (gzip) new GZIPInputStream(in) else in)
     try {
@@ -98,7 +100,7 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
       close
     }
     in.close
-    this
+    count
   }
   def createEmptyRecord: Array[Array[Byte]] = new Array[Array[Byte]](schema.size)
 

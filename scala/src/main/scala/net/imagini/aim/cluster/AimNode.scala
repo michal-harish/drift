@@ -55,7 +55,9 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   private var keyspaceRefs = new ConcurrentHashMap[String, ConcurrentMap[String, AimPartition]]()
   def keyspaces: List[String] = keyspaceRefs.asScala.keys.toList
   def keyspace(k: String): Map[String, AimPartition] = keyspaceRefs.get(k).asScala.toMap
-  def stats: AbstractScanner = new StatScanner(id, keyspaces.flatMap(k ⇒ { keyspace(k).map { case (t, partition) ⇒ t -> partition } }).toMap)
+  def stats(keyspaceName:String): AbstractScanner = {
+    new StatScanner(id, keyspace(keyspaceName).map { case (t, partition) ⇒ t -> partition }.toMap)
+  }
   def query(keyspaceName: String, query: String) = new QueryParser(keyspace(keyspaceName)).parse(query)
 
   @volatile var isShutdown = false

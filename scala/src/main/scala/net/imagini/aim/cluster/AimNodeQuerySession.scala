@@ -20,7 +20,10 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
           close
         }
         case command: String if (command.toUpperCase.startsWith("USE")) ⇒ useKeySpace(command)
-        case query: String if (query.toUpperCase.startsWith("STAT"))    ⇒ handleSelectStream(node.stats)
+        case query: String if (query.toUpperCase.startsWith("STAT"))    ⇒ keyspace match {
+          case Some(k) ⇒ handleSelectStream(node.stats(k))
+          case None    ⇒ throw new IllegalStateException("No keyspace selected, usage USE <keyspace>")
+        }
         case query: String ⇒ keyspace match {
           case Some(k) ⇒ handleSelectStream(node.query(k, query))
           case None    ⇒ throw new IllegalStateException("No keyspace selected, usage USE <keyspace>")
