@@ -52,7 +52,7 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
   val log = Logger[this.type]
   val in: InputStream = if (fileinput == null) System.in else fileinput
   val socket = new Socket(InetAddress.getByName(host), port)
-  val pipe = new PipeLZ4(socket, Protocol.LOADER_LOCAL)
+  val pipe = new PipeLZ4(socket, Protocol.LOADER_LOCAL) //TODO LOADER_DISTRIBUTED
   pipe.write(keyspace)
   pipe.write(table)
   pipe.flush

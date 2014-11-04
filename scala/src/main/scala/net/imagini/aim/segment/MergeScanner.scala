@@ -26,7 +26,7 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   private val sortOrder = SortOrder.ASC
   private val keyField: String = sourceSchema.name(0)
   private val scanSchema: AimSchema = sourceSchema.subset(selectFields ++ rowFilter.getColumns :+ keyField)
-  private val scanners: Seq[Array[ColumnScanner]] = segments.map(segment ⇒ segment.wrapScanners(scanSchema))
+  private val scanners: Array[Array[ColumnScanner]] = segments.map(segment ⇒ segment.wrapScanners(scanSchema)).toArray
   private val scanColumnIndex: Array[Int] = schema.names.map(n ⇒ scanSchema.get(n))
   private val scanKeyColumnIndex: Int = scanSchema.get(keyField)
   override val keyType = scanSchema.get(scanKeyColumnIndex)
@@ -59,32 +59,9 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   }
 
   /**
-   * TODO Parallel count - currently hard-coded for 4-core processors, however once
-   * the table is distributed across multiple machines this thread pool should
-   * be bigger until the I/O becomes bottleneck.
+   * Optimized next method
    */
-  
-  override def count: Long = {
-    rewind
-    val executor = Executors.newFixedThreadPool(4)
-    val results: List[Future[Long]] = (0 to segments.size - 1).map(s ⇒ executor.submit(new Callable[Long] {
-      override def call: Long = {
-        if (rowFilter.isEmptyFilter) {
-          segments(s).count
-        } else {
-          val scanner = scanners(s)
-          var count = 0
-          do {
-            if (rowFilter.matches(scanner.map(_.buffer))) count += 1
-            for (columnScanner ← scanner) columnScanner.skip
-          } while (scanner.forall(columnScanner ⇒ !columnScanner.eof))
-          count
-        }
-      }
-    })).toList
-    eof = true
-    results.foldLeft(0L)(_ + _.get)
-  }
+  val buffers: Array[ByteBuffer] = new Array[ByteBuffer](scanSchema.size)
   override def next: Boolean = {
     if (eof) {
       return false
@@ -93,16 +70,28 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
       for (columnScanner ← currentScanner.get) columnScanner.skip
       currentScanner = None
     }
-    for (s ← (0 to scanners.size - 1)) {
-      //filter
-      var segmentHasData = scanners(s).forall(columnScanner ⇒ !columnScanner.eof)
-      while (segmentHasData && !rowFilter.matches(scanners(s).map(_.buffer))) {
-        segmentHasData = scanners(s).forall(columnScanner ⇒ { columnScanner.skip; !columnScanner.eof })
-      }
+    var s = 0
+    while(s < scanners.length) {
+      val scanner  = scanners(s)
+      s += 1
+      //optimized filter
+      var segmentHasData = true
+      var filterMatch = true
+      do {
+        var i = 0
+        while (i < scanner.length) {
+          if (!filterMatch) scanner(i).skip
+          segmentHasData = segmentHasData && !scanner(i).eof
+          buffers(i) = scanner(i).buffer
+          i += 1
+        }
+        if (segmentHasData) filterMatch = rowFilter.matches(buffers)
+      } while (segmentHasData && !filterMatch)
+
       //merge sort
       if (segmentHasData) {
-        if (currentScanner == None || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanners(s)(scanKeyColumnIndex).buffer, currentScanner.get(scanKeyColumnIndex).buffer, keyType) > 0))) {
-          currentScanner = Some(scanners(s))
+        if (currentScanner == None || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanner(scanKeyColumnIndex).buffer, currentScanner.get(scanKeyColumnIndex).buffer, keyType) > 0))) {
+          currentScanner = Some(scanner)
         }
       }
     }
@@ -138,4 +127,45 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
       }
     }
   }
+
+  /**
+   * TODO currently hard-coded for 4-core processors, however once
+   * the table is distributed across multiple machines this thread pool should
+   * be bigger until the I/O becomes bottleneck.
+   */
+  override def count: Long = {
+    rewind
+    val executor = Executors.newFixedThreadPool(4)
+    val results: List[Future[Long]] = (0 to segments.size - 1).map(s ⇒ executor.submit(new Callable[Long] {
+      override def call: Long = {
+        if (rowFilter.isEmptyFilter) {
+          segments(s).count
+        } else {
+          //optimized filter count
+          val scanner = scanners(s)
+          var count = 0
+          var scannerHasData = true
+          do {
+            var i = 0
+            while (i < scanner.length) {
+              scannerHasData = scannerHasData && !scanner(i).eof
+              buffers(i) = scanner(i).buffer
+              i += 1
+            }
+            if (rowFilter.matches(buffers)) count += 1
+            i = 0
+            while (i < scanner.length) {
+              scanner(i).skip
+              scannerHasData = scannerHasData && !scanner(i).eof
+              i += 1
+            }
+          } while (scannerHasData)
+          count
+        }
+      }
+    })).toList
+    eof = true
+    results.foldLeft(0L)(_ + _.get)
+  }
+
 }

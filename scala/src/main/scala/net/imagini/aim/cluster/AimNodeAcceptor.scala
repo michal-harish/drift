@@ -23,6 +23,7 @@ class AimNodeAcceptor(val node: AimNode, listenPort: Int) extends Thread {
           log.debug("Node " + pipe.protocol + " connection from " + socket.getRemoteSocketAddress.toString)
           pipe.protocol match {
             case Protocol.LOADER_LOCAL ⇒ node.session(new AimNodeLoaderSession(node, pipe))
+//            case Protocol.LOADER_DISTRIBUTED => node.session(new AimNodeStreamLoaderSession(node, pipe))
             case Protocol.QUERY_LOCAL ⇒ node.session(new AimNodeQuerySession(node, pipe))
             case _              ⇒ log.debug("Unsupported protocol request " + pipe.protocol)
           }

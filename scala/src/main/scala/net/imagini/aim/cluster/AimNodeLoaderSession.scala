@@ -8,6 +8,11 @@ import java.io.IOException
 import net.imagini.aim.utils.BlockStorageLZ4
 import grizzled.slf4j.Logger
 
+/**
+ * TODO Loader session should be able to recieve any stream
+ * with content format specified in the header, this way we can directly pipe 
+ * in a gzip file without having to decompress and parse in the loader and then pipe
+ */
 class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
   val keyspace = pipe.read
   log.info("KEYSPACE=" + keyspace)

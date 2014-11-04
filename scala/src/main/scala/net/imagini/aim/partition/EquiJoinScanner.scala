@@ -86,6 +86,7 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
   override def count: Long = {
     rewind
     var count = 0
+    //TODO optimize - do not call next when counting
     while(!eof && right.next) {
       var cmp: Int = -1
       do {
