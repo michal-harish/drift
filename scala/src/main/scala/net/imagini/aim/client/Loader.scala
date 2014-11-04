@@ -1,20 +1,12 @@
-package net.imagini.aim.cluster
-
-import java.io.BufferedReader
-import java.io.EOFException
+package net.imagini.aim.client
 import java.io.FileInputStream
 import java.io.InputStream
-import java.io.InputStreamReader
 import java.net.InetAddress
 import java.net.Socket
-import java.util.zip.GZIPInputStream
-import scala.Array.canBuildFrom
 import grizzled.slf4j.Logger
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.types.AimType
-import java.io.IOException
-import net.imagini.aim.tools.StreamUtils
-import net.imagini.aim.types.Aim
+import net.imagini.aim.cluster.PipeGZIPLoader
+import net.imagini.aim.cluster.Protocol
 
 object Loader extends App {
   var host: String = "localhost"
@@ -67,14 +59,29 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
   val schemaDeclaration = pipe.read
   val schema = AimSchema.fromString(schemaDeclaration)
 
-  def streamInput:Int = {
-    org.apache.commons.io.IOUtils.copy(in, if (gzip) pipe.getOutputStream() else pipe.getDirectOutputStream())
+  def streamInput: Int = {
+    val out = if (gzip) pipe.getOutputStream else pipe.getDirectOutputStream
+    var count: Long = 0
+    var n: Int = 0
+    val buffer = new Array[Byte](65535)
+    do {
+      n = in.read(buffer)
+      if (-1 != n) {
+        out.write(buffer, 0, n)
+        if (gzip) {
+          pipe.getOutputStream.flush
+        } else {
+          pipe.getDirectOutputStream.flush
+        }
+        count += n
+      }
+    } while (-1 != n)
     if (!gzip) pipe.getDirectOutputStream.finish
     pipe.getOutputStream().flush
-    val loadedCount:Int = pipe.readInt
+    val loadedCount: Int = pipe.readInt
     pipe.close
     socket.close
-    loadedCount 
+    loadedCount
   }
 
 }

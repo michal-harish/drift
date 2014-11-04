@@ -2,7 +2,7 @@ package net.imagini.aim
 
 import net.imagini.aim.cluster.AimNode
 import net.imagini.aim.cluster.DriftManagerLocal
-import net.imagini.aim.cluster.Loader
+import net.imagini.aim.client.Loader
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 
