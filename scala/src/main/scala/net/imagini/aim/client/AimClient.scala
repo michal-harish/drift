@@ -77,15 +77,20 @@ class AimClient(val host: String, val port: Int) {
   }
 
   def printResult = {
-    val len: Array[Int] = resultSchema.names.map(n ⇒ {
-      val l = (math.max(n.length, resultSchema.dataType(n).getSize) / 4 + 1) * 4 + 1; print(" " + n.padTo(l - 1, ' ') + "|"); l
-    }).toArray
-    println("\n" + len.map(l ⇒ "-" * l).mkString("+"))
+    val len: Array[Int] = resultSchema.names.map(n ⇒ (math.max(n.length, resultSchema.dataType(n).getSize) / 4 + 1) * 4 + 1).toArray
+    var printedHeader = false
     while (hasNext) {
-      println((0 to len.length - 1, fetchRecordStrings).zipped.map((i, v) ⇒ {
+      val line = (0 to len.length - 1, fetchRecordStrings).zipped.map((i, v) ⇒ {
         len(i) = math.max(len(i), (v.length / 4 + 1) * 4 + 1)
         " " + v.padTo(len(i) - 1, ' ')
-      }).mkString("|"))
+      }).mkString("|")
+      if (!printedHeader) {
+        val header =  (0 to len.length - 1).map(i ⇒ " " + resultSchema.name(i).padTo(len(i) - 1, ' ') + "|")
+        println(header)
+        println(len.map(l ⇒ "-" * l).mkString("+"))
+        printedHeader = true
+      }
+      println(line)
     }
     println()
   }

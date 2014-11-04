@@ -7,20 +7,16 @@ import net.imagini.aim.segment.AimSegmentQuickSort
 import java.io.IOException
 import net.imagini.aim.utils.BlockStorageLZ4
 import grizzled.slf4j.Logger
+import java.io.InputStreamReader
+import java.io.BufferedReader
+import net.imagini.aim.types.TypeUtils
 
-/**
- * TODO Loader session should be able to recieve any stream
- * with content format specified in the header, this way we can directly pipe 
- * in a gzip file without having to decompress and parse in the loader and then pipe
- */
 class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
   val keyspace = pipe.read
-  log.info("KEYSPACE=" + keyspace)
   val table = pipe.read
-  log.info("TABLE=" + table)
   val partition = node.keyspace(keyspace)(table)
-  log.info(keyspace + " " + table + " sending schema " + partition.schema.toString)
-
+  val separator = pipe.read
+  log.info("LOADING INTO " + keyspace + "." + table + " " + partition.schema.toString)
   pipe.write(partition.schema.toString)
   pipe.flush
 
@@ -36,24 +32,55 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
   createNewSegmentIfNull
 
   override def accept = {
-    try {
-      record.clear
-      for (t ← partition.schema.fields) {
-        pipe.readInto(t.getDataType, record)
-      }
-      record.flip
-      currentSegment.appendRecord(record);
-      count += 1
 
-      if (currentSegment.getOriginalSize > partition.segmentSizeBytes) {
-        addCurrentSegment
+    val reader = new InputStreamReader(pipe.getInputStream)
+    try {
+      val lineReader = new BufferedReader(reader)
+      val values: Array[String] = new Array[String](partition.schema.size)
+      var line: String = ""
+      while (true) {
+        record.clear
+        var fields: Int = 0
+        while (fields < partition.schema.size) {
+          val line = lineReader.readLine
+          if (line == null) {
+            throw new EOFException
+          } else {
+            for (value ← line.split(separator)) {
+              values(fields) = value
+              fields += 1
+            }
+          }
+        }
+        try {
+          for ((t, value) ← (partition.schema.fields zip values)) {
+            val bytes = t.convert(value)
+            TypeUtils.copy(bytes, t.getDataType, record)
+          }
+          record.flip
+          currentSegment.appendRecord(record);
+          count += 1
+
+          if (currentSegment.getOriginalSize > partition.segmentSizeBytes) {
+            addCurrentSegment
+          }
+        } catch {
+          case e: IOException ⇒ {
+            log.error(count + ":" + values, e);
+            throw e
+          }
+          case e: Exception ⇒ {
+            log.error(count + ":" + values, e);
+          }
+        }
       }
-    } catch {
-      case e: EOFException ⇒ {
-        addCurrentSegment
-        log.info("load(EOF) records: " + count + " time(ms): " + (System.currentTimeMillis - startTime))
-        throw e;
-      }
+
+    } finally {
+      addCurrentSegment
+      log.info("load(EOF) records: " + count + " time(ms): " + (System.currentTimeMillis - startTime))
+      pipe.writeInt(count)
+      pipe.flush
+      reader.close
     }
   }
 
@@ -83,4 +110,5 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
       //            }
     }
   }
+
 }

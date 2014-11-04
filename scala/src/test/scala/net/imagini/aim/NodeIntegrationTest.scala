@@ -27,11 +27,11 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
   }
   def fixutreLoadDataSyncs = {
     val loader = new Loader(host, port, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv"), false)
-    loader.processInput should equal(3)
+    loader.streamInput should be (3)
   }
   def fixutreLoadPageviews = {
     val loader = new Loader(host, port, "vdna", "events", "\n", this.getClass.getResourceAsStream("pageviews.csv"), false)
-    loader.processInput should equal(5)
+    loader.streamInput should be (5)
   }
 
   def newClient: AimClient = {
@@ -108,9 +108,9 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     }
     node.query("vdna", "COUNT events").asInstanceOf[CountScanner].count should be(0)
 
-    client.query("COUNT events")  should be (None)
+    client.query("COUNT events") should be(None)
     client.getCount should be(0)
-    
+
     fixutreLoadDataSyncs
     fixutreLoadPageviews
 

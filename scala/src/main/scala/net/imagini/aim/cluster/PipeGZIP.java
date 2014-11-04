@@ -9,7 +9,6 @@ import java.util.zip.GZIPOutputStream;
 
 public class PipeGZIP extends Pipe {
 
-
     public PipeGZIP(OutputStream out) throws IOException {
        super(out);
     }
@@ -33,6 +32,5 @@ public class PipeGZIP extends Pipe {
     @Override protected InputStream createInputStreamWrapper(InputStream in) throws IOException {
         return new GZIPInputStream(in);
     }
-
 
 }

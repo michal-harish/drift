@@ -13,6 +13,8 @@ import grizzled.slf4j.Logger
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
 import java.io.IOException
+import net.imagini.aim.tools.StreamUtils
+import net.imagini.aim.types.Aim
 
 object Loader extends App {
   var host: String = "localhost"
@@ -39,10 +41,9 @@ object Loader extends App {
     case None           ⇒ new Loader(host, port, keyspace, table, separator, gzip)
     case Some(filename) ⇒ new Loader(host, port, keyspace, table, separator, filename, gzip)
   }
-  loader.processInput
-  loader.close
-
+  loader.streamInput
 }
+
 class Loader(host: String, port: Int, val keyspace: String, val table: String, val separator: String, val fileinput: InputStream, val gzip: Boolean) {
 
   def this(host: String, port: Int, keyspace: String, table: String, separator: String, filename: String, gzip: Boolean) = this(host, port, keyspace, table, separator, if (filename == null) null else new FileInputStream(filename), gzip)
@@ -52,79 +53,28 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
   val log = Logger[this.type]
   val in: InputStream = if (fileinput == null) System.in else fileinput
   val socket = new Socket(InetAddress.getByName(host), port)
-  val pipe = new PipeLZ4(socket, Protocol.LOADER_LOCAL) //TODO LOADER_DISTRIBUTED
-  pipe.write(keyspace)
-  pipe.write(table)
-  pipe.flush
+  val pipe = new PipeGZIPLoader(socket, Protocol.LOADER_LOCAL)
+
+  //handshake
+  pipe.writeDirect(keyspace)
+  pipe.writeDirect(table)
+  pipe.writeDirect(separator)
+  if (gzip) {
+    pipe.getDirectOutputStream.finish
+  } else {
+    pipe.getDirectOutputStream.flush
+  }
   val schemaDeclaration = pipe.read
   val schema = AimSchema.fromString(schemaDeclaration)
 
-  def close() {
+  def streamInput:Int = {
+    org.apache.commons.io.IOUtils.copy(in, if (gzip) pipe.getOutputStream() else pipe.getDirectOutputStream())
+    if (!gzip) pipe.getDirectOutputStream.finish
+    pipe.getOutputStream().flush
+    val loadedCount:Int = pipe.readInt
     pipe.close
     socket.close
+    loadedCount 
   }
 
-  def processInput: Int = {
-    var count = 0
-    val reader = new InputStreamReader(if (gzip) new GZIPInputStream(in) else in)
-    try {
-      val lineReader = new BufferedReader(reader)
-      val values: Array[String] = new Array[String](schema.size)
-      var line: String = ""
-      var eof = false
-      while (!eof) {
-        var fields: Int = 0
-        while (fields < schema.size && !eof) {
-          val line = lineReader.readLine
-          if (line == null) {
-            eof = true
-          } else {
-            for (value ← line.split(separator)) {
-              values(fields) = value
-              fields += 1
-            }
-          }
-        }
-        if (!eof) {
-          try {
-            val record = createEmptyRecord
-            for ((t, i) ← schema.fields zip (0 to record.size - 1)) {
-              record(i) = t.convert(values(i))
-            }
-            storeLoadedRecord(record)
-            count += 1
-          } catch {
-            case e: IOException ⇒ {
-              log.error(count + ":" + values, e);
-              eof = true
-            }
-            case e: Exception ⇒ {
-              log.error(count + ":" + values, e);
-            }
-          }
-        }
-      }
-    } finally {
-      pipe.flush
-      close
-    }
-    in.close
-    count
-  }
-  def createEmptyRecord: Array[Array[Byte]] = new Array[Array[Byte]](schema.size)
-
-  def storeLoadedRecord(record: Array[Array[Byte]]) = {
-    try {
-      var i = 0
-      for (t: AimType ← schema.fields) {
-        pipe.write(t.getDataType, record(i))
-        i = i + 1
-      }
-    } catch {
-      case e: EOFException ⇒ {
-        pipe.flush
-        throw e
-      }
-    }
-  }
 }

@@ -42,7 +42,7 @@ public class Pipe {
             compression = 0;
         else if (getClass().equals(PipeLZ4.class))
             compression = 1;
-        else if (getClass().equals(PipeGZIP.class))
+        else if (getClass().equals(PipeGZIP.class) || getClass().equals(PipeGZIPLoader.class))
             compression = 2;
         else
             throw new IOException("Unsupported pipe type "
