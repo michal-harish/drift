@@ -23,19 +23,19 @@ class SegmentIntegration extends FlatSpec with Matchers {
     s1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "a", "6571796330792743131")
     s1.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748042", "a", "6571796330792743131")
     s1.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748043", "a", "6571796330792743131")
+    s1.count should be(3)
     p1.add(s1.close)
-
     s1.count should be(3)
 
-    val in: InputStream = new ScannerInputStream(new MergeScanner(p1.schema, "*", "column='a'", p1.segments))
+    val merge = new MergeScanner(p1.schema, "*", "column='a'", p1.segments)
+    val in: InputStream = new ScannerInputStream(merge)
     schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
     schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
     schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
     in.close
 
-    p1.count("column=a") should be(3)
-    p1.count("timestamp>1413143748041") should be(2)
-
+    merge.rewind
+    merge.count should be(3)
   }
 
   "QuickSorted ASC segemnt select" should "give an input stream with the correct order" in {
@@ -47,13 +47,14 @@ class SegmentIntegration extends FlatSpec with Matchers {
     s1.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748043", "a", "6571796330792743131")
     p1.add(s1.close)
     s1.count should be(3)
-    p1.count("column=a") should be(3)
-    p1.count("timestamp>1413143748041") should be(2)
-    val in: InputStream = new ScannerInputStream(new MergeScanner(p1.schema, "*", "column='a'", p1.segments))
+    val merge = new MergeScanner(p1.schema, "*", "column='a'", p1.segments)
+    val in: InputStream = new ScannerInputStream(merge)
     schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
     schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
     schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
     in.close
+    merge.rewind
+    merge.count should be(3)
 
   }
 

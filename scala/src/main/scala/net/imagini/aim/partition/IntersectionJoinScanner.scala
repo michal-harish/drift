@@ -96,4 +96,12 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
       })
     }
   }
+
+  override def count: Long = {
+    rewind
+    throw new NotImplementedError
+    eof = true
+    0
+  }
+
 }

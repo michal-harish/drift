@@ -3,16 +3,16 @@ package net.imagini.aim.partition
 import java.io.EOFException
 import java.nio.ByteBuffer
 import java.util.LinkedHashMap
-
 import scala.Array.canBuildFrom
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.immutable.ListMap
-
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.types.TypeUtils
+import java.util.concurrent.Executors
+import java.util.concurrent.Callable
 
 class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 
@@ -86,7 +86,7 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
     case true ⇒ {
       val row = if (currentLeft) {
         selectedKey = left.selectKey
-        left.selectRow 
+        left.selectRow
       } else {
         selectedKey = right.selectKey
         right.selectRow
@@ -96,5 +96,15 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
         case c: Int ⇒ selectBuffer(i) = row(c)
       })
     }
+  }
+
+  override def count: Long = {
+    rewind
+    rightHasData = false
+    leftHasData = false
+    val executor = Executors.newFixedThreadPool(2)
+    val l = executor.submit(new Callable[Long] { override def call: Long = left.count })
+    val r = executor.submit(new Callable[Long] { override def call: Long = right.count })
+    l.get + r.get
   }
 }

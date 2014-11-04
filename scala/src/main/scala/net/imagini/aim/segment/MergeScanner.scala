@@ -10,6 +10,9 @@ import net.imagini.aim.tools.AbstractScanner
 import scala.Array.canBuildFrom
 import net.imagini.aim.types.TypeUtils
 import net.imagini.aim.tools.ColumnScanner
+import java.util.concurrent.Future
+import java.util.concurrent.Executors
+import java.util.concurrent.Callable
 
 class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String], val rowFilter: RowFilter, val segments: Seq[AimSegment])
   extends AbstractScanner {
@@ -55,6 +58,33 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
     move
   }
 
+  /**
+   * TODO Parallel count - currently hard-coded for 4-core processors, however once
+   * the table is distributed across multiple machines this thread pool should
+   * be bigger until the I/O becomes bottleneck.
+   */
+  
+  override def count: Long = {
+    rewind
+    val executor = Executors.newFixedThreadPool(4)
+    val results: List[Future[Long]] = (0 to segments.size - 1).map(s ⇒ executor.submit(new Callable[Long] {
+      override def call: Long = {
+        if (rowFilter.isEmptyFilter) {
+          segments(s).count
+        } else {
+          val scanner = scanners(s)
+          var count = 0
+          do {
+            if (rowFilter.matches(scanner.map(_.buffer))) count += 1
+            for (columnScanner ← scanner) columnScanner.skip
+          } while (scanner.forall(columnScanner ⇒ !columnScanner.eof))
+          count
+        }
+      }
+    })).toList
+    eof = true
+    results.foldLeft(0L)(_ + _.get)
+  }
   override def next: Boolean = {
     if (eof) {
       return false
@@ -67,7 +97,6 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
       //filter
       var segmentHasData = scanners(s).forall(columnScanner ⇒ !columnScanner.eof)
       while (segmentHasData && !rowFilter.matches(scanners(s).map(_.buffer))) {
-        //for (columnScanner ← scanners(s)) 
         segmentHasData = scanners(s).forall(columnScanner ⇒ { columnScanner.skip; !columnScanner.eof })
       }
       //merge sort

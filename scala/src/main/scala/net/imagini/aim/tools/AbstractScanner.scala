@@ -29,6 +29,8 @@ trait AbstractScanner {
     //TODO implement close for all scanners
   }
 
+  def count: Long
+
   final protected[aim] def nextLine: String = nextLine("\t")
 
   final protected[aim] def nextLine(separator: String): String = { next; selectLine(separator) }

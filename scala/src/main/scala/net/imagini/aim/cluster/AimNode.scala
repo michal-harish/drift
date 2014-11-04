@@ -38,6 +38,7 @@ object AimNode extends App {
   manager.createTable("addthis", "pageviews", "at_id(STRING), url(STRING), timestamp(LONG)", true)
   manager.createTable("addthis", "syncs", "at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(LONG)", true)
   manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), type(STRING), url(STRING)", true)
+  manager.createTable("vdna", "pageviews", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), url(STRING)", true)
   manager.createTable("vdna", "syncs", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), id_space(STRING), partner_user_id(STRING)", true)
 
   //ATTACH CONSOLE

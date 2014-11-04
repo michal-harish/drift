@@ -53,7 +53,7 @@ class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val s
   }
 
   override def selectKey: ByteBuffer = if (eof) throw new EOFException else selectedKey
-  
+
   override def selectRow: Array[ByteBuffer] = if (eof) throw new EOFException else selectBuffer
 
   private def move = eof match {
@@ -66,5 +66,12 @@ class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val s
       val row = scanner.selectRow
       for (i ← (0 to schema.size - 1)) selectBuffer(i) = row(selectIndex(i))
     }
+  }
+
+  override def count: Long = {
+    rewind
+    throw new NotImplementedError
+    eof = true
+    0
   }
 }

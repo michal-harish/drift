@@ -22,16 +22,18 @@ object AimClient extends App {
   var table: String = null
   val argsIterator = args.iterator
   var query: Option[String] = None
+  var separator: String = "\t"
   while (argsIterator.hasNext) {
     argsIterator.next match {
-      case "--host"     ⇒ host = argsIterator.next
-      case "--port"     ⇒ port = argsIterator.next.toInt
-      case "--keyspace" ⇒ keyspace = argsIterator.next
-      case arg: String  ⇒ query = Some(arg)
+      case "--host"      ⇒ host = argsIterator.next
+      case "--port"      ⇒ port = argsIterator.next.toInt
+      case "--keyspace"  ⇒ keyspace = argsIterator.next
+      case "--separator" ⇒ separator = argsIterator.next
+      case arg: String   ⇒ query = Some(arg)
     }
   }
   query match {
-    case None ⇒ println("Usage: java jar drift-client.jar --keyspace <name> [--host <localhost> --port <4000> ] '<query>'")
+    case None ⇒ println("Usage: java jar drift-client.jar --keyspace <name> [--host <localhost> --port <4000> --separator<\\t>] '<query>'")
     case Some(query) ⇒ {
       val client = new AimClient(host, port)
       client.query("USE " + keyspace)
@@ -39,7 +41,7 @@ object AimClient extends App {
         case None ⇒ println("Invalid DRFIT Query")
         case Some(schema) ⇒ {
           while (client.hasNext) {
-            println(client.fetchRecordLine)
+            println(client.fetchRecordStrings.mkString(separator))
           }
         }
       }
@@ -55,7 +57,7 @@ class AimClient(val host: String, val port: Int) {
   private var error: Option[String] = None
   private var hasData: Option[Boolean] = None
   private var schema: Option[AimSchema] = None
-  private var count:Long = 0
+  private var count: Long = 0
 
   private def reconnect = {
     socket.close
@@ -139,7 +141,7 @@ class AimClient(val host: String, val port: Int) {
     }
   }
 
-  private def processResponse(pipe: Pipe):Boolean = {
+  private def processResponse(pipe: Pipe): Boolean = {
     pipe.read match {
       case "OK" ⇒ {
         schema = None

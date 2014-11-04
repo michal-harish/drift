@@ -21,8 +21,9 @@ class StatScanner(val partition: Int, val regions: Map[String,AimPartition]) ext
             ByteUtils.wrap(schema.get(0).convert(r._1)),
             ByteUtils.wrap(schema.get(1).convert(partition.toString)),
             ByteUtils.wrap(schema.get(2).convert(r._2.numSegments.toString)),
-            ByteUtils.wrap(schema.get(3).convert(r._2.count("*").toString)),
-            ByteUtils.wrap(schema.get(4).convert(r._2.count("*").toString)),
+            ByteUtils.wrap(schema.get(3).convert(r._2.getCount.toString)),
+            //TODO count(!) count distinct should be different from count(*)
+            ByteUtils.wrap(schema.get(4).convert(r._2.getCount.toString)),
             ByteUtils.wrap(schema.get(5).convert(r._2.getCompressedSize.toString)),
             ByteUtils.wrap(schema.get(6).convert(r._2.getUncompressedSize.toString))
          )
@@ -46,4 +47,6 @@ class StatScanner(val partition: Int, val regions: Map[String,AimPartition]) ext
   override def mark = rowMark = currentRow
 
   override def reset = currentRow = rowMark
+
+  override def count: Long = data.size
 }

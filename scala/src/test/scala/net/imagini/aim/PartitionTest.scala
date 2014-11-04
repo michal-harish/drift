@@ -42,7 +42,7 @@ class PartitionTest extends FlatSpec with Matchers {
     partitionUserFlags1.add(sC2)
 
     val scanner = new StatScanner(1, Map("pageviews" -> partition1, "flags" -> partitionUserFlags1))
-    scanner.nextLine should be("flags\t1\t2\t4\t4\t121\t141") //TODO count(!) count distinct should be different from count(*)
+    scanner.nextLine should be("flags\t1\t2\t5\t5\t121\t141")
     scanner.nextLine should be("pageviews\t1\t2\t6\t6\t218\t267")
     an[EOFException] must be thrownBy(scanner.nextLine)
   }

@@ -83,4 +83,19 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
     }
   }
 
+  override def count: Long = {
+    rewind
+    var count = 0
+    while(!eof && right.next) {
+      var cmp: Int = -1
+      do {
+        cmp = TypeUtils.compare(left.selectKey, right.selectKey, left.keyType)
+        if (cmp < 0) eof = !left.next
+        else if (cmp > 0) eof = !right.next
+      } while (!eof && cmp != 0)
+        count += 1
+    }
+    eof = true
+    count
+  }
 }

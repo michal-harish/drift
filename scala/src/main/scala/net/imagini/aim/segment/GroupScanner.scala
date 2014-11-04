@@ -142,6 +142,12 @@ class GroupScanner(
     } while (!satisfiesFilter || !groupFunctions.forall(_.satisfied))
     merge.reset
   }
+  override def count: Long = {
+    rewind
+    //TODO count for group filter after decision about refactor above
+    eof = true
+    0
+  }
 
 }
 

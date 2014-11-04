@@ -167,7 +167,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     scanner2.next should be(false);
 
     val scanner3 = parser.parse("count pageviews where user_uid='37b22cfb-a29e-42c3-a3d9-12d32850e103'")
-    scanner3.asInstanceOf[CountScanner].count should be(3L)
+    scanner3.count should be(3L)
   }
 
   "Partition " should "understand complex join query" in {
@@ -188,7 +188,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     scanner.next should be(false)
     an[EOFException] must be thrownBy (scanner.selectLine(","))
     val scanner3 = parser.parse("count (SELECT user_uid,url,timestamp FROM pageviews WHERE timestamp > '2014-10-10 11:59:01' UNION SELECT * FROM conversions)")
-    scanner3.asInstanceOf[CountScanner].count should be(6L)
+    scanner3.count should be(7L)
 
   }
 

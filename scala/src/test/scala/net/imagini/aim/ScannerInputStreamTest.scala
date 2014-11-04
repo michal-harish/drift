@@ -37,8 +37,6 @@ class ScannerInputStreamTest extends FlatSpec with Matchers {
     readLine(in) should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 www.travel.com/offers")
     readLine(in) should be("37b22cfb-a29e-42c3-a3d9-12d32850e103 www.travel.com/offers/holiday")
     in.close
-
-    p.count("*") should be(4)
   }
 
   "ScannerInputStream " should "be able to read can read MergeScanner byte by byte" in {
