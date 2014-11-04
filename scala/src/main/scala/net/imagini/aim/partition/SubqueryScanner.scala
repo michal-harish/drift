@@ -16,9 +16,11 @@ class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val s
 
   override val schema: AimSchema = scanner.schema.subset(select)
 
-  override val keyColumn = if (!schema.has(scanner.schema.name(scanner.keyColumn))) -1 else schema.get(scanner.schema.name(scanner.keyColumn))
+  override val keyType: AimType = scanner.keyType
 
   private val selectIndex = schema.names.map(t ⇒ scanner.schema.get(t))
+
+  private var selectedKey: ByteBuffer = null
 
   private val selectBuffer: Array[ByteBuffer] = new Array[ByteBuffer](schema.size)
 
@@ -50,11 +52,17 @@ class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val s
     true
   }
 
-  def selectRow: Array[ByteBuffer] = if (eof) throw new EOFException else selectBuffer
+  override def selectKey: ByteBuffer = if (eof) throw new EOFException else selectedKey
+  
+  override def selectRow: Array[ByteBuffer] = if (eof) throw new EOFException else selectBuffer
 
   private def move = eof match {
-    case true ⇒ for (i ← (0 to schema.size - 1)) selectBuffer(i) = null
+    case true ⇒ {
+      selectedKey = null
+      for (i ← (0 to schema.size - 1)) selectBuffer(i) = null
+    }
     case false ⇒ {
+      selectedKey = scanner.selectKey
       val row = scanner.selectRow
       for (i ← (0 to schema.size - 1)) selectBuffer(i) = row(selectIndex(i))
     }

@@ -72,11 +72,10 @@ class QueryParser(val regions: Map[String, AimPartition]) extends App {
       case join: PEquiJoin ⇒ {
         val leftScanner = compile(join.left)
         val rightScanner = compile(join.right)
-        val fields: Array[String] = compile(join.fields)
         if (asCounter) {
-          new EquiJoinScanner(fields, leftScanner, rightScanner) with CountScanner
+          new EquiJoinScanner(leftScanner, rightScanner) with CountScanner
         } else {
-          new EquiJoinScanner(fields, leftScanner, rightScanner)
+          new EquiJoinScanner(leftScanner, rightScanner)
         }
       }
     }
@@ -121,7 +120,11 @@ class QueryParser(val regions: Map[String, AimPartition]) extends App {
       q.dequeue match {
         case "(" ⇒ {
           frame = asDataFrame(q); q.dequeue;
-          return PCount(PSubquery(frame, asFilter(q)))
+          val filter = asFilter(q)
+          return filter match {
+            case "*" ⇒ PCount(frame)
+            case _   ⇒ PCount(PSubquery(frame, filter))
+          }
         }
         case name: String ⇒ {
           frame = PTable(name);

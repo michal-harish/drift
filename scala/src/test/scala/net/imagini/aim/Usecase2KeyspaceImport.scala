@@ -43,9 +43,8 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
 
     //Scan join transformation of AT pageviews into VDNA Pageviews 
     val joinScan = new EquiJoinScanner(
-      Array("user_uid","url","timestamp"),
-      new MergeScanner(schemaATSyncs, "user_uid, at_id", "*", AS1.segments),
-      new MergeScanner(schemaATPageviews, "at_id, url, timestamp", "timestamp > '2014-10-10 16:00:00' ", AP1.segments))
+      new MergeScanner(schemaATSyncs, "user_uid", "*", AS1.segments),
+      new MergeScanner(schemaATPageviews, "url, timestamp", "timestamp > '2014-10-10 16:00:00' ", AP1.segments))
     val newVDNAPageviewsSegment = new AimSegmentQuickSort(schemaVDNAPageviews, classOf[BlockStorageLZ4])
 
     while (joinScan.next) {

@@ -68,7 +68,6 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
      * ) 
      */
     val tsetJoin = new EquiJoinScanner(
-      Array("user_uid","url","timestamp","conversion"),
       new MergeScanner(schemaUserFlags, "user_uid", "value='true' and flag='quizzed' or flag='cc'", partitionUserFlags1.segments),
       new UnionJoinScanner(
           new MergeScanner(schemaPageviews, "user_uid,url,timestamp", "url contains 'travel.com'", partitionPageviews1.segments)

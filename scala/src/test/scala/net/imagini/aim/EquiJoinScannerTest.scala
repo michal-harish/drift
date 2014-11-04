@@ -35,9 +35,8 @@ class EquiJoinScannerTest extends FlatSpec with Matchers {
       .close)
 
     val joinScan = new EquiJoinScanner(
-        Array("user_uid","url", "timestamp"),
-        new MergeScanner(AS1.schema, "user_uid, at_id ", "*", AS1.segments), 
-        new MergeScanner(AP1.schema, "at_id, url, timestamp", "timestamp > '2014-10-10 16:00:00' ", AP1.segments) //at_id, 
+        new MergeScanner(AS1.schema, "user_uid", "*", AS1.segments), 
+        new MergeScanner(AP1.schema, "url, timestamp", "timestamp > '2014-10-10 16:00:00' ", AP1.segments) //at_id, 
     )
     joinScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com\t2014-10-10 16:00:01")
     joinScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.bank.com\t2014-10-10 18:00:01")
@@ -47,9 +46,8 @@ class EquiJoinScannerTest extends FlatSpec with Matchers {
     an[EOFException] must be thrownBy joinScan.nextLine
 
     val joinScan2 = new EquiJoinScanner(
-        Array("user_uid","url","timestamp"),
-        new MergeScanner(AS1.schema, "user_uid, at_id", "*", AS1.segments),  
-        new MergeScanner(AP1.schema, "at_id, url, timestamp", "*", AP1.segments)
+        new MergeScanner(AS1.schema, "user_uid", "*", AS1.segments),  
+        new MergeScanner(AP1.schema, "url, timestamp", "*", AP1.segments)
     )
     joinScan2.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.tv.com\t2014-10-10 13:59:01")
     joinScan2.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.auto.com/offers\t2014-10-10 15:00:01")

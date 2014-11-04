@@ -16,6 +16,7 @@ import net.imagini.aim.types.AimType
 import net.imagini.aim.types.AimTypeAbstract
 import net.imagini.aim.types.TypeUtils
 
+//TODO either optimize with selectBuffer or simply extend MergeScanner
 class GroupScanner(
   val sourceSchema: AimSchema,
   val groupSelectStatement: String,
@@ -33,43 +34,55 @@ class GroupScanner(
       case function: String if (function.contains("(group")) ⇒ new AimTypeGROUP(sourceSchema, function).typeTuple
     }): _*).asJava))
 
-  override val keyColumn = schema.get(sourceSchema.name(0))
-
-
   private val rowFilter = RowFilter.fromString(sourceSchema, rowFilterStatement)
   private val groupFilter = RowFilter.fromString(sourceSchema, groupFilterStatement)
   private val groupFunctions: Seq[AimTypeGROUP] = schema.fields.filter(_.isInstanceOf[AimTypeGROUP]).map(_.asInstanceOf[AimTypeGROUP])
-
+  private val keyField = sourceSchema.name(0)
   private val scanColumns:Array[String] = 
     selectRef ++ 
     rowFilter.getColumns ++ 
     groupFilter.getColumns ++ 
     groupFunctions.flatMap(_.filter.getColumns) ++ 
-    groupFunctions.map(_.field) :+ sourceSchema.name(0)
+    groupFunctions.map(_.field) :+ keyField
   private val merge = new MergeScanner(sourceSchema, scanColumns, RowFilter.fromString(sourceSchema, "*"), segments)
-  private val scanKeyType = sourceSchema.get(0)
+  override val keyType = sourceSchema.get(0)
   rowFilter.updateFormula(merge.schema.names)
   groupFilter.updateFormula(merge.schema.names)
   groupFunctions.map(_.filter.updateFormula(merge.schema.names))
   private val mergeColumnIndex: Array[Int] = schema.names.map(n ⇒ if (merge.schema.has(n)) merge.schema.get(n) else -1)
+  private var groupKey: Option[ByteBuffer] = None
+  private var eof = false
 
-  override def rewind = merge.rewind
-  override def mark = merge.mark //FIXME this needs its own mark, e.g. x = merge.mark ... merge.reset(x)
-  override def reset = merge.reset
+  override def rewind = {
+    merge.rewind
+    eof = false
+  }
+  override def mark = {
+    merge.mark //FIXME this needs its own mark, e.g. x = merge.mark ... merge.reset(x)
+  }
+  override def reset = {
+    merge.reset
+  }
 
   override def next: Boolean = {
-    try {
+    if (eof) {
+      false
+    } else try {
       while (!selectNextGroupRow) {
         skipToNextGroup
       }
       true
     } catch {
-      case e: EOFException ⇒ { false }
+      case e: EOFException ⇒ {
+        eof = true
+        false 
+      }
     }
   }
 
-  override def selectRow: Array[ByteBuffer] = {
-    //TODO optimize with var selectBuffer: Array[ByteBuffer
+  override def selectKey: ByteBuffer = if (eof) throw new EOFException else groupKey.get
+
+  override def selectRow: Array[ByteBuffer] = if (eof) throw new EOFException else {
     val mergeRow = merge.selectRow
     (schema.fields, (0 to schema.fields.length)).zipped.map((f, c) ⇒ f match {
       case function: AimTypeGROUP ⇒ function.toByteBuffer
@@ -77,15 +90,13 @@ class GroupScanner(
     })
   }
 
-  private var groupKey: ByteBuffer = null
-
   def selectNextGroupRow: Boolean = {
-    if (groupKey == null) {
+    if (groupKey == None) {
       skipToNextGroup
     } else {
       merge.next
     }
-    while (TypeUtils.equals(merge.selectKey, groupKey, scanKeyType)) {
+    while (TypeUtils.equals(merge.selectKey, groupKey.get, keyType)) {
       if (rowFilter.matches(merge.selectRow)) {
         return true
       } else {
@@ -96,8 +107,8 @@ class GroupScanner(
   }
 
   private def skipToNextGroup = {
-    if (groupKey != null) {
-      while (TypeUtils.equals(merge.selectKey, groupKey, scanKeyType)) {
+    if (groupKey != None) {
+      while (TypeUtils.equals(merge.selectKey, groupKey.get, keyType)) {
         merge.next
       }
     }
@@ -111,10 +122,10 @@ class GroupScanner(
       merge.next
     }
     do {
-      groupKey = merge.selectKey.slice
+      groupKey = Some(merge.selectKey.slice)
       merge.mark
       try {
-        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && TypeUtils.equals(merge.selectKey, groupKey, scanKeyType)) {
+        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && TypeUtils.equals(merge.selectKey, groupKey.get, keyType)) {
           if (!satisfiesFilter && groupFilter.matches(merge.selectRow)) {
             satisfiesFilter = true
           }

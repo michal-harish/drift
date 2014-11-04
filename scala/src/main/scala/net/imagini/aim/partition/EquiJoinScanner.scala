@@ -11,22 +11,22 @@ import net.imagini.aim.types.TypeUtils
 import java.nio.ByteBuffer
 import net.imagini.aim.tools.AbstractScanner
 
-class EquiJoinScanner(val select: Array[String], val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
+class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 
   val leftSelect = left.schema.names
   val rightSelect = right.schema.names.filter(!left.schema.has(_))
 
-  override val keyColumn = 0
-
-  private val selectMap = ListMap(select.map(_ match {
-    case f if (left.schema.has(f))  ⇒ f -> left.schema.field(f)
-    case f if (right.schema.has(f)) ⇒ f -> right.schema.field(f)
-  }): _*)
+  private val selectMap = ListMap((
+   left.schema.names.map(f => (f -> left.schema.field(f))) ++ 
+   right.schema.names.filter(!left.schema.has(_)).map(f => (f -> right.schema.field(f)))
+  ): _*)
 
   override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](selectMap.asJava))
+  override val keyType: AimType = left.keyType
 
   private val leftSelectIndex:Array[Int] = selectMap.keys.filter(left.schema.has(_)).map(left.schema.get(_)).toArray
   private val rightSelectIndex:Array[Int] = selectMap.keys.filter(f =>(!left.schema.has(f) && right.schema.has(f))).map(right.schema.get(_)).toArray
+  private var selectedKey: ByteBuffer = null
   private val selectBuffer: Array[ByteBuffer] = new Array[ByteBuffer](schema.size)
   private var eof = false
   left.next
@@ -50,6 +50,8 @@ class EquiJoinScanner(val select: Array[String], val left: AbstractScanner, val 
     move
   }
 
+  override def selectKey: ByteBuffer = if (eof) throw new EOFException else selectedKey
+
   override def selectRow: Array[ByteBuffer] = if (eof) throw new EOFException else selectBuffer
 
   override def next: Boolean = {
@@ -68,8 +70,12 @@ class EquiJoinScanner(val select: Array[String], val left: AbstractScanner, val 
   }
 
   private def move = eof match {
-    case true ⇒ for (i ← (0 to schema.size - 1)) selectBuffer(i) = null
+    case true ⇒ {
+      selectedKey = null
+      for (i ← (0 to schema.size - 1)) selectBuffer(i) = null
+    }
     case false ⇒ {
+      selectedKey = left.selectKey
       val leftRow = left.selectRow
       val rightRow = right.selectRow
       for(i <- (0 to leftSelectIndex.size - 1)) selectBuffer(i) = leftRow(leftSelectIndex(i))
