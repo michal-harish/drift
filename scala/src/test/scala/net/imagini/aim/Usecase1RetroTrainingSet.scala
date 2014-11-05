@@ -64,28 +64,6 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
     val tsetJoin = parser.parse("select user_uid from flags where value='true' and flag='quizzed' or flag='cc' join " +
         "(select user_uid,url,timestamp from pageviews where url contains 'travel.com' union " 
         +"select user_uid,url,timestamp,conversion from conversions)");
-    while(tsetJoin.next) {
-      println(tsetJoin.selectLine("\t"));
-    }
-
-
-
-    /**
-     * TODO 
-     * select 'user_uid' from flags where value='true' and flag='quizzed' or flag='cc'
-     * join (
-     *   select user_uid,url,timestamp from pageviews where url contains 'travel.com'
-     *   union 
-     *   select conversions user_uid,url,timestamp,conversion 
-     * ) 
-     */
-//    val tsetJoin = new EquiJoinScanner(
-//      new MergeScanner(schemaUserFlags, "user_uid", "value='true' and flag='quizzed' or flag='cc'", partitionUserFlags1.segments),
-//      new UnionJoinScanner(
-//          new MergeScanner(schemaPageviews, "user_uid,url,timestamp", "url contains 'travel.com'", partitionPageviews1.segments)
-//          ,new MergeScanner(schemaConversions, "user_uid,url,timestamp,conversion", "*", partitionConversions1.segments)
-//        )
-//    )
 
     /**
      * Expected result contains only first and third user, combined schema from pageviews and conversions
@@ -102,7 +80,6 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
      * =====================================+=======================================+=======================|
      */
 
-    tsetJoin.rewind
     tsetJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 12:01:02\t"+Aim.EMPTY)
     tsetJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers/holiday\t2014-10-10 12:01:03\t"+Aim.EMPTY)
     tsetJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.bank.com/myaccunt\t2014-10-10 13:59:01\tcheck")
