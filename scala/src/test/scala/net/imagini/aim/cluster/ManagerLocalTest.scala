@@ -13,12 +13,13 @@ class ManagerLocalTest extends FlatSpec with Matchers {
       children.keys.map(k ⇒ {
         manager.watch("/drift/keyspaces/" + k, (tables: Map[String, String]) ⇒ {
           tables.map(t ⇒ {
+            println(t._2)
             notification = Some(t._2)
           })
         })
       })
     })
     manager.createTable("xyz", "table1", "user_id(STRING)")
-    notification.get should be("user_id(STRING)")
+    notification.get should be("user_id(STRING)\n100000000\nnet.imagini.aim.utils.BlockStorageLZ4")
   }
 }

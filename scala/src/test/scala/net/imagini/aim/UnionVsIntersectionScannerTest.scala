@@ -21,11 +21,9 @@ class UnionVsIntersectionScannerTest extends FlatSpec with Matchers {
       sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01")
       sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02")
       sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03")
-      sA1.close
       val sA2 = new AimSegmentQuickSort(schemaA, classOf[BlockStorageLZ4])
       sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
       sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
-      sA2.close
       val partitionA1 = new AimPartition(schemaA, 1000)
       partitionA1.add(sA1)
       partitionA1.add(sA2)
@@ -36,7 +34,6 @@ class UnionVsIntersectionScannerTest extends FlatSpec with Matchers {
       val sB1 = new AimSegmentQuickSort(schemaB, classOf[BlockStorageLZ4])
       sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
       sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
-      sB1.close
 
       val partitionB1 = new AimPartition(schemaB, 1000)
       partitionB1.add(sB1)

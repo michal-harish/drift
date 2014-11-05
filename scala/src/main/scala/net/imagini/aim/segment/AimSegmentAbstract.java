@@ -61,7 +61,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
         return appendRecord(recordBuffer);
     }
 
-    @Override final public AimSegment appendRecord(String... values) throws IOException {
+    final public AimSegment appendRecord(String... values) throws IOException {
         if (values.length != schema.size()) {
             throw new IllegalArgumentException("Number of values doesn't match the number of fields in the schema");
         }

@@ -24,7 +24,7 @@ class SegmentIntegration extends FlatSpec with Matchers {
     s1.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748042", "a", "6571796330792743131")
     s1.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748043", "a", "6571796330792743131")
     s1.count should be(3)
-    p1.add(s1.close)
+    p1.add(s1)
     s1.count should be(3)
 
     val merge = new MergeScanner(p1.schema, "*", "column='a'", p1.segments)
@@ -45,7 +45,7 @@ class SegmentIntegration extends FlatSpec with Matchers {
     s1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "a", "6571796330792743131")
     s1.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748042", "a", "6571796330792743131")
     s1.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748043", "a", "6571796330792743131")
-    p1.add(s1.close)
+    p1.add(s1)
     s1.count should be(3)
     val merge = new MergeScanner(p1.schema, "*", "column='a'", p1.segments)
     val in: InputStream = new ScannerInputStream(merge)
@@ -64,7 +64,6 @@ class SegmentIntegration extends FlatSpec with Matchers {
   //    s1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103","1413143748041","a","6571796330792743131")
   //    s1.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103","1413143748042","a","6571796330792743131")
   //    s1.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103","1413143748043","a","6571796330792743131")
-  //    s1.close
   //    s1.count(RowFilter.emptyFilter) should be(3)
   //    s1.count(RowFilter.fromString(schema, "column=a")) should be(3)
   //    s1.count(RowFilter.fromString(schema, "timestamp>1413143748041")) should be(2)

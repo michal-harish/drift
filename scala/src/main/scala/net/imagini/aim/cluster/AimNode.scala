@@ -14,6 +14,8 @@ import net.imagini.aim.partition.StatScanner
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorageLZ4
+import net.imagini.aim.utils.BlockStorageMem
+import net.imagini.aim.utils.BlockStorage
 
 object AimNode extends App {
   val log = Logger[this.type]
@@ -36,7 +38,7 @@ object AimNode extends App {
   new AimNode(4, "localhost:4003", manager)
 
   //CREATING TABLES
-  val storageType = classOf[BlockStorageLZ4]
+  val storageType = classOf[BlockStorageMem]
   manager.createTable("addthis", "views", "at_id(STRING), url(STRING), timestamp(LONG)", 50000000, storageType)
   manager.createTable("addthis", "syncs", "at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(LONG)", 200000000, storageType)
   manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), type(STRING), url(STRING)", 100000000, storageType)
@@ -116,8 +118,8 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
           val tableDescriptor = t._2.split("\n")
           val schema = AimSchema.fromString(tableDescriptor(0))
           val segmentSize = java.lang.Integer.valueOf(tableDescriptor(1))
-          val storage = Class.forName(tableDescriptor(2))
-          keyspaceRefs.get(k).put(t._1, new AimPartition(schema, segmentSize)) 
+          val storageType = Class.forName(tableDescriptor(2)).asInstanceOf[Class[BlockStorage]]
+          keyspaceRefs.get(k).put(t._1, new AimPartition(schema, segmentSize, storageType)) 
           log.debug(id + ": " + k + "." + t._1 + " " + keyspaceRefs.get(k).get(t._1).toString)
         })
       })

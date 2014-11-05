@@ -20,7 +20,7 @@ class EquiJoinScannerTest extends FlatSpec with Matchers {
       .appendRecord("AT1234", "37b22cfb-a29e-42c3-a3d9-12d32850e103")
       .appendRecord("AT5656", "a7b22cfb-a29e-42c3-a3d9-12d32850e234")
       .appendRecord("AT7888", "89777987-a29e-42c3-a3d9-12d32850e234")
-      .close)
+    )
 
     //Keyspace:at, table: pageviews
     val AP = AimSchema.fromString("at_id(STRING), url(STRING), timestamp(TIME:LONG)")
@@ -32,7 +32,7 @@ class EquiJoinScannerTest extends FlatSpec with Matchers {
       .appendRecord("AT1234", "www.travel.com", "2014-10-10 16:00:01")
       .appendRecord("AT5656", "www.marvel.com", "2014-10-10 17:00:01")
       .appendRecord("AT1234", "www.bank.com", "2014-10-10 18:00:01")
-      .close)
+      )
 
     val joinScan = new EquiJoinScanner(
         new MergeScanner(AS1.schema, "user_uid", "*", AS1.segments), 

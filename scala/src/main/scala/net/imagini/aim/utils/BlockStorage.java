@@ -10,6 +10,7 @@ abstract public class BlockStorage {
 
     final public int hotSpotBlock = -1;
     final public ByteBuffer hotSpot = null;
+    protected LinkedList<Integer> lengths = new LinkedList<Integer>();
 
     final public ByteBuffer newBlock() {
         return ByteUtils.wrap(allocateBlock());
@@ -26,6 +27,7 @@ abstract public class BlockStorage {
     final public int addBlock(byte[] array, int offset, int length) {
         synchronized(blocks) {
             blocks.add(new AtomicInteger(0));
+            lengths.add(length);
             return compressBlock(array, offset, length);
         }
     }
@@ -51,7 +53,7 @@ abstract public class BlockStorage {
 
     final public ByteBuffer open(int block) {
         ref(block);
-        ByteBuffer zoom = ByteBuffer.wrap(cache.get(block));
+        ByteBuffer zoom = ByteBuffer.wrap(cache.get(block), 0, lengths.get(block));
         /**
          * Direct malloc() 
          *

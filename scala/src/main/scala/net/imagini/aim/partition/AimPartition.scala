@@ -41,7 +41,6 @@ class AimPartition(
   def createNewSegment: AimSegment = new AimSegmentQuickSort(schema, storageType)
 
   def add(segment: AimSegment) = {
-    //TODO make sure close throws IllegalState when already closed/added
     segment.close
     if (segment.count > 0) {
       segments.synchronized { //TODO use concurrent structure as this synchronisation really does nothing

@@ -10,7 +10,7 @@ public interface AimSegment {
 
     AimSegment appendRecord(byte[][] record) throws IOException;
     AimSegment appendRecord(ByteBuffer[] record) throws IOException;
-    AimSegment appendRecord(String... values) throws IOException;
+    AimSegment appendRecord(String... values) throws IOException; 
     AimSegment appendRecord(ByteBuffer record) throws IOException;
 
     AimSegment close() throws IllegalAccessException, IOException;

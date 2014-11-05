@@ -21,7 +21,7 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
     existingVDNAPageviewsSegment.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e234", "www.work.com", "2014-10-10 08:59:01")
     existingVDNAPageviewsSegment.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e234", "www.work2.com", "2014-10-10 08:59:01")
     existingVDNAPageviewsSegment.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.cafe.com", "2014-10-10 10:59:01")
-    partitionVDNAPageviews1.add(existingVDNAPageviewsSegment.close)
+    partitionVDNAPageviews1.add(existingVDNAPageviewsSegment)
 
     //Keyspace AT normal load
     val AS1 = new AimPartition(schemaATSyncs, 1000)
@@ -29,7 +29,7 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
       .appendRecord("AT1234", "37b22cfb-a29e-42c3-a3d9-12d32850e103")
       .appendRecord("AT5656", "a7b22cfb-a29e-42c3-a3d9-12d32850e234")
       .appendRecord("AT7888", "89777987-a29e-42c3-a3d9-12d32850e234")
-      .close)
+      )
 
     val AP1 = new AimPartition(schemaATPageviews, 1000)
     AP1.add(new AimSegmentQuickSort(schemaATPageviews, classOf[BlockStorageLZ4])
@@ -39,7 +39,7 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
       .appendRecord("AT1234", "www.travel.com", "2014-10-10 16:00:01")
       .appendRecord("AT5656", "www.marvel.com", "2014-10-10 17:00:01")
       .appendRecord("AT1234", "www.bank.com", "2014-10-10 18:00:01")
-      .close)
+      )
 
     //Scan join transformation of AT pageviews into VDNA Pageviews 
     val joinScan = new EquiJoinScanner(
@@ -50,8 +50,8 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
     while (joinScan.next) {
       newVDNAPageviewsSegment.appendRecord(joinScan.selectRow)
     }
-    partitionVDNAPageviews1.add(newVDNAPageviewsSegment.close)
-    //TODO joinScan.close
+    partitionVDNAPageviews1.add(newVDNAPageviewsSegment)
+    joinScan.close
 
     //scan VDNA Pageviews which should contain previous pageviews with the ones imported from AT
     val vdnaPageviewScan = new MergeScanner(schemaVDNAPageviews, "user_uid,url,timestamp", "*", partitionVDNAPageviews1.segments)

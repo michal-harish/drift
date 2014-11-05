@@ -34,20 +34,69 @@ BlockStorage
 
 ![Design Overview](https://dl.dropboxusercontent.com/u/15048579/drift.svg "Design Overview")
 
-Usecases 
-----------------------------------------------------
+Usecase 1. Benchmark - retroactive data windows: Solution - two tables in the same Keyspace, i.e. co-partitioned, with ScanJoin select 
+---------------------------------------------------------------------------------------------------------------------------------------
 
-* Usecase 1 - retroactive data windows: Solution - two tables in the same Keyspace, i.e. co-partitioned, with ScanJoin select
+Usecase 2. Benchmark - combining datasets from id-spaces - two tables from different Keyspaces, with StreamJoin and key transformation (!) 
+-------------------------------------------------------------------------------------------------------------------------------------------
 
-* Usecase 2 - combining datasets from id-spaces - two tables from different Keyspaces, with StreamJoin and key transformation (!)
-  - table 1: pageviews (STRING[16] at_id, STRING[?] url, LONG timestamp)
-  - table 2: syncs (STRING[16] at_id, UUID vdan_user_uid) 
-  - the inner join: vdna_user_uid, url, timestamp
-  - the benchmark 1) loading table 1 and 2 as quickly as possible from 2 files containing 1 days worth of data - cca half a gig
-  - the benchmark 2) counting the join
-  - the benchmark 3) scanning the join into a local csv file
+views       (6m rows, 266Mb.gz)         syncs         (1m syncs 32Mb.gz)
++--------+--------+-----------+         +--------+---------------------+
+| at_id  | url    | timestamp |         | at_id  | vdna_user_id        |
++--------+--------+-----------+         +--------+---------------------+
+| STRING | STRING | LONG      |         | STRING | UUID(BYTEARRAY[16]) |
++--------+--------+-----------+         +--------+---------------------+
 
-* Usecase 3 - id-linking from newly discovered information (?)
++----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+| 6m views (266Mb.gz)              | DRIFT    | DRIFT   | DRIFT   | HBase  | SPARK | REDIS | HADOOP |
+| 1m syncs (32Mb.gz)               | (LZ4mem) | (mem)   | (LZ4fs) | (mem)  |       |       |        |
++----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+| 1. Load Table 1 - Views          | 71.440s  | 39.802s |         | 72.10s |       |       | 0      |
++----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+| 2. Load Table 2 - Syncs          | 15.552s  | 13.01s  |         | 13.56s |       |       | 0      |
++----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+| 3. Memory Used                   |          |         |         |        |       |       | 0      |
++----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+| 4. Memory Occupied               | 222Mb    | 660Mb   |         | 1500Mb |       |       | 0      |
++----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+| 5. SCAN Syncs for a column value | 99ms     | 40ms    |         | 666ms  |       |       |        |
++----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+| 6. SCAN Views for a url contains | 1.491s   |         |         | 5.660s |       |       |        |
++----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+| 7. COUNT inner join              | 1.659s   |         |         | 3.060s |       |       |        |
++----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+| 8. TRANSFORM inner join          | 22.197s  |         |         | 0      |       |       |        |
++----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+| 9. EXPORT inner join to file     | 33.296s  |         |         |        |       |       |        |
++----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+| 10. RANDOM ACCESS                | N/A      | N/A     |         |        |       |       | N/A    |
++----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+
+DRIFT - commands to run the benchmark
+1. cat ~/addthis_views_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table views
+2. time cat ~/addthis_syncs_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table syncs
+5. select at_id,vdna_user_uid from syncs where vdna_user_uid= 'ce1e0d6b-6b11-428c-a9f7-c919721c669c'
+6. select at_id,url from views where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'
+count the equi inner join between both tables: count (select at_id from syncs join select at_id from views)
+export crossed data into local file: time java -jar target/drift-client.jar --keyspace addthis "select vdna_user_uid, timestamp,url FROM ( select vdna_user_uid, at_id from syncs join select at_id,timestamp,url from views)" > ~/vdna-addthis-export.csv
+export crossed data into vdna keyspace: time java -jar target/drift-client.jar --keyspace addthis "select vdna_user_uid from syncs join select timestamp,url from views" | java -jar target/drift-loader.jar --separator '\t' --keyspace vdna --table pageviews
+
+BENCHMARK DATA 
+#hive add this views  2014-10-31 15:00-16:00 (6 million records) (0.63Gb uncompressed) (0.22Gb compressed)
+bl-yarnpoc-p01 hive> select count(1) from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;
+bl-yarnpoc-p01 ~> hive -e "select uid, url, timestamp from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;" > addthis_views_2014-10-31_15.csv
+bl-yarnpoc-p01 ~> gzip addthis_views_2014-10-31_15.csv
+scp mharis@bl-yarnpoc-p01:~/addthis_views_2014-10-31_15.csv.gz ~/
+
+#hive add this syncs  2014-10-31 15:00-16:00
+bl-yarnpoc-p01 hive> select count(1) from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync' and timestamp>=1414767600 and timestamp<1414771200;
+bl-yarnpoc-p01 ~> hive -e "select partner_user_id, useruid, concat(timestamp,'000') from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync' and timestamp>=1414767600 and timestamp<1414771200" > addthis_syncs_2014-10-31_15.csv
+bl-yarnpoc-p01 ~> gzip addthis_syncs_2014-10-31_15.csv
+scp mharis@bl-yarnpoc-p01:~/addthis_syncs_2014-10-31_15.csv.gz ~/
+
+
+Usecase 3. Benchmark - id-linking from newly discovered information (?) 
+---------------------------------------------------------------------------------------------------------------------------------------
 
 Design thoughts dump
 ================================================================================================= 

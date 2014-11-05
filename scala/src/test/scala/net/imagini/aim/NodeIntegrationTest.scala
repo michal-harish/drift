@@ -219,11 +219,9 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02") //16 1
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03") //32 1
     sA1.appendRecord("12322cfb-a29e-42c3-a3d9-12d32850e103", "www.xyz.com", "2014-10-10 12:01:02") //48 2
-    sA1.close
     val sA2 = new AimSegmentQuickSort(schemaPageviews, classOf[BlockStorageLZ4])
     sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
     sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
-    sA2.close
     val partitionPageviews = new AimPartition(schemaPageviews, 10000)
     partitionPageviews.add(sA1)
     partitionPageviews.add(sA2)
@@ -237,7 +235,6 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     val sB1 = new AimSegmentQuickSort(schemaConversions, classOf[BlockStorageLZ4])
     sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
     sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
-    sB1.close
     val partitionConversions1 = new AimPartition(schemaConversions, 1000)
     partitionConversions1.add(sB1)
     partitionConversions1
@@ -249,12 +246,10 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     val sC1 = new AimSegmentQuickSort(schemaUserFlags, classOf[BlockStorageLZ4])
     sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "true")
     sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
-    sC1.close
     val sC2 = new AimSegmentQuickSort(schemaUserFlags, classOf[BlockStorageLZ4])
     sC2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "opt_out_targetting", "true")
     sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
     sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "false")
-    sC2.close
     val partitionUserFlags1 = new AimPartition(schemaUserFlags, 1000)
     partitionUserFlags1.add(sC1)
     partitionUserFlags1.add(sC2)

@@ -16,12 +16,10 @@ class PartitionTest extends FlatSpec with Matchers {
     s1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.auto.com}")
     s1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT1234")
     s1.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.travel.com}")
-    s1.close
     val s2 = new AimSegmentQuickSort(schema, classOf[BlockStorageLZ4])
     s2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.ebay.com}")
     s2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT9876")
     s2.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.music.com}")
-    s2.close
     val partition1 = new AimPartition(schema, 1000)
     partition1.add(s1)
     partition1.add(s2)
@@ -31,12 +29,10 @@ class PartitionTest extends FlatSpec with Matchers {
     val sC1 = new AimSegmentQuickSort(schemaUserFlags, classOf[BlockStorageLZ4])
     sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "true")
     sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
-    sC1.close
     val sC2 = new AimSegmentQuickSort(schemaUserFlags, classOf[BlockStorageLZ4])
     sC2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "opt_out_targetting", "true")
     sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
     sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "false")
-    sC2.close
     val partitionUserFlags1 = new AimPartition(schemaUserFlags, 1000)
     partitionUserFlags1.add(sC1)
     partitionUserFlags1.add(sC2)

@@ -25,7 +25,6 @@ public class BlockStorageLZ4 extends BlockStorage {
     private int originalSize = 0;
     private int compressedSize = 0;
     private LinkedList<byte[]> compressedBlocks = new LinkedList<byte[]>();
-    private LinkedList<Integer> lengths = new LinkedList<Integer>();
 
     private LZ4Compressor compressor = LZ4Factory.fastestInstance().highCompressor();
     private LZ4Decompressor decompressor = LZ4Factory.fastestInstance().decompressor();
@@ -48,7 +47,6 @@ public class BlockStorageLZ4 extends BlockStorage {
             compressedBlocks.add(compress_buffer);
         }
 
-        lengths.add(length);
         compressedSize += cLen;
         originalSize += length;
         return cLen;
