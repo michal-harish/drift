@@ -39,7 +39,7 @@ Usecase 1. Benchmark - retroactive data windows: Solution - two tables in the sa
 
 Usecase 2. Benchmark - combining datasets from id-spaces - two tables from different Keyspaces, with StreamJoin and key transformation (!) 
 -------------------------------------------------------------------------------------------------------------------------------------------
-
+<html><pre>
 views       (6m rows, 266Mb.gz)         syncs         (1m syncs 32Mb.gz)
 +--------+--------+-----------+         +--------+---------------------+
 | at_id  | url    | timestamp |         | at_id  | vdna_user_id        |
@@ -71,7 +71,7 @@ views       (6m rows, 266Mb.gz)         syncs         (1m syncs 32Mb.gz)
 +----------------------------------+----------+---------+---------+--------+-------+-------+--------+
 | 10. RANDOM ACCESS                | N/A      | N/A     |         |        |       |       | N/A    |
 +----------------------------------+----------+---------+---------+--------+-------+-------+--------+
-
+</pre></html>
 DRIFT - commands to run the benchmark
 1. cat ~/addthis_views_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table views
 2. time cat ~/addthis_syncs_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table syncs
