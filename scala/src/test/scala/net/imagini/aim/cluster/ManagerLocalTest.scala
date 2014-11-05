@@ -18,7 +18,7 @@ class ManagerLocalTest extends FlatSpec with Matchers {
         })
       })
     })
-    manager.createTable("xyz", "table1", "user_id(STRING)", true)
+    manager.createTable("xyz", "table1", "user_id(STRING)")
     notification.get should be("user_id(STRING)")
   }
 }

@@ -3,16 +3,17 @@ package net.imagini.aim.cluster
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.JavaConverters.mapAsScalaConcurrentMapConverter
 import grizzled.slf4j.Logger
-import net.imagini.aim.types.AimSchema
-import java.util.concurrent.TimeoutException
+import net.imagini.aim.client.AimConsole
 import net.imagini.aim.partition.AimPartition
+import net.imagini.aim.partition.QueryParser
 import net.imagini.aim.partition.StatScanner
 import net.imagini.aim.tools.AbstractScanner
-import net.imagini.aim.partition.QueryParser
-import net.imagini.aim.client.AimConsole
+import net.imagini.aim.types.AimSchema
+import net.imagini.aim.utils.BlockStorageLZ4
 
 object AimNode extends App {
   val log = Logger[this.type]
@@ -35,11 +36,12 @@ object AimNode extends App {
   new AimNode(4, "localhost:4003", manager)
 
   //CREATING TABLES
-  manager.createTable("addthis", "pageviews", "at_id(STRING), url(STRING), timestamp(LONG)", true)
-  manager.createTable("addthis", "syncs", "at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(LONG)", true)
-  manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), type(STRING), url(STRING)", true)
-  manager.createTable("vdna", "pageviews", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), url(STRING)", true)
-  manager.createTable("vdna", "syncs", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), id_space(STRING), partner_user_id(STRING)", true)
+  val storageType = classOf[BlockStorageLZ4]
+  manager.createTable("addthis", "views", "at_id(STRING), url(STRING), timestamp(LONG)", 50000000, storageType)
+  manager.createTable("addthis", "syncs", "at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(LONG)", 200000000, storageType)
+  manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), type(STRING), url(STRING)", 100000000, storageType)
+  manager.createTable("vdna", "pageviews", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), url(STRING)", 100000000, storageType)
+  manager.createTable("vdna", "syncs", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), id_space(STRING), partner_user_id(STRING)", 100000000, storageType)
 
   //ATTACH CONSOLE
   val console = new AimConsole("localhost", 4000)
@@ -70,8 +72,10 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   def transform(srcKeysapce: String, srcQuery: String, destKeyspace: String, destTable: String) = {
     val t = System.currentTimeMillis
     val scanner = query(srcKeysapce, srcQuery)
+    val dest = keyspace(destKeyspace)(destTable)
+    var segment = dest.createNewSegment
     while(scanner.next) {
-      scanner.selectRow
+      segment = dest.appendRecord(segment, scanner.selectRow)
     }
     log.info("TRANSFORM INTO " + destKeyspace + "." + destTable + " in " + (System.currentTimeMillis - t))
   }
@@ -109,8 +113,11 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
       manager.watch("/drift/keyspaces/" + k, (tables: Map[String, String]) ⇒ {
         keyspaceRefs.get(k).asScala.keys.filter(!tables.contains(_)).map(keyspaceRefs.get(k).remove(_))
         tables.filter(t ⇒ !keyspaceRefs.get(k).containsKey(t._1)).map(t ⇒ {
-          val schema = AimSchema.fromString(t._2)
-          keyspaceRefs.get(k).put(t._1, new AimPartition(schema, 10485760 * 20))
+          val tableDescriptor = t._2.split("\n")
+          val schema = AimSchema.fromString(tableDescriptor(0))
+          val segmentSize = java.lang.Integer.valueOf(tableDescriptor(1))
+          val storage = Class.forName(tableDescriptor(2))
+          keyspaceRefs.get(k).put(t._1, new AimPartition(schema, segmentSize)) 
           log.debug(id + ": " + k + "." + t._1 + " " + keyspaceRefs.get(k).get(t._1).toString)
         })
       })

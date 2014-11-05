@@ -17,28 +17,29 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
   private var count: Integer = 0
   private var currentSegment: AimSegment = null
 
-//  var position = -1
-//  var limit = -1
-//  var mark = -1
-//  val buf = new Array[Byte](1000)
-//  private def readColumn: String = {
-//    var result: String = ""
-//    while (true) {
-//      position += 1
-//      if (position >= limit) {
-//        if (mark >= 0) {
-//          result += new String(buf, 0, limit)
-//        }
-//        position = 0
-//        mark = 0
-//        limit = pipe.getInputStream.read(buf, 0, buf.length)
-//      }
-//      if (limit == -1) {
-//        return result;
-//      }
-//    }
-//    throw new EOFException
-//  }
+  //TODO optimized parsing
+  //  var position = -1
+  //  var limit = -1
+  //  var mark = -1
+  //  val buf = new Array[Byte](1000)
+  //  private def readColumn: String = {
+  //    var result: String = ""
+  //    while (true) {
+  //      position += 1
+  //      if (position >= limit) {
+  //        if (mark >= 0) {
+  //          result += new String(buf, 0, limit)
+  //        }
+  //        position = 0
+  //        mark = 0
+  //        limit = pipe.getInputStream.read(buf, 0, buf.length)
+  //      }
+  //      if (limit == -1) {
+  //        return result;
+  //      }
+  //    }
+  //    throw new EOFException
+  //  }
   override def accept = {
     val keyspace = pipe.readHeader
     val table = pipe.readHeader
@@ -49,8 +50,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
     val startTime = System.currentTimeMillis
     val COLUMN_BUFFER_SIZE = 2048
     val record = ByteUtils.createBuffer(COLUMN_BUFFER_SIZE * partition.schema.size)
-
-    createNewSegmentIfNull(partition)
+    var segment = partition.createNewSegment
     val source = scala.io.Source.fromInputStream(pipe.getInputStream)
     val lines = source.getLines
     try {
@@ -76,12 +76,8 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
             TypeUtils.copy(bytes, t.getDataType, record)
           }
           record.flip
-          currentSegment.appendRecord(record);
+          segment = partition.appendRecord(segment, record)
           count += 1
-
-          if (currentSegment.getOriginalSize > partition.segmentSizeBytes) {
-            addCurrentSegment(partition)
-          }
         } catch {
           case e: IOException ⇒ {
             log.error(count + ":" + values, e);
@@ -93,38 +89,13 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
         }
       }
     } finally {
-      addCurrentSegment(partition)
+      partition.add(segment)
       log.info("load(EOF) records: " + count + " time(ms): " + (System.currentTimeMillis - startTime))
       pipe.writeInt(count)
       pipe.flush
     }
   }
 
-  private def addCurrentSegment(partition: AimPartition) = {
-    try {
-      currentSegment.close
-      if (currentSegment.getOriginalSize > 0) {
-        partition.add(currentSegment);
-        currentSegment = null
-      }
-      createNewSegmentIfNull(partition)
-    } catch {
-      case e: Throwable ⇒ {
-        throw new IOException(e);
-      }
-    }
-  }
-
-  private def createNewSegmentIfNull(partition: AimPartition) = {
-    if (currentSegment == null) {
-      currentSegment = new AimSegmentQuickSort(partition.schema, classOf[BlockStorageLZ4]);
-      //TODO enalbe once schema contains keyField and sort order
-      //            if (partition.keyField == null) {
-      //                currentSegment = new AimSegmentUnsorted(partition.schema(), BlockStorageLZ4.class);
-      //            } else {
-      //                currentSegment = new AimSegmentQuickSort(partition.schema(), partition.keyField(), partition.sortOrder, BlockStorageLZ4.class);
-      //            }
-    }
-  }
+  
 
 }

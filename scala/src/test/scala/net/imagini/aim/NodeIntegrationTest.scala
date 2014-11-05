@@ -21,7 +21,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
 
   def fixutreNode: AimNode = {
     val manager = new DriftManagerLocal
-    manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)", true)
+    manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
     val node = new AimNode(1, host + ":" + port, manager)
     node
   }

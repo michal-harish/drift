@@ -2,6 +2,8 @@ package net.imagini.aim.cluster
 
 import net.imagini.aim.types.AimSchema
 import grizzled.slf4j.Logger
+import net.imagini.aim.utils.BlockStorage
+import net.imagini.aim.utils.BlockStorageLZ4
 
 trait DriftManager {
   val log = Logger[this.type]
@@ -20,17 +22,17 @@ trait DriftManager {
     }
   }
 
-  final def createTable(keyspace: String, name: String, schemaDeclaration: String, ifNotExists: Boolean) {
+  final def createTable(keyspace: String, name: String, schemaDeclaration: String) {
+      createTable(keyspace, name, schemaDeclaration, 100000000, classOf[BlockStorageLZ4])
+  }
+
+  final def createTable(keyspace: String, name: String, schemaDeclaration: String, segmentSize:Int, storage: Class[_ <: BlockStorage]) {
     AimSchema.fromString(schemaDeclaration)
     val keyspacePath = "/drift/keyspaces/" + keyspace
     if (!pathExists(keyspacePath)) pathCreatePersistent(keyspacePath, "")
     val tablePath = keyspacePath + "/" + name
-    if (pathExists(tablePath)) ifNotExists match {
-      case false ⇒ throw new IllegalStateException("Table already exists")
-      case true  ⇒ {}
-    }
-    else {
-      pathCreatePersistent(tablePath, schemaDeclaration)
+    if (!pathExists(tablePath)) {
+      pathCreatePersistent(tablePath, schemaDeclaration +"\n" + segmentSize.toString + "\n" + storage.getName  )
     }
   }
 

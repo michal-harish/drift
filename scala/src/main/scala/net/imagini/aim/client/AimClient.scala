@@ -12,6 +12,7 @@ import net.imagini.aim.types.AimQueryException
 import net.imagini.aim.tools.StreamUtils
 import net.imagini.aim.types.Aim
 import net.imagini.aim.utils.ByteUtils
+import java.nio.ByteBuffer
 
 object AimClient extends App {
 
@@ -67,7 +68,7 @@ class AimClient(val host: String, val port: Int) {
   def close = {
     pipe.write("CLOSE")
     pipe.flush
-    try { pipe.close } catch { case e:IOException ⇒ {} }
+    try { pipe.close } catch { case e: IOException ⇒ {} }
   }
 
   def resultSchema: AimSchema = schema match {
@@ -84,7 +85,7 @@ class AimClient(val host: String, val port: Int) {
         " " + v.padTo(len(i) - 1, ' ')
       }).mkString("|")
       if (!printedHeader) {
-        val header =  (0 to len.length - 1).map(i ⇒ " " + resultSchema.name(i).padTo(len(i) - 1, ' ') + "|").mkString("|")
+        val header = (0 to len.length - 1).map(i ⇒ " " + resultSchema.name(i).padTo(len(i) - 1, ' ')).mkString("|")
         println(header)
         println(len.map(l ⇒ "-" * l).mkString("+"))
         printedHeader = true
@@ -142,6 +143,23 @@ class AimClient(val host: String, val port: Int) {
       hasData = None
       count += 1
       schema.get.fields.map(field ⇒ pipe.read(field.getDataType))
+    }
+  }
+
+  def fetchRow(buffer: ByteBuffer) = {
+    if (schema == None) {
+      throw new IllegalStateException
+    } else if (!hasNext) {
+      throw new EOFException
+    } else {
+      hasData = None
+      count += 1
+      var i = 0
+      var fields = schema.get.size
+      while (i < fields) {
+        pipe.readInto(schema.get.dataType(i).getDataType, buffer)
+        i += 1
+      }
     }
   }
 

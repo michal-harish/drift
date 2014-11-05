@@ -21,7 +21,7 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
         }
         case command: String if (command.toUpperCase.startsWith("TRANSFORM")) ⇒ keyspace match {
           case Some(k) ⇒ {
-            node.transform("addthis", "select vdna_user_uid from syncs join select timestamp,url from pageviews", "vdna", "pageviews")
+            node.transform("addthis", "select vdna_user_uid from syncs join select timestamp,url from views", "vdna", "pageviews")
             pipe.write("OK")
             pipe.flush
           }

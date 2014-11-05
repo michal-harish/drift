@@ -50,7 +50,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
         }
     }
 
-    final public AimSegment appendRecord(ByteBuffer[]  record) throws IOException {
+    @Override final public AimSegment appendRecord(ByteBuffer[]  record) throws IOException {
         recordBuffer.clear();
         for(int col = 0; col < schema.size() ; col++) {
             int mark = record[col].position();
@@ -61,7 +61,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
         return appendRecord(recordBuffer);
     }
 
-    final public AimSegment appendRecord(String... values) throws IOException {
+    @Override final public AimSegment appendRecord(String... values) throws IOException {
         if (values.length != schema.size()) {
             throw new IllegalArgumentException("Number of values doesn't match the number of fields in the schema");
         }

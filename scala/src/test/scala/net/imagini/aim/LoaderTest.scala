@@ -8,7 +8,7 @@ import org.scalatest.FlatSpec
 
 class LoaderTest extends FlatSpec with Matchers {
   val manager = new DriftManagerLocal
-  manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)", true)
+  manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
   val node = new AimNode(1, "localhost:9998", manager)
 
   new Loader("localhost", 9998, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv.gz"), true).streamInput should be (3)

@@ -15,11 +15,20 @@ import java.io.IOException
 import net.imagini.aim.cluster.ScannerInputStream
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.tools.CountScanner
+import net.imagini.aim.utils.BlockStorage
+import net.imagini.aim.segment.AimSegmentQuickSort
+import java.nio.ByteBuffer
+import net.imagini.aim.utils.BlockStorageLZ4
 
-class AimPartition(val schema: AimSchema, val segmentSizeBytes: Int) {
+class AimPartition(
+  val schema: AimSchema,
+  val segmentSizeBytes: Int,
+  val storageType: Class[_ <: BlockStorage] = classOf[BlockStorageLZ4]) {
 
   val segments: ListBuffer[AimSegment] = ListBuffer()
+
   val numSegments = new AtomicInteger(0)
+
   def getNumSegments = numSegments.get
 
   def getCount: Long = segments.foldLeft(0L)(_ + _.count)
@@ -28,12 +37,41 @@ class AimPartition(val schema: AimSchema, val segmentSizeBytes: Int) {
 
   def getUncompressedSize: Long = segments.foldLeft(0L)(_ + _.getOriginalSize)
 
-  def add(segment: AimSegment): AimSegment = {
-    segments.synchronized { //TODO is this necessary
-      segments += segment
-      numSegments.incrementAndGet
+  //TODO parametrize segment sort type 
+  def createNewSegment: AimSegment = new AimSegmentQuickSort(schema, storageType)
+
+  def add(segment: AimSegment) = {
+    //TODO make sure close throws IllegalState when already closed/added
+    segment.close
+    if (segment.count > 0) {
+      segments.synchronized { //TODO use concurrent structure as this synchronisation really does nothing
+        segments += segment
+        numSegments.incrementAndGet
+      }
     }
-    segment
   }
 
+  def appendRecord(segment: AimSegment, record: Array[ByteBuffer]): AimSegment = {
+    val size = record.map(b => b.limit - b.position).foldLeft(0)(_ + _)
+    val theSegment = checkSegment(segment, size)
+    theSegment.appendRecord(record)
+    theSegment
+  }
+  def appendRecord(segment: AimSegment, record: ByteBuffer): AimSegment = {
+    val theSegment = checkSegment(segment, record.limit - record.position )
+    theSegment.appendRecord(record)
+    theSegment
+  }
+  private def checkSegment(segment: AimSegment, size: Int): AimSegment = {
+    if (segment.getOriginalSize + size> segmentSizeBytes) try {
+      add(segment)
+      createNewSegment
+    } catch {
+      case e: Throwable ⇒ {
+        throw new IOException(e);
+      }
+    } else {
+      segment
+    }
+  }
 }
