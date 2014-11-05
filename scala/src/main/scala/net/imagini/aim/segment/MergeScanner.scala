@@ -66,13 +66,18 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
     if (eof) {
       return false
     }
-    if (currentScanner != None) {
-      for (columnScanner ← currentScanner.get) columnScanner.skip
+    //skip to next
+    if (!currentScanner.isEmpty) {
+      var c = 0
+      while (c < currentScanner.get.length) {
+        currentScanner.get(c).skip
+        c += 1
+      }
       currentScanner = None
     }
     var s = 0
-    while(s < scanners.length) {
-      val scanner  = scanners(s)
+    while (s < scanners.length) {
+      val scanner = scanners(s)
       s += 1
       //optimized filter
       var segmentHasData = true
@@ -90,25 +95,25 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
 
       //merge sort
       if (segmentHasData) {
-        if (currentScanner == None || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanner(scanKeyColumnIndex).buffer, currentScanner.get(scanKeyColumnIndex).buffer, keyType) > 0))) {
+        if (currentScanner.isEmpty || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanner(scanKeyColumnIndex).buffer, currentScanner.get(scanKeyColumnIndex).buffer, keyType) > 0))) {
           currentScanner = Some(scanner)
         }
       }
     }
-    eof = currentScanner == None
+    eof = currentScanner.isEmpty
     move
     !eof
   }
 
   override def selectKey: ByteBuffer = {
-    if (eof || (currentScanner == None && !next)) {
+    if (eof || (currentScanner.isEmpty && !next)) {
       throw new EOFException
     } else {
       currentKey
     }
   }
   override def selectRow: Array[ByteBuffer] = {
-    if (eof || (currentScanner == None && !next)) {
+    if (eof || (currentScanner.isEmpty && !next)) {
       throw new EOFException
     } else {
       currentRecord
@@ -123,7 +128,11 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
       }
       case Some(scanner) ⇒ {
         currentKey = scanner(scanKeyColumnIndex).buffer
-        for (i ← (0 to schema.size - 1)) currentRecord(i) = scanner(scanColumnIndex(i)).buffer
+        var i = 0
+        while (i < currentRecord.length) {
+          currentRecord(i) = scanner(scanColumnIndex(i)).buffer
+          i += 1
+        }
       }
     }
   }
