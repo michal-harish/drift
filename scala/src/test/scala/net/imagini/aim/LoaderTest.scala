@@ -12,9 +12,9 @@ class LoaderTest extends FlatSpec with Matchers {
   val node = new AimNode(1, "localhost:9998", manager)
 
   new Loader("localhost", 9998, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv.gz"), true).streamInput should be (3)
+  node.keyspace("vdna")("events").getCount should be(3L)
 
   new Loader("localhost", 9998, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv"), false).streamInput should be (3)
-
   node.keyspace("vdna")("events").getCount should be(6L)
 
   node.shutdown

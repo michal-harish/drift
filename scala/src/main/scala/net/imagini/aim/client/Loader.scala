@@ -1,12 +1,15 @@
 package net.imagini.aim.client
+
 import java.io.FileInputStream
 import java.io.InputStream
 import java.net.InetAddress
 import java.net.Socket
+import java.util.zip.GZIPOutputStream
+
 import grizzled.slf4j.Logger
-import net.imagini.aim.types.AimSchema
-import net.imagini.aim.cluster.PipeGZIPLoader
+import net.imagini.aim.cluster.Pipe
 import net.imagini.aim.cluster.Protocol
+import net.imagini.aim.types.AimSchema
 
 object Loader extends App {
   var host: String = "localhost"
@@ -45,42 +48,32 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
   val log = Logger[this.type]
   val in: InputStream = if (fileinput == null) System.in else fileinput
   val socket = new Socket(InetAddress.getByName(host), port)
-  val pipe = new PipeGZIPLoader(socket, Protocol.LOADER_LOCAL)
+  val pipe = new Pipe(socket, Protocol.LOADER_LOCAL, if (gzip) 3 else 2)
 
   //handshake
-  pipe.writeDirect(keyspace)
-  pipe.writeDirect(table)
-  pipe.writeDirect(separator)
-  if (gzip) {
-    pipe.getDirectOutputStream.finish
-  } else {
-    pipe.getDirectOutputStream.flush
-  }
-  val schemaDeclaration = pipe.read
+  pipe.writeHeader(keyspace)
+  pipe.writeHeader(table)
+  pipe.writeHeader(separator)
+  val schemaDeclaration = pipe.readHeader
   val schema = AimSchema.fromString(schemaDeclaration)
 
   def streamInput: Int = {
-    val out = if (gzip) pipe.getOutputStream else pipe.getDirectOutputStream
     var count: Long = 0
     var n: Int = 0
     val buffer = new Array[Byte](65535)
     do {
       n = in.read(buffer)
       if (-1 != n) {
-        out.write(buffer, 0, n)
-        if (gzip) {
-          pipe.getOutputStream.flush
-        } else {
-          pipe.getDirectOutputStream.flush
-        }
+        pipe.getOutputStream.write(buffer, 0, n)
         count += n
       }
     } while (-1 != n)
-    if (!gzip) pipe.getDirectOutputStream.finish
-    pipe.getOutputStream().flush
+    pipe.flush
+    if (!gzip) {
+      pipe.getOutputStream.asInstanceOf[GZIPOutputStream].finish
+    }
     val loadedCount: Int = pipe.readInt
     pipe.close
-    socket.close
     loadedCount
   }
 

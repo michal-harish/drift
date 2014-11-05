@@ -19,11 +19,19 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
         case command: String if (command.toUpperCase.startsWith("CLOSE")) ⇒ {
           close
         }
+        case command: String if (command.toUpperCase.startsWith("TRANSFORM")) ⇒ keyspace match {
+          case Some(k) ⇒ {
+            node.transform("addthis", "select vdna_user_uid from syncs join select timestamp,url from pageviews", "vdna", "pageviews")
+            pipe.write("OK")
+            pipe.flush
+          }
+          case None ⇒ throw new IllegalStateException("No keyspace selected, usage USE <keyspace>")
+        }
         case command: String if (command.toUpperCase.startsWith("USE")) ⇒ useKeySpace(command)
-//        case query: String if (query.toUpperCase.startsWith("DESCRIBE")) ⇒ keyspace match {
-          //TODO          case Some(k) ⇒ handleSelectStream(node.describe(k,query))
-//          case None ⇒ throw new IllegalStateException("No keyspace selected, usage USE <keyspace>")
-//        }
+        //        case query: String if (query.toUpperCase.startsWith("DESCRIBE")) ⇒ keyspace match {
+        //TODO          case Some(k) ⇒ handleSelectStream(node.describe(k,query))
+        //          case None ⇒ throw new IllegalStateException("No keyspace selected, usage USE <keyspace>")
+        //        }
         case query: String if (query.toUpperCase.startsWith("STAT")) ⇒ keyspace match {
           case Some(k) ⇒ handleSelectStream(node.stats(k))
           case None    ⇒ throw new IllegalStateException("No keyspace selected, usage USE <keyspace>")

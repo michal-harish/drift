@@ -15,12 +15,12 @@ DRIFT - LZ4 in-memory sequential compression
 
 
 HBASE - wihtout in-memory compression 
-150s: load pageviews 
-20s: load syncs: 
+72.10s: load pageviews 
+13.56s: load syncs: 
 1500Mb: memory used
-....: scan for a column value in the syncs table: ...vdna_user_uid= 'ce1e0d6b-6b11-428c-a9f7-c919721c669c'
-9.0s: scan for a url contains patter in the pageviews table: ... url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'
-5.0s:  count the equi inner join between both tables: ...
+0.666s: scan for a column value in the syncs table: ...vdna_user_uid= 'ce1e0d6b-6b11-428c-a9f7-c919721c669c'
+5.660s: scan for a url contains patter in the pageviews table: ... url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'
+3.060s:  count the equi inner join between both tables: ...
 ....: export crossed data into local file: 
 ....: export crossed data into vdna keyspace (select vdna_user_uid from syncs join select timestamp,url from pageviews)
 

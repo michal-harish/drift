@@ -6,7 +6,6 @@ import java.net.Socket
 import scala.Array.canBuildFrom
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.cluster.Pipe
-import net.imagini.aim.cluster.PipeLZ4
 import net.imagini.aim.cluster.Protocol
 import java.io.EOFException
 import net.imagini.aim.types.AimQueryException
@@ -53,7 +52,7 @@ object AimClient extends App {
 class AimClient(val host: String, val port: Int) {
 
   private var socket = new Socket(InetAddress.getByName(host), port)
-  private var pipe = new PipeLZ4(socket, Protocol.QUERY_LOCAL)
+  private var pipe = Pipe.newLZ4Pipe(socket, Protocol.QUERY_LOCAL)
   private var error: Option[String] = None
   private var hasData: Option[Boolean] = None
   private var schema: Option[AimSchema] = None
@@ -62,13 +61,13 @@ class AimClient(val host: String, val port: Int) {
   private def reconnect = {
     socket.close
     socket = new Socket(InetAddress.getByName(host), port)
-    pipe = new PipeLZ4(socket, Protocol.QUERY_LOCAL)
+    pipe = Pipe.newLZ4Pipe(socket, Protocol.QUERY_LOCAL)
   }
 
   def close = {
     pipe.write("CLOSE")
     pipe.flush
-    pipe.close
+    try { pipe.close } catch { case e:IOException ⇒ {} }
   }
 
   def resultSchema: AimSchema = schema match {
@@ -85,7 +84,7 @@ class AimClient(val host: String, val port: Int) {
         " " + v.padTo(len(i) - 1, ' ')
       }).mkString("|")
       if (!printedHeader) {
-        val header =  (0 to len.length - 1).map(i ⇒ " " + resultSchema.name(i).padTo(len(i) - 1, ' ') + "|")
+        val header =  (0 to len.length - 1).map(i ⇒ " " + resultSchema.name(i).padTo(len(i) - 1, ' ') + "|").mkString("|")
         println(header)
         println(len.map(l ⇒ "-" * l).mkString("+"))
         printedHeader = true

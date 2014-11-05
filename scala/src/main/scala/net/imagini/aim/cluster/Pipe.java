@@ -1,15 +1,20 @@
 package net.imagini.aim.cluster;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import net.imagini.aim.tools.StreamUtils;
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
+import net.jpountz.lz4.LZ4BlockInputStream;
+import net.jpountz.lz4.LZ4BlockOutputStream;
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.xxhash.XXHashFactory;
 
 /**
  * Pipe is a bi-directional stream that is aimtype-aware
@@ -17,145 +22,163 @@ import net.imagini.aim.types.AimDataType;
  * @author mharis
  */
 public class Pipe {
-
+    private Socket socket;
+    final public static int LZ4_BLOCK_SIZE = 524280;
+    final public static int SIGNATURE = "DRIFT".hashCode();
     final public Protocol protocol;
+    final public int compression;
     private OutputStream outputPipe;
-    private InputStream inputPipe;
+    private InputStream inputPipe = null;
 
-    public Pipe() {
-        this.protocol = Protocol.RESERVED;
-    }
-
-    public Pipe(Socket socket, Protocol protocol) throws IOException {
-        this(socket.getOutputStream(), protocol);
-        inputPipe = createInputStreamWrapper(socket.getInputStream());
-    }
-
-    public Pipe(OutputStream out) throws IOException {
-        outputPipe = createOutputStreamWrapper(out);
-        this.protocol = Protocol.RESERVED;
-    }
-
-    public Pipe(OutputStream out, Protocol protocol) throws IOException {
-        byte compression;
-        if (getClass().equals(Pipe.class))
-            compression = 0;
-        else if (getClass().equals(PipeLZ4.class))
-            compression = 1;
-        else if (getClass().equals(PipeGZIP.class) || getClass().equals(PipeGZIPLoader.class))
-            compression = 2;
-        else
-            throw new IOException("Unsupported pipe type "
-                    + getClass().getSimpleName());
-        StreamUtils.writeInt(out, "DRIFT".hashCode());
-        out.write(compression);
-        StreamUtils.writeInt(out, protocol.id);
-        this.protocol = protocol;
-        outputPipe = createOutputStreamWrapper(out);
-    }
-
-    public Pipe(InputStream in) throws IOException {
-        inputPipe = createInputStreamWrapper(in);
-        this.protocol = Protocol.RESERVED;
-    }
-
-    public Pipe(InputStream in, Protocol protocol) throws IOException {
-        inputPipe = createInputStreamWrapper(in);
-        this.protocol = protocol;
-    }
-
-    static public Pipe open(Socket socket) throws IOException {
-        Pipe pipe = open(socket.getInputStream());
-        pipe.outputPipe = pipe.createOutputStreamWrapper(socket
-                .getOutputStream());
-        return pipe;
-    }
-
-    static public Pipe open(InputStream in) throws IOException {
-        int signature = StreamUtils.readInt(in);
-        if (signature != "DRIFT".hashCode()) {
-            throw new IOException("Invalid pipe header signature");
-        }
-        byte compression = (byte) in.read();
-        int pipe_protocol = StreamUtils.readInt(in);
-        Protocol protocol = Protocol.get(pipe_protocol);
-        if (protocol == null)
-            throw new IOException("Unknown protocol id " + pipe_protocol);
+    private void createInputPipe() throws IOException {
         switch (compression) {
         case 0:
-            return new Pipe(in, protocol);
+            inputPipe = socket.getInputStream();
+            break;
         case 1:
-            return new PipeLZ4(in, protocol);
-        case 2:
-            return new PipeGZIP(in, protocol);
+            inputPipe = new LZ4BlockInputStream(socket.getInputStream());
+            break;
+        case 2: case 3:
+//            System.err.println("GZIP INPUT INIT ");
+            inputPipe = new GZIPInputStream(socket.getInputStream());
+            break;
         default:
-            throw new IOException("Invalid pipe header type");
+            throw new IOException("Unsupported compression type " + compression);
         }
     }
 
-    protected InputStream createInputStreamWrapper(InputStream in)
+    private void createOutputPipe() throws IOException {
+        switch (compression) {
+        case 0: case 3:
+            outputPipe = socket.getOutputStream();
+            break;
+        case 1:
+            outputPipe = new LZ4BlockOutputStream(socket.getOutputStream(),
+                    LZ4_BLOCK_SIZE, LZ4Factory.fastestInstance()
+                            .highCompressor(), XXHashFactory.fastestInstance()
+                            .newStreamingHash32(0x9747b28c).asChecksum(), true);
+            break;
+        case 2:
+//            System.err.println("GZIP OUTPUT INIT ");
+            outputPipe = new GZIPOutputStream(socket.getOutputStream(), true);
+            break;
+        default:
+            throw new IOException("Unsupported compression type " + compression);
+
+        }
+    }
+
+    public static Pipe newLZ4Pipe(Socket socket, Protocol protocol)
             throws IOException {
-        return in;
+        return new Pipe(socket, protocol, 1);
     }
 
-    public InputStream getInputStream() {
-        return inputPipe;
-    }
-
-    public OutputStream getOutputStream() {
-        return outputPipe;
-    }
-
-    protected OutputStream createOutputStreamWrapper(OutputStream out)
+    public static Pipe newGZIPPipe(Socket socket, Protocol protocol)
             throws IOException {
-        return new DataOutputStream(out);
+        return new Pipe(socket, protocol, 2);
     }
 
-    final public void flush() throws IOException {
-        outputPipe.flush();
+    public Pipe(Socket socket, Protocol protocol, int compression)
+            throws IOException {
+        this.socket = socket;
+        this.protocol = protocol;
+        StreamUtils.writeInt(socket.getOutputStream(), SIGNATURE);
+        StreamUtils.writeInt(socket.getOutputStream(), compression);
+        StreamUtils.writeInt(socket.getOutputStream(), protocol.id);
+        this.compression = compression == 3 ? 0 : compression;
+        socket.getOutputStream().flush();
+    }
+
+    public Pipe(Socket socket) throws IOException {
+        this.socket = socket;
+        int signature = StreamUtils.readInt(socket.getInputStream());
+        if (signature != SIGNATURE) {
+            throw new IOException("Invalid pipe header signature");
+        }
+        this.compression = StreamUtils.readInt(socket.getInputStream());
+        int pipe_protocol = StreamUtils.readInt(socket.getInputStream());
+        this.protocol = Protocol.get(pipe_protocol);
     }
 
     final public void close() throws IOException {
-        if (inputPipe != null)
-            inputPipe.close();
+        if (inputPipe != null) inputPipe.close();
         inputPipe = null;
+        if (outputPipe != null) outputPipe.close();
         outputPipe = null;
+    }
+    final public void writeHeader(String value) throws IOException {
+        if (outputPipe != null) throw new IllegalStateException();
+        StreamUtils.write(Aim.STRING, Aim.STRING.convert(value), socket.getOutputStream());
+//        System.err.println("HEADER > " + value);
+        socket.getOutputStream().flush();
+    }
+
+    public String readHeader() throws IOException {
+        if (inputPipe != null) throw new IllegalStateException();
+        String value = Aim.STRING.convert(StreamUtils.read(socket.getInputStream(), (Aim.STRING)));
+//        System.err.println("HEADER << " + value);
+        return value;
+    }
+
+    public InputStream getInputStream() throws IOException {
+        if (inputPipe == null) createInputPipe();
+        return inputPipe;
+    }
+
+    final public void flush() throws IOException {
+        if (outputPipe != null) {
+            outputPipe.flush();
+        }
+    }
+
+    public OutputStream getOutputStream() throws IOException {
+        if (outputPipe == null) createOutputPipe();
+        return outputPipe;
     }
 
     final public void writeInt(int value) throws IOException {
+        if (outputPipe == null) createOutputPipe();
         StreamUtils.writeInt(outputPipe, value);
     }
 
     final public Pipe write(String value) throws IOException {
+        if (outputPipe == null) createOutputPipe();
         StreamUtils.write(Aim.STRING, Aim.STRING.convert(value), outputPipe);
         return this;
     }
 
     public int write(AimDataType type, ByteBuffer value) throws IOException {
+        if (outputPipe == null) createOutputPipe();
         return StreamUtils.write(type, value, outputPipe);
     }
 
     public int write(AimDataType type, byte[] value) throws IOException {
+        if (outputPipe == null) createOutputPipe();
         return StreamUtils.write(type, value, outputPipe);
     }
 
     public int readInto(AimDataType type, ByteBuffer buf) throws IOException {
+        if (inputPipe == null) createInputPipe();
         return StreamUtils.read(inputPipe, type, buf);
     }
 
     public String read() throws IOException {
+        if (inputPipe == null) createInputPipe();
         return Aim.STRING.convert(read(Aim.STRING));
     }
 
     public int readInt() throws IOException {
+        if (inputPipe == null) createInputPipe();
         return StreamUtils.readInt(inputPipe);
     }
 
     public byte[] read(AimDataType type) throws IOException {
+        if (inputPipe == null) createInputPipe();
         return StreamUtils.read(inputPipe, type);
     }
 
     public void skip(AimDataType type) throws IOException {
+        if (inputPipe == null) createInputPipe();
         StreamUtils.skip(inputPipe, type);
     }
 

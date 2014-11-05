@@ -67,6 +67,15 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   }
   def query(keyspaceName: String, query: String) = new QueryParser(keyspace(keyspaceName)).parse(query)
 
+  def transform(srcKeysapce: String, srcQuery: String, destKeyspace: String, destTable: String) = {
+    val t = System.currentTimeMillis
+    val scanner = query(srcKeysapce, srcQuery)
+    while(scanner.next) {
+      scanner.selectRow
+    }
+    log.info("TRANSFORM INTO " + destKeyspace + "." + destTable + " in " + (System.currentTimeMillis - t))
+  }
+
   @volatile var isShutdown = false
   private var shutDownHook: Option[AtomicBoolean] = None
   var sessions = scala.collection.mutable.ListBuffer[AimNodeSession]()
@@ -125,7 +134,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
     sessions.foreach(session ⇒ try {
       session.close
     } catch {
-      case e: Throwable ⇒ log.error("Force session close", e)
+      case e: Throwable ⇒ log.warn("Force session close: " + e.getMessage)
     })
 
     shutDownHook match {

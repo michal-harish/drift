@@ -10,42 +10,60 @@ import grizzled.slf4j.Logger
 import java.io.InputStreamReader
 import java.io.BufferedReader
 import net.imagini.aim.types.TypeUtils
+import net.imagini.aim.partition.AimPartition
+import java.nio.ByteBuffer
 
 class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
-  val keyspace = pipe.read
-  val table = pipe.read
-  val partition = node.keyspace(keyspace)(table)
-  val separator = pipe.read
-  log.info("LOADING INTO " + keyspace + "." + table + " " + partition.schema.toString)
-  pipe.write(partition.schema.toString)
-  pipe.flush
-
-  val startTime = System.currentTimeMillis
   private var count: Integer = 0
   private var currentSegment: AimSegment = null
-  /* Zero-copy support
-     * TODO COLUMN_BUFFER_SIZE should be configurable for different schemas
-     */
-  private val COLUMN_BUFFER_SIZE = 2048
-  private val record = ByteUtils.createBuffer(COLUMN_BUFFER_SIZE * partition.schema.size)
 
-  createNewSegmentIfNull
-
+//  var position = -1
+//  var limit = -1
+//  var mark = -1
+//  val buf = new Array[Byte](1000)
+//  private def readColumn: String = {
+//    var result: String = ""
+//    while (true) {
+//      position += 1
+//      if (position >= limit) {
+//        if (mark >= 0) {
+//          result += new String(buf, 0, limit)
+//        }
+//        position = 0
+//        mark = 0
+//        limit = pipe.getInputStream.read(buf, 0, buf.length)
+//      }
+//      if (limit == -1) {
+//        return result;
+//      }
+//    }
+//    throw new EOFException
+//  }
   override def accept = {
+    val keyspace = pipe.readHeader
+    val table = pipe.readHeader
+    val partition = node.keyspace(keyspace)(table)
+    val separator = pipe.readHeader
+    pipe.writeHeader(partition.schema.toString)
+    log.info("LOADING INTO " + keyspace + "." + table + " " + partition.schema.toString)
+    val startTime = System.currentTimeMillis
+    val COLUMN_BUFFER_SIZE = 2048
+    val record = ByteUtils.createBuffer(COLUMN_BUFFER_SIZE * partition.schema.size)
 
-    val reader = new InputStreamReader(pipe.getInputStream)
+    createNewSegmentIfNull(partition)
+    val source = scala.io.Source.fromInputStream(pipe.getInputStream)
+    val lines = source.getLines
     try {
-      val lineReader = new BufferedReader(reader)
       val values: Array[String] = new Array[String](partition.schema.size)
       var line: String = ""
       while (true) {
         record.clear
         var fields: Int = 0
         while (fields < partition.schema.size) {
-          val line = lineReader.readLine
-          if (line == null) {
+          if (!lines.hasNext) {
             throw new EOFException
           } else {
+            val line = lines.next
             for (value ← line.split(separator)) {
               values(fields) = value
               fields += 1
@@ -62,7 +80,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
           count += 1
 
           if (currentSegment.getOriginalSize > partition.segmentSizeBytes) {
-            addCurrentSegment
+            addCurrentSegment(partition)
           }
         } catch {
           case e: IOException ⇒ {
@@ -74,24 +92,22 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
           }
         }
       }
-
     } finally {
-      addCurrentSegment
+      addCurrentSegment(partition)
       log.info("load(EOF) records: " + count + " time(ms): " + (System.currentTimeMillis - startTime))
       pipe.writeInt(count)
       pipe.flush
-      reader.close
     }
   }
 
-  private def addCurrentSegment = {
+  private def addCurrentSegment(partition: AimPartition) = {
     try {
       currentSegment.close
       if (currentSegment.getOriginalSize > 0) {
         partition.add(currentSegment);
         currentSegment = null
       }
-      createNewSegmentIfNull
+      createNewSegmentIfNull(partition)
     } catch {
       case e: Throwable ⇒ {
         throw new IOException(e);
@@ -99,7 +115,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
     }
   }
 
-  private def createNewSegmentIfNull = {
+  private def createNewSegmentIfNull(partition: AimPartition) = {
     if (currentSegment == null) {
       currentSegment = new AimSegmentQuickSort(partition.schema, classOf[BlockStorageLZ4]);
       //TODO enalbe once schema contains keyField and sort order

@@ -19,7 +19,7 @@ class AimNodeAcceptor(val node: AimNode, listenPort: Int) extends Thread {
       while (!isInterrupted && !node.isShutdown) {
         val socket = controllerListener.accept
         try {
-          val pipe = Pipe.open(socket)
+          val pipe = new Pipe(socket)
           log.debug("Node " + pipe.protocol + " connection from " + socket.getRemoteSocketAddress.toString)
           pipe.protocol match {
             case Protocol.LOADER_LOCAL ⇒ node.session(new AimNodeLoaderSession(node, pipe))
