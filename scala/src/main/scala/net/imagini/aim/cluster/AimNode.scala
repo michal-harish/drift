@@ -48,6 +48,7 @@ object AimNode extends App {
   //ATTACH CONSOLE
   val console = new AimConsole("localhost", 4000)
   console.start
+  console.query("user addthis")
 
   //WAIT FOR DISTRIBUTED SHUTDOWN
   manager.synchronized(manager.wait)

@@ -39,60 +39,67 @@ Usecase 1. Benchmark - retroactive data windows: Solution - two tables in the sa
 
 Usecase 2. Benchmark - combining datasets from id-spaces - two tables from different Keyspaces, with StreamJoin and key transformation (!) 
 -------------------------------------------------------------------------------------------------------------------------------------------
-<html><pre>
-views       (6m rows, 266Mb.gz)         syncs         (1m syncs 32Mb.gz)
-+--------+--------+-----------+         +--------+---------------------+
-| at_id  | url    | timestamp |         | at_id  | vdna_user_id        |
-+--------+--------+-----------+         +--------+---------------------+
-| STRING | STRING | LONG      |         | STRING | UUID(BYTEARRAY[16]) |
-+--------+--------+-----------+         +--------+---------------------+
 
-+----------------------------------+----------+---------+---------+--------+-------+-------+--------+
-| 6m views (266Mb.gz)              | DRIFT    | DRIFT   | DRIFT   | HBase  | SPARK | REDIS | HADOOP |
-| 1m syncs (32Mb.gz)               | (LZ4mem) | (mem)   | (LZ4fs) | (mem)  |       |       |        |
-+----------------------------------+----------+---------+---------+--------+-------+-------+--------+
-| 1. Load Table 1 - Views          | 71.440s  | 39.802s |         | 72.10s |       |       | 0      |
-+----------------------------------+----------+---------+---------+--------+-------+-------+--------+
-| 2. Load Table 2 - Syncs          | 15.552s  | 13.01s  |         | 13.56s |       |       | 0      |
-+----------------------------------+----------+---------+---------+--------+-------+-------+--------+
-| 3. Memory Used                   |          |         |         |        |       |       | 0      |
-+----------------------------------+----------+---------+---------+--------+-------+-------+--------+
-| 4. Memory Occupied               | 222Mb    | 660Mb   |         | 1500Mb |       |       | 0      |
-+----------------------------------+----------+---------+---------+--------+-------+-------+--------+
-| 5. SCAN Syncs for a column value | 99ms     | 40ms    |         | 666ms  |       |       |        |
-+----------------------------------+----------+---------+---------+--------+-------+-------+--------+
-| 6. SCAN Views for a url contains | 1.491s   |         |         | 5.660s |       |       |        |
-+----------------------------------+----------+---------+---------+--------+-------+-------+--------+
-| 7. COUNT inner join              | 1.659s   |         |         | 3.060s |       |       |        |
-+----------------------------------+----------+---------+---------+--------+-------+-------+--------+
-| 8. TRANSFORM inner join          | 22.197s  |         |         | 0      |       |       |        |
-+----------------------------------+----------+---------+---------+--------+-------+-------+--------+
-| 9. EXPORT inner join to file     | 33.296s  |         |         |        |       |       |        |
-+----------------------------------+----------+---------+---------+--------+-------+-------+--------+
-| 10. RANDOM ACCESS                | N/A      | N/A     |         |        |       |       | N/A    |
-+----------------------------------+----------+---------+---------+--------+-------+-------+--------+
+<html><pre>
+
+addthis.views    (6m, 266Mb.gz)         addthis.syncs      (1m, 32Mb.gz)        addthis.views             (2.45m, 3.02Mb)
++--------+--------+-----------+         +--------+---------------------+        +---------------------+-----------+-----+
+| at_id  | url    | timestamp |         | at_id  | vdna_user_id        |        | user_uid            | timestamp | url |
++--------+--------+-----------+         +--------+---------------------+        +---------------------+-----------+-----+
+| STRING | STRING | LONG      |         | STRING | UUID(BYTEARRAY[16]) |        | UUID(BYTEARRAY[16]) | LONG      |     |
++--------+--------+-----------+         +--------+---------------------+        +---------------------+-----------+-----+
+
++----------------------------------+----------+---------+---------+--------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 6m views (266Mb.gz)              | DRIFT    | DRIFT   | DRIFT   | HBase  | SPARK   | HADOOP  | (drift or equivalent command)                                                                                                                                |
+| 1m syncs (32Mb.gz)               | (LZ4mem) | (mem)   | (LZ4fs) | (mem)  | (1.0.1) | (fs.gz) |                                                                                                                                                              |
++----------------------------------+----------+---------+---------+--------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 1. Load Table 1 - Views          | 71.440s  | 39.802s |         | 72.10s |         |         | time cat ~/addthis_views_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table views                   |
++----------------------------------+----------+---------+---------+--------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 2. Load Table 2 - Syncs          | 15.552s  | 13.01s  |         | 13.56s |         |         | time cat ~/addthis_syncs_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table syncs                   |
++----------------------------------+----------+---------+---------+--------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 3. Query-Time Extra Memory Used  | 128Mb    | 8Mb     | 128Mb   | 0      |         |         |                                                                                                                                                              |
++----------------------------------+----------+---------+---------+--------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 4. Memory Occupied               | 222Mb    | 660Mb   | 0       | 1500Mb |         | 0       | use addthis; stats                                                                                                                                           |
++----------------------------------+----------+---------+---------+--------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 5. SCAN Syncs for a column value | 120ms    |         |         | 666ms  |         |         | select at_id,vdna_user_uid from syncs where vdna_user_uid= 'ce1e0d6b-6b11-428c-a9f7-c919721c669c'                                                            |
++----------------------------------+----------+---------+---------+--------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 6. SCAN Views for a url contains | 1.491s   |         |         | 5.660s |         |         | select at_id,url from views where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'                                   |
++----------------------------------+----------+---------+---------+--------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 7. COUNT inner join              | 1.659s   |         |         | 3.060s |         |         | count (select at_id from syncs join select at_id from views)                                                                                                 |
++----------------------------------+----------+---------+---------+--------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 8. TRANSFORM inner join          | 22.197s  |         |         |        |         |         | select vdna_user_uid from syncs join select timestamp,url from views into vdna.pageviews                                                                     |
++----------------------------------+----------+---------+---------+--------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 9. EXPORT inner join to file     | 27.715s  |         |         |        |         |         | time java -jar target/drift-client.jar --keyspace addthis "select vdna_user_uid from syncs join select timestamp,url from views" > ~/vdna-addthis-export.csv |
++----------------------------------+----------+---------+---------+--------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 10. RANDOM ACCESS                | N/A      | N/A     |         |        |         | N/A     |                                                                                                                                                              |
++----------------------------------+----------+---------+---------+--------+---------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
 </pre></html>
+
+
+
 DRIFT - commands to run the benchmark
-1. cat ~/addthis_views_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table views
-2. time cat ~/addthis_syncs_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table syncs
-5. select at_id,vdna_user_uid from syncs where vdna_user_uid= 'ce1e0d6b-6b11-428c-a9f7-c919721c669c'
-6. select at_id,url from views where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'
-count the equi inner join between both tables: count (select at_id from syncs join select at_id from views)
-export crossed data into local file: time java -jar target/drift-client.jar --keyspace addthis "select vdna_user_uid, timestamp,url FROM ( select vdna_user_uid, at_id from syncs join select at_id,timestamp,url from views)" > ~/vdna-addthis-export.csv
-export crossed data into vdna keyspace: time java -jar target/drift-client.jar --keyspace addthis "select vdna_user_uid from syncs join select timestamp,url from views" | java -jar target/drift-loader.jar --separator '\t' --keyspace vdna --table pageviews
+- time cat ~/addthis_views_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table views
+- time cat ~/addthis_syncs_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table syncs
+- select at_id,vdna_user_uid from syncs where vdna_user_uid= 'ce1e0d6b-6b11-428c-a9f7-c919721c669c'
+- select at_id,url from views where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'
+- count (select at_id from syncs join select at_id from views)
+- select vdna_user_uid from syncs join select timestamp,url from views into vdna.pageviews 
+- time java -jar target/drift-client.jar --keyspace addthis "select vdna_user_uid from syncs join select timestamp,url from views" > ~/vdna-addthis-export.csv
 
 BENCHMARK DATA 
-#hive add this views  2014-10-31 15:00-16:00 (6 million records) (0.63Gb uncompressed) (0.22Gb compressed)
-bl-yarnpoc-p01 hive> select count(1) from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;
-bl-yarnpoc-p01 ~> hive -e "select uid, url, timestamp from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;" > addthis_views_2014-10-31_15.csv
-bl-yarnpoc-p01 ~> gzip addthis_views_2014-10-31_15.csv
-scp mharis@bl-yarnpoc-p01:~/addthis_views_2014-10-31_15.csv.gz ~/
 
-#hive add this syncs  2014-10-31 15:00-16:00
-bl-yarnpoc-p01 hive> select count(1) from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync' and timestamp>=1414767600 and timestamp<1414771200;
-bl-yarnpoc-p01 ~> hive -e "select partner_user_id, useruid, concat(timestamp,'000') from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync' and timestamp>=1414767600 and timestamp<1414771200" > addthis_syncs_2014-10-31_15.csv
-bl-yarnpoc-p01 ~> gzip addthis_syncs_2014-10-31_15.csv
-scp mharis@bl-yarnpoc-p01:~/addthis_syncs_2014-10-31_15.csv.gz ~/
+* hive add this views  2014-10-31 15:00-16:00 (6 million records) (0.63Gb uncompressed) (0.22Gb compressed)
+* bl-yarnpoc-p01 hive> select count(1) from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;
+* bl-yarnpoc-p01 ~> hive -e "select uid, url, timestamp from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;" > addthis_views_2014-10-31_15.csv
+* bl-yarnpoc-p01 ~> gzip addthis_views_2014-10-31_15.csv
+* scp mharis@bl-yarnpoc-p01:~/addthis_views_2014-10-31_15.csv.gz ~/
+
+hive add this syncs  2014-10-31 15:00-16:00
+* bl-yarnpoc-p01 hive> select count(1) from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync' and timestamp>=1414767600 and timestamp<1414771200;
+* bl-yarnpoc-p01 ~> hive -e "select partner_user_id, useruid, concat(timestamp,'000') from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync' and timestamp>=1414767600 and timestamp<1414771200" > addthis_syncs_2014-10-31_15.csv
+* bl-yarnpoc-p01 ~> gzip addthis_syncs_2014-10-31_15.csv
+* scp mharis@bl-yarnpoc-p01:~/addthis_syncs_2014-10-31_15.csv.gz ~/
 
 
 Usecase 3. Benchmark - id-linking from newly discovered information (?) 
@@ -117,13 +124,13 @@ Design thoughts dump
   stored efficiently in memory and thus queried and filtered at very high speeds
 * All the communication storage and streaming is compressed with LZ4 High Compression algorithm.
 * Standard method of querying is replaced 2 separate processes: 
-  1. Filter - produces a FilterBitSet for given range (set of segments)
-  2. Select - doesn't have a where condition but is given the FilterBitSet  
+  * Filter - produces a FilterBitSet for given range (set of segments)
+  *  Select - doesn't have a where condition but is given the FilterBitSet  
 * Components: Loaders -> Loading Interface -> Storage <- Filter Interface <- Select Interface 
-  - Loading is done using IPC and is only defined by a protocol so any language can be used 
-  - Memory Mapped Files are used for storage 
-  - Go , C and other low-level languages can be used to implement the central component
-  - Filter and Select Interfaces should be done in Scala as this allows for passing mapper/select code around nicely
+  *  Loading is done using IPC and is only defined by a protocol so any language can be used 
+  * Memory Mapped Files are used for storage 
+  *  Go , C and other low-level languages can be used to implement the central component
+  * Filter and Select Interfaces should be done in Scala as this allows for passing mapper/select code around nicely
 * The protocol uses BIG_ENDIAN format as it is better suited for filtering comparsions 
 * Trivial binary protocol with transparent LZ4 streaming compression is used, with following data types:
 * Each segment can be sorted at load-time with quick-sort and multiple segments are sorted with merge-sort at query time

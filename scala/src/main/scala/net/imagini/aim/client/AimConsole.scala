@@ -24,9 +24,9 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
 
   override def run = {
     try {
+      System.out.println();
+      System.out.print(">");
       while (!stopped) {
-        System.out.println();
-        System.out.print(">");
         val line = bufferRead.readLine
         if (line == null) {
           stopped = true
@@ -39,17 +39,7 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
           try {
             input(0) match {
               case "exit" ⇒ stopped = true
-              case _ ⇒ {
-                val t = System.currentTimeMillis
-                client.query(instruction) match {
-                  case (Some(schema)) ⇒ client.printResult
-                  case None           ⇒ println("OK")
-                }
-                if (client.getCount > 0)  {
-                  println("Count: " + client.getCount)
-                }
-                println("Query took: " + (System.currentTimeMillis() - t) + " ms")
-              }
+              case _      ⇒ query(instruction)
             }
           } catch {
             case e: AimQueryException ⇒ println(e.getMessage)
@@ -63,6 +53,20 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
       this.synchronized(notify)
       System.out.println("Console shut down complete.")
     }
+  }
+
+  def query(query: String) = {
+    val t = System.currentTimeMillis
+    client.query(query) match {
+      case (Some(schema)) ⇒ client.printResult
+      case None           ⇒ println("OK")
+    }
+    if (client.getCount > 0) {
+      println("Count: " + client.getCount)
+    }
+    println("Query took: " + (System.currentTimeMillis() - t) + " ms")
+    System.out.println();
+    System.out.print(">");
   }
 
 }

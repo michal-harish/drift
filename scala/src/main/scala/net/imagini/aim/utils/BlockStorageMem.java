@@ -15,14 +15,7 @@ public class BlockStorageMem  extends BlockStorage {
 
     @Override
     protected int compressBlock(byte[] array, int offset, int length) {
-        int inflation = (int)(Double.valueOf(MEM_BLOCK_SIZE) / Double.valueOf(length-offset) / 0.01) - 100;
-        System.err.println(length + " inflation: " + inflation + " %");
         blocks.add(Arrays.copyOfRange(array, offset, length));
-//        if (offset >0 || inflation > 0.5) {
-//            blocks.add(Arrays.copyOfRange(array, offset, length));
-//        } else {
-//            blocks.add(array);
-//        }
         return array.length;
     }
 
