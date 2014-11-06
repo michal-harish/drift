@@ -18,11 +18,11 @@ public class ColumnScanner {
     final public AimType aimType;
     final public AimDataType dataType;
     final private BlockStorage blockStorage;
-    private Boolean eof = false;
-    private Integer currentBlock = -1;
+    private boolean eof = false;
+    private int currentBlock = -1;
     volatile private ByteBuffer buffer = null;
-    private Integer markBlock = -1;
-    private Integer markPosition = -1;
+    private int markBlock = -1;
+    private int markPosition = -1;
 
     public ColumnScanner(BlockStorage blockStorage, AimType aimType) {
         this.blockStorage = blockStorage;

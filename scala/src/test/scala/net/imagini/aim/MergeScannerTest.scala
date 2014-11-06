@@ -30,6 +30,7 @@ class MergeScannerTest extends FlatSpec with Matchers {
     partition.add(s2)
 
     val scanner = new MergeScanner(partition.schema, "user_uid,column", "*", partition.segments)
+
     scanner.next should be(true); scanner.selectLine(",") should be("17b22cfb-a29e-42c3-a3d9-12d32850e103,pageview")
     scanner.next should be(true); scanner.selectLine(",") should be("17b22cfb-a29e-42c3-a3d9-12d32850e103,addthis_id")
     scanner.next should be(true); scanner.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103,pageview")

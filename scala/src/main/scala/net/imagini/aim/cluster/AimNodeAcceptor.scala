@@ -20,11 +20,11 @@ class AimNodeAcceptor(val node: AimNode, listenPort: Int) extends Thread {
         val socket = controllerListener.accept
         try {
           val pipe = new Pipe(socket)
-          log.debug("Node " + pipe.protocol + " connection from " + socket.getRemoteSocketAddress.toString)
+          log.info("Node " + pipe.protocol + " connection from " + socket.getRemoteSocketAddress.toString)
           pipe.protocol match {
-            case Protocol.LOADER_LOCAL ⇒ node.session(new AimNodeLoaderSession(node, pipe))
-            case Protocol.QUERY_LOCAL ⇒ node.session(new AimNodeQuerySession(node, pipe))
-            case _              ⇒ log.debug("Unsupported protocol request " + pipe.protocol)
+            case Protocol.LOADER_USER | Protocol.LOADER_INTERNAL ⇒ node.session(new AimNodeLoaderSession(node, pipe))
+            case Protocol.QUERY_USER | Protocol.QUERY_INTERNAL ⇒ node.session(new AimNodeQuerySession(node, pipe))
+            case _ ⇒ log.debug("Unsupported protocol request " + pipe.protocol)
           }
         } catch {
           case e: IOException ⇒ log.error("Node at port " + port + " failed to establish client connection: ", e)

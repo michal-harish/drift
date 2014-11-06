@@ -1,6 +1,7 @@
 package net.imagini.aim.utils;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -61,7 +62,7 @@ abstract public class BlockStorage {
         zoom.put(decompress_buffer, 0, length);
         zoom.flip();*/
 
-        zoom.order(ByteUtils.ENDIAN);
+        zoom.order(ByteOrder.BIG_ENDIAN);
         return zoom;
 
     }

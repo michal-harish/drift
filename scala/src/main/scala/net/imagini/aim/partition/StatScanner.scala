@@ -16,6 +16,8 @@ class StatScanner(val partition: Int, val regions: Map[String,AimPartition]) ext
 
   override val keyType:AimType = Aim.STRING
 
+  override val keyLen = keyType.getDataType.getLen
+
   private val data: SortedMap[String,Array[ByteBuffer]] = SortedMap(regions.map(r => {
         r._1 -> Array( 
             ByteUtils.wrap(schema.get(0).convert(r._1)),

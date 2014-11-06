@@ -1,12 +1,10 @@
-package net.imagini.aim
+package net.imagini.aim.cluster
 
 import java.io.EOFException
 import scala.Array.canBuildFrom
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import net.imagini.aim.client.AimClient
-import net.imagini.aim.cluster.AimNode
-import net.imagini.aim.cluster.DriftManagerLocal
 import net.imagini.aim.client.Loader
 import net.imagini.aim.partition.AimPartition
 import net.imagini.aim.partition.QueryParser
@@ -20,17 +18,17 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
   val port = 9999
 
   def fixutreNode: AimNode = {
-    val manager = new DriftManagerLocal
+    val manager = new DriftManagerLocal(1)
     manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
     val node = new AimNode(1, host + ":" + port, manager)
     node
   }
   def fixutreLoadDataSyncs = {
-    val loader = new Loader(host, port, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv"), false)
+    val loader = new Loader(host, port,Protocol.LOADER_USER, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv"), false)
     loader.streamInput should be (3)
   }
   def fixutreLoadPageviews = {
-    val loader = new Loader(host, port, "vdna", "events", "\n", this.getClass.getResourceAsStream("pageviews.csv"), false)
+    val loader = new Loader(host, port, Protocol.LOADER_USER, "vdna", "events", "\n", this.getClass.getResourceAsStream("pageviews.csv"), false)
     loader.streamInput should be (5)
   }
 

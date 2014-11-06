@@ -2,8 +2,8 @@ package net.imagini.aim.cluster;
 
 public enum Protocol {
     RESERVED(0), 
-    LOADER_LOCAL(10), LOADER_DISTRIBUTED(11),
-    QUERY_LOCAL(20), QUERY_DISTRIBUTED(21);
+    LOADER_USER(10), LOADER_INTERNAL(11),
+    QUERY_USER(20), QUERY_INTERNAL(21);
     public final int id;
 
     private Protocol(int id) {

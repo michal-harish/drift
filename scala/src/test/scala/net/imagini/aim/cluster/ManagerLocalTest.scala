@@ -8,7 +8,7 @@ class ManagerLocalTest extends FlatSpec with Matchers {
 
   var notification: Option[String] = None
   "Local Manager " should " immitate zk behaviours" in {
-    val manager = new DriftManagerLocal
+    val manager = new DriftManagerLocal(1)
     manager.watch("/drift/keyspaces", (children: Map[String, String]) ⇒ {
       children.keys.map(k ⇒ {
         manager.watch("/drift/keyspaces/" + k, (tables: Map[String, String]) ⇒ {

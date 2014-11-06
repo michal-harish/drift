@@ -6,13 +6,13 @@ import java.util.Arrays;
 public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
     final public int size;
     public AimTypeBYTEARRAY(int size) {  this.size = size; }
-    @Override public int getSize() { return size; }
+    @Override public int getLen() { return size; }
     @Override public int sizeOf(ByteBuffer value) { return size; }
     @Override public String toString() { return "BYTEARRAY["+size+"]"; }
     @Override public String escape(String value) { return "'" + value +"'"; }
 
     @Override public boolean equals(Object object) {
-        return object instanceof AimTypeBYTEARRAY && this.size == ((AimTypeBYTEARRAY)object).getSize();
+        return object instanceof AimTypeBYTEARRAY && this.size == ((AimTypeBYTEARRAY)object).getLen();
     }
 
     @Override public String asString(ByteBuffer value) {

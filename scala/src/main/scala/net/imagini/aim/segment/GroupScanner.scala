@@ -14,7 +14,7 @@ import net.imagini.aim.tools.RowFilter
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
 import net.imagini.aim.types.AimTypeAbstract
-import net.imagini.aim.types.TypeUtils
+import net.imagini.aim.utils.ByteUtils
 
 //TODO either optimize with selectBuffer or simply extend MergeScanner
 class GroupScanner(
@@ -46,6 +46,7 @@ class GroupScanner(
     groupFunctions.map(_.field) :+ keyField
   private val merge = new MergeScanner(sourceSchema, scanColumns, RowFilter.fromString(sourceSchema, "*"), segments)
   override val keyType = sourceSchema.get(0)
+  override val keyLen = keyType.getDataType.getLen
   rowFilter.updateFormula(merge.schema.names)
   groupFilter.updateFormula(merge.schema.names)
   groupFunctions.map(_.filter.updateFormula(merge.schema.names))
@@ -96,7 +97,7 @@ class GroupScanner(
     } else {
       merge.next
     }
-    while (TypeUtils.equals(merge.selectKey, groupKey.get, keyType)) {
+    while (ByteUtils.equals(merge.selectKey, groupKey.get, keyLen)) {
       if (rowFilter.matches(merge.selectRow)) {
         return true
       } else {
@@ -108,7 +109,7 @@ class GroupScanner(
 
   private def skipToNextGroup = {
     if (groupKey != None) {
-      while (TypeUtils.equals(merge.selectKey, groupKey.get, keyType)) {
+      while (ByteUtils.equals(merge.selectKey, groupKey.get, keyLen)) {
         merge.next
       }
     }
@@ -125,7 +126,7 @@ class GroupScanner(
       groupKey = Some(merge.selectKey.slice)
       merge.mark
       try {
-        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && TypeUtils.equals(merge.selectKey, groupKey.get, keyType)) {
+        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && ByteUtils.equals(merge.selectKey, groupKey.get, keyLen)) {
           if (!satisfiesFilter && groupFilter.matches(merge.selectRow)) {
             satisfiesFilter = true
           }

@@ -60,9 +60,9 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
 
   val log = Logger[this.type]
   val nodes: ConcurrentMap[Int, URI] = new ConcurrentHashMap[Int, URI]()
-  def peers = nodes.asScala.filter(n ⇒ n._1 != id)
+  def peers:Map[Int,URI] = nodes.asScala.filter(n ⇒ n._1 != id).toMap
 
-  private var expectedNumNodes = -1
+  var expectedNumNodes:Int = -1
   private var suspended = new AtomicBoolean(true)
   private var keyspaceRefs = new ConcurrentHashMap[String, ConcurrentMap[String, AimPartition]]()
   def keyspaces: List[String] = keyspaceRefs.asScala.keys.toList
@@ -100,7 +100,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   })
 
   manager.watch("/drift/nodes", (children: Map[String, String]) ⇒ {
-    val newNodes = children.map(p ⇒ p._1.toInt -> new URI(p._2)).toMap
+    val newNodes = children.map(p ⇒ p._1.toInt -> new URI("drift://"+ p._2)).toMap
     nodes.asScala.keys.filter(!newNodes.contains(_)).map(nodes.remove(_))
     newNodes.map(n ⇒ nodes.put(n._1, n._2))
     rebalance

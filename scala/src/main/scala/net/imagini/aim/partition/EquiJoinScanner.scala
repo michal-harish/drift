@@ -7,9 +7,9 @@ import java.util.LinkedHashMap
 import scala.collection.immutable.ListMap
 import net.imagini.aim.types.AimType
 import scala.collection.JavaConverters._
-import net.imagini.aim.types.TypeUtils
 import java.nio.ByteBuffer
 import net.imagini.aim.tools.AbstractScanner
+import net.imagini.aim.utils.ByteUtils
 
 class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 
@@ -23,6 +23,7 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
 
   override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](selectMap.asJava))
   override val keyType: AimType = left.keyType
+  override val keyLen = keyType.getDataType.getLen
 
   private val leftSelectIndex:Array[Int] = selectMap.keys.filter(left.schema.has(_)).map(left.schema.get(_)).toArray
   private val rightSelectIndex:Array[Int] = selectMap.keys.filter(f =>(!left.schema.has(f) && right.schema.has(f))).map(right.schema.get(_)).toArray
@@ -60,7 +61,7 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
     if (!eof) {
       var cmp: Int = -1
       do {
-        cmp = TypeUtils.compare(left.selectKey, right.selectKey, left.keyType)
+        cmp = ByteUtils.compare(left.selectKey, right.selectKey, keyLen)
         if (cmp < 0) eof = !left.next
         else if (cmp > 0) eof = !right.next
       } while (!eof && cmp != 0)
@@ -90,7 +91,7 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
     while(!eof && right.next) {
       var cmp: Int = -1
       do {
-        cmp = TypeUtils.compare(left.selectKey, right.selectKey, left.keyType)
+        cmp = ByteUtils.compare(left.selectKey, right.selectKey, keyLen)
         if (cmp < 0) eof = !left.next
         else if (cmp > 0) eof = !right.next
       } while (!eof && cmp != 0)

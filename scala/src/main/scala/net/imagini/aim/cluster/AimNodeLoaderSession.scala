@@ -12,10 +12,106 @@ import java.io.BufferedReader
 import net.imagini.aim.types.TypeUtils
 import net.imagini.aim.partition.AimPartition
 import java.nio.ByteBuffer
+import net.imagini.aim.client.Loader
+import net.imagini.aim.tools.StreamUtils
+import net.imagini.aim.types.AimQueryException
 
 class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
-  private var count: Integer = 0
-  private var currentSegment: AimSegment = null
+
+  val keyspace = pipe.readHeader
+  val table = pipe.readHeader
+  val partition = node.keyspace(keyspace)(table)
+  val separator = pipe.readHeader
+  val schema = partition.schema
+  val keyType = schema.get(0)
+  pipe.writeHeader(schema.toString)
+  log.info("LOADING INTO " + keyspace + "." + table + " " + schema.toString)
+
+  val startTime = System.currentTimeMillis
+  val COLUMN_BUFFER_SIZE = 2048
+  val record = ByteUtils.createBuffer(COLUMN_BUFFER_SIZE * schema.size)
+  var localSegment = partition.createNewSegment
+  var count = 0
+
+  override def accept = {
+    try {
+      pipe.protocol match {
+        case Protocol.LOADER_USER     ⇒ loadUnparsedStream
+        case Protocol.LOADER_INTERNAL ⇒ loadPartitionedStream
+        case _                        ⇒ throw new AimQueryException("Invalid loader protocol " + pipe.protocol);
+      }
+    } finally {
+      partition.add(localSegment)
+      log.info("load(EOF) records: " + count + " time(ms): " + (System.currentTimeMillis - startTime))
+      pipe.writeInt(count)
+      pipe.flush
+    }
+  }
+
+  private def loadPartitionedStream = {
+    val in = pipe.getInputStream
+    while (true) {
+      record.clear
+      for (t ← schema.fields) StreamUtils.read(in, t.getDataType, record)
+      record.flip
+      localSegment = partition.appendRecord(localSegment, record)
+      count += 1
+    }
+  }
+
+  private def loadUnparsedStream = {
+    val peerLoaders: Map[Int, Loader] = node.peers.map(peer ⇒ {
+      peer._1 -> new Loader(peer._2.getHost, peer._2.getPort, Protocol.LOADER_INTERNAL, keyspace, table, "", null, false)
+    })
+    try {
+      val source = scala.io.Source.fromInputStream(pipe.getInputStream)
+      val lines = source.getLines
+      val values: Array[String] = new Array[String](schema.size)
+      var line: String = ""
+      while (true) {
+        record.clear
+        var fields: Int = 0
+        while (fields < schema.size) {
+          if (!lines.hasNext) {
+            throw new EOFException
+          } else {
+            val line = lines.next
+            for (value ← line.split(separator)) {
+              values(fields) = value
+              fields += 1
+            }
+          }
+        }
+        try {
+          for ((t, value) ← (schema.fields zip values)) {
+            val bytes = t.convert(value)
+            TypeUtils.copy(bytes, t.getDataType, record)
+          }
+          record.flip
+          val targetNode = keyType.partition(record, node.expectedNumNodes) + 1
+          if (targetNode == node.id) {
+            localSegment = partition.appendRecord(localSegment, record)
+            count += 1
+          } else {
+            StreamUtils.write(record, peerLoaders(targetNode).pipe.getOutputStream)
+          }
+        } catch {
+          case e: IOException ⇒ {
+            log.error(count + ":" + values, e);
+            throw e
+          }
+          case e: Exception ⇒ {
+            log.error(count + ":" + values, e);
+          }
+        }
+      }
+    } catch {
+      case e: EOFException ⇒ {
+        peerLoaders.values.map(peer ⇒ count += peer.ackLoadedCount)
+        throw e;
+      }
+    }
+  }
 
   //TODO optimized parsing
   //  var position = -1
@@ -40,62 +136,4 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
   //    }
   //    throw new EOFException
   //  }
-  override def accept = {
-    val keyspace = pipe.readHeader
-    val table = pipe.readHeader
-    val partition = node.keyspace(keyspace)(table)
-    val separator = pipe.readHeader
-    pipe.writeHeader(partition.schema.toString)
-    log.info("LOADING INTO " + keyspace + "." + table + " " + partition.schema.toString)
-    val startTime = System.currentTimeMillis
-    val COLUMN_BUFFER_SIZE = 2048
-    val record = ByteUtils.createBuffer(COLUMN_BUFFER_SIZE * partition.schema.size)
-    var segment = partition.createNewSegment
-    val source = scala.io.Source.fromInputStream(pipe.getInputStream)
-    val lines = source.getLines
-    try {
-      val values: Array[String] = new Array[String](partition.schema.size)
-      var line: String = ""
-      while (true) {
-        record.clear
-        var fields: Int = 0
-        while (fields < partition.schema.size) {
-          if (!lines.hasNext) {
-            throw new EOFException
-          } else {
-            val line = lines.next
-            for (value ← line.split(separator)) {
-              values(fields) = value
-              fields += 1
-            }
-          }
-        }
-        try {
-          for ((t, value) ← (partition.schema.fields zip values)) {
-            val bytes = t.convert(value)
-            TypeUtils.copy(bytes, t.getDataType, record)
-          }
-          record.flip
-          segment = partition.appendRecord(segment, record)
-          count += 1
-        } catch {
-          case e: IOException ⇒ {
-            log.error(count + ":" + values, e);
-            throw e
-          }
-          case e: Exception ⇒ {
-            log.error(count + ":" + values, e);
-          }
-        }
-      }
-    } finally {
-      partition.add(segment)
-      log.info("load(EOF) records: " + count + " time(ms): " + (System.currentTimeMillis - startTime))
-      pipe.writeInt(count)
-      pipe.flush
-    }
-  }
-
-  
-
 }

@@ -8,12 +8,12 @@ import scala.collection.mutable.Set
 import scala.collection.mutable.HashMap
 import grizzled.slf4j.Logger
 
-class DriftManagerLocal extends DriftManager {
+class DriftManagerLocal(numNodes: Int) extends DriftManager {
 
   val tree = HashMap[String, Any]()
   val dataWatchers = new HashMap[String, Set[(Option[Any]) ⇒ Unit]] with MultiMap[String, (Option[Any]) ⇒ Unit]
   val pathWatchers = new HashMap[String, Set[(Map[String, Any]) ⇒ Unit]] with MultiMap[String, (Map[String, Any]) ⇒ Unit]
-  init(1)
+  init(numNodes)
   override def close = {}
   override protected def pathExists(path: String): Boolean = {
     log.debug("EXISTS ? " + path + " " + tree.contains(path))

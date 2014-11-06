@@ -5,11 +5,12 @@ import java.io.InputStream
 import java.net.InetAddress
 import java.net.Socket
 import java.util.zip.GZIPOutputStream
-
 import grizzled.slf4j.Logger
 import net.imagini.aim.cluster.Pipe
 import net.imagini.aim.cluster.Protocol
 import net.imagini.aim.types.AimSchema
+import java.nio.ByteBuffer
+import net.imagini.aim.tools.StreamUtils
 
 object Loader extends App {
   var host: String = "localhost"
@@ -33,22 +34,24 @@ object Loader extends App {
     }
   }
   val loader = file match {
-    case None           ⇒ new Loader(host, port, keyspace, table, separator, gzip)
-    case Some(filename) ⇒ new Loader(host, port, keyspace, table, separator, filename, gzip)
+    case None           ⇒ new Loader(host, port, Protocol.LOADER_USER, keyspace, table, separator, null, gzip)
+    case Some(filename) ⇒ new Loader(host, port, Protocol.LOADER_USER, keyspace, table, separator, new FileInputStream(filename), gzip)
   }
   loader.streamInput
 }
 
-class Loader(host: String, port: Int, val keyspace: String, val table: String, val separator: String, val fileinput: InputStream, val gzip: Boolean) {
-
-  def this(host: String, port: Int, keyspace: String, table: String, separator: String, filename: String, gzip: Boolean) = this(host, port, keyspace, table, separator, if (filename == null) null else new FileInputStream(filename), gzip)
-
-  def this(host: String, port: Int, keyspace: String, table: String, separator: String, gzip: Boolean) = this(host, port, keyspace, table, separator, null.asInstanceOf[InputStream], gzip)
+class Loader(host: String, port: Int, protocol: Protocol, 
+    val keyspace: String, 
+    val table: String, 
+    val separator: String, 
+    val fileinput: InputStream, 
+    val gzip: Boolean
+) {
 
   val log = Logger[this.type]
   val in: InputStream = if (fileinput == null) System.in else fileinput
   val socket = new Socket(InetAddress.getByName(host), port)
-  val pipe = new Pipe(socket, Protocol.LOADER_LOCAL, if (gzip) 3 else 2)
+  val pipe = new Pipe(socket, protocol, if (gzip) 3 else 2)
 
   //handshake
   pipe.writeHeader(keyspace)
@@ -68,6 +71,10 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
         count += n
       }
     } while (-1 != n)
+    ackLoadedCount
+  }
+
+  def ackLoadedCount: Int = {
     pipe.flush
     if (!gzip) {
       pipe.getOutputStream.asInstanceOf[GZIPOutputStream].finish
@@ -76,5 +83,4 @@ class Loader(host: String, port: Int, val keyspace: String, val table: String, v
     pipe.close
     loadedCount
   }
-
 }

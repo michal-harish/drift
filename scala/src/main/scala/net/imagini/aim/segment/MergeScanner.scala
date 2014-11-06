@@ -8,11 +8,11 @@ import scala.collection.JavaConverters._
 import java.nio.ByteBuffer
 import net.imagini.aim.tools.AbstractScanner
 import scala.Array.canBuildFrom
-import net.imagini.aim.types.TypeUtils
 import net.imagini.aim.tools.ColumnScanner
 import java.util.concurrent.Future
 import java.util.concurrent.Executors
 import java.util.concurrent.Callable
+import net.imagini.aim.utils.ByteUtils
 
 class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String], val rowFilter: RowFilter, val segments: Seq[AimSegment])
   extends AbstractScanner {
@@ -30,17 +30,18 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   private val scanColumnIndex: Array[Int] = schema.names.map(n ⇒ scanSchema.get(n))
   private val scanKeyColumnIndex: Int = scanSchema.get(keyField)
   override val keyType = scanSchema.get(scanKeyColumnIndex)
+  override val keyLen = keyType.getDataType.getLen
   rowFilter.updateFormula(scanSchema.names)
 
   private var eof = false
-  private var currentScanner: Option[Array[ColumnScanner]] = None
-  private var markCurrentSegment: Option[Array[ColumnScanner]] = None
+  private var currentScanner: Array[ColumnScanner] = null
+  private var markCurrentSegment: Array[ColumnScanner] = null
   private var currentKey: ByteBuffer = null
   private val currentRecord: Array[ByteBuffer] = new Array[ByteBuffer](schema.size)
 
   override def rewind = {
     scanners.foreach(_.foreach(_.rewind))
-    currentScanner = None
+    currentScanner = null
     eof = false
     move
   }
@@ -53,7 +54,7 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   override def reset = {
     scanners.foreach(_.foreach(_.reset))
     currentScanner = markCurrentSegment
-    markCurrentSegment = None
+    markCurrentSegment = null
     eof = false
     move
   }
@@ -61,19 +62,19 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   /**
    * Optimized next method
    */
-  val buffers: Array[ByteBuffer] = new Array[ByteBuffer](scanSchema.size)
+  var buffers: Array[ByteBuffer] = new Array[ByteBuffer](scanSchema.size)
   override def next: Boolean = {
     if (eof) {
       return false
     }
     //skip to next
-    if (!currentScanner.isEmpty) {
+    if (null != currentScanner) {
       var c = 0
-      while (c < currentScanner.get.length) {
-        currentScanner.get(c).skip
+      while (c < currentScanner.length) {
+        currentScanner(c).skip
         c += 1
       }
-      currentScanner = None
+      currentScanner = null
     }
     var s = 0
     while (s < scanners.length) {
@@ -95,25 +96,25 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
 
       //merge sort
       if (segmentHasData) {
-        if (currentScanner.isEmpty || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanner(scanKeyColumnIndex).buffer, currentScanner.get(scanKeyColumnIndex).buffer, keyType) > 0))) {
-          currentScanner = Some(scanner)
+        if (null == currentScanner || ((sortOrder == SortOrder.ASC ^ ByteUtils.compare(scanner(scanKeyColumnIndex).buffer, currentScanner(scanKeyColumnIndex).buffer, keyLen) > 0))) {
+          currentScanner = scanner
         }
       }
     }
-    eof = currentScanner.isEmpty
+    eof = null == currentScanner 
     move
     !eof
   }
 
   override def selectKey: ByteBuffer = {
-    if (eof || (currentScanner.isEmpty && !next)) {
+    if (eof || (null == currentScanner && !next)) {
       throw new EOFException
     } else {
       currentKey
     }
   }
   override def selectRow: Array[ByteBuffer] = {
-    if (eof || (currentScanner.isEmpty && !next)) {
+    if (eof || (null == currentScanner && !next)) {
       throw new EOFException
     } else {
       currentRecord
@@ -121,18 +122,15 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   }
 
   private def move = {
-    currentScanner match {
-      case None ⇒ {
-        currentKey = null
-        for (i ← (0 to schema.size - 1)) currentRecord(i) = null
-      }
-      case Some(scanner) ⇒ {
-        currentKey = scanner(scanKeyColumnIndex).buffer
-        var i = 0
-        while (i < currentRecord.length) {
-          currentRecord(i) = scanner(scanColumnIndex(i)).buffer
-          i += 1
-        }
+    if (null == currentScanner) {
+      currentKey = null
+      for (i ← (0 to schema.size - 1)) currentRecord(i) = null
+    } else {
+      currentKey = currentScanner(scanKeyColumnIndex).buffer
+      var i = 0
+      while (i < currentRecord.length) {
+        currentRecord(i) = currentScanner(scanColumnIndex(i)).buffer
+        i += 1
       }
     }
   }

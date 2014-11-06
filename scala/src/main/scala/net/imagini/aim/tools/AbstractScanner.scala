@@ -13,6 +13,8 @@ trait AbstractScanner {
 
   def keyType: AimType
 
+  def keyLen: Int
+
   def rewind
 
   def next: Boolean

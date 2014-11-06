@@ -6,7 +6,7 @@ import net.imagini.aim.utils.ByteUtils;
 
 public enum Aim implements AimDataType {
 
-    BOOL(1), BYTE(1), INT(4), LONG(8), STRING(4); //TODO DOUBLE(8), 
+    BOOL(1), BYTE(1), INT(4), LONG(8), STRING(-1); //TODO DOUBLE(8), 
 
     final public static String EMPTY = String.valueOf((char) 0); //
 
@@ -32,10 +32,10 @@ public enum Aim implements AimDataType {
         this.size = size;
     }
 
-    final public int size;
+    final private int size;
 
     @Override
-    public int getSize() {
+    public int getLen() {
         return size;
     }
 
@@ -76,10 +76,9 @@ public enum Aim implements AimDataType {
 
     @Override
     public int sizeOf(ByteBuffer value) {
-        switch (this) {
-        case STRING:
-            return ByteUtils.asIntValue(value) + size;
-        default:
+        if (this.size == -1) {
+            return ByteUtils.asIntValue(value) + 4;
+        } else {
             return size;
         }
     }
@@ -90,7 +89,7 @@ public enum Aim implements AimDataType {
             case BOOL: case BYTE: return value.get(value.position()) % numPartitions;
             case INT: return ByteUtils.asIntValue(value) % numPartitions;
             case LONG: return (int)ByteUtils.asLongValue(value) % numPartitions;
-            case STRING: return ByteUtils.asIntValue(value) % numPartitions;
+            case STRING: return ByteUtils.asIntValue(value) % numPartitions; //TODO crc32 checksum & numPartitions
             default: throw new IllegalArgumentException();
         }
     }

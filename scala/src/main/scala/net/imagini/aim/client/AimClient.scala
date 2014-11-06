@@ -53,7 +53,7 @@ object AimClient extends App {
 class AimClient(val host: String, val port: Int) {
 
   private var socket = new Socket(InetAddress.getByName(host), port)
-  private var pipe = Pipe.newLZ4Pipe(socket, Protocol.QUERY_LOCAL)
+  private var pipe = Pipe.newLZ4Pipe(socket, Protocol.QUERY_USER)
   private var error: Option[String] = None
   private var hasData: Option[Boolean] = None
   private var schema: Option[AimSchema] = None
@@ -62,7 +62,7 @@ class AimClient(val host: String, val port: Int) {
   private def reconnect = {
     socket.close
     socket = new Socket(InetAddress.getByName(host), port)
-    pipe = Pipe.newLZ4Pipe(socket, Protocol.QUERY_LOCAL)
+    pipe = Pipe.newLZ4Pipe(socket, Protocol.QUERY_USER)
   }
 
   def close = {
@@ -77,7 +77,7 @@ class AimClient(val host: String, val port: Int) {
   }
 
   def printResult = {
-    val len: Array[Int] = resultSchema.names.map(n ⇒ (math.max(n.length, resultSchema.dataType(n).getSize) / 4 + 1) * 4 + 1).toArray
+    val len: Array[Int] = resultSchema.names.map(n ⇒ (math.max(n.length, resultSchema.dataType(n).getLen) / 4 + 1) * 4 + 1).toArray
     var printedHeader = false
     while (hasNext) {
       val line = (0 to len.length - 1, fetchRecordStrings).zipped.map((i, v) ⇒ {

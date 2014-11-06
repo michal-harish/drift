@@ -12,7 +12,6 @@ import java.util.Set;
 import net.imagini.aim.cluster.Pipe;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.AimType;
-import net.imagini.aim.types.TypeUtils;
 import net.imagini.aim.utils.ByteUtils;
 import net.imagini.aim.utils.Tokenizer;
 
@@ -87,6 +86,7 @@ public class RowFilter {
     private AimSchema schema;
     protected RowFilter root;
     protected AimType aimType;
+    protected int aimTypeLen;
     protected RowFilter next;
     protected boolean isEmptyFilter = false;
     public boolean isEmptyFilter() {
@@ -110,6 +110,7 @@ public class RowFilter {
 
     protected RowFilter(RowFilter root, AimType type, RowFilter next) {
         this.aimType = type;
+        this.aimTypeLen = (aimType == null) ? 0 : type.getDataType().getLen();
         this.root = root;
         this.next = next;
     }
@@ -174,7 +175,7 @@ public class RowFilter {
         return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "= " + aimType.escape(value) + super.toString(); }
             @Override protected boolean matches(ByteBuffer value, ByteBuffer[] record) {
-                boolean match = super.matches(TypeUtils.compare(value,val,aimType)==0, record);
+                boolean match = super.matches(ByteUtils.compare(value,val,aimTypeLen)==0, record);
                 return match;
             }
         };
@@ -213,7 +214,7 @@ public class RowFilter {
         return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "CONTAINS " + aimType.escape(value) + super.toString(); }
             @Override protected boolean matches(ByteBuffer value,  ByteBuffer[] record) {
-                return super.matches(TypeUtils.contains(value, val,aimType.getDataType()), record);
+                return super.matches(ByteUtils.contains(value, val,aimTypeLen), record);
             }
         };
     }
@@ -224,7 +225,7 @@ public class RowFilter {
         return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "> " + aimType.escape(value) + super.toString(); }
             @Override protected boolean matches(ByteBuffer value, ByteBuffer[] data) {
-                return super.matches(TypeUtils.compare(value,val,aimType) > 0, data);
+                return super.matches(ByteUtils.compare(value,val,aimTypeLen) > 0, data);
             }
         };
     }
@@ -235,7 +236,7 @@ public class RowFilter {
         return next = new RowFilter(root,aimType) {
             @Override public String toString() { return "< " + aimType.escape(value) +super.toString(); }
             @Override protected boolean matches(ByteBuffer value, ByteBuffer[] data) {
-                return super.matches(TypeUtils.compare(value, val,aimType) < 0, data);
+                return super.matches(ByteUtils.compare(value, val,aimTypeLen) < 0, data);
             }
         };
     }
@@ -251,7 +252,7 @@ public class RowFilter {
             @Override protected boolean matches(ByteBuffer value, ByteBuffer[] data) {
                 boolean localResult = false;
                 for(ByteBuffer val: vals) {
-                    if (TypeUtils.compare(value, val,aimType)==0) {
+                    if (ByteUtils.compare(value, val,aimTypeLen)==0) {
                         localResult = true;
                         break;
                     }
