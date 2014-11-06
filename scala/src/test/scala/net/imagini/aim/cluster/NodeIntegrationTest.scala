@@ -34,7 +34,6 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
 
   def newClient: AimClient = {
     val client = new AimClient(host, port)
-    client.query("use vdna")
     client
   }
   def fetchAll(client: AimClient): Array[String] = {
@@ -50,6 +49,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     fixutreLoadDataSyncs
     fixutreLoadPageviews
     val client = newClient
+    client.query("use vdna")
     if (client.query("select * from events") != None) {
       client.hasNext should be(true)
       client.fetchRecordStrings(0) should equal("04732d65-d530-4b18-a583-53799838731a")
@@ -79,6 +79,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     fixutreLoadDataSyncs
 
     val client = newClient
+    client.query("use vdna")
     if (client.query("select * from events") != None) {
       client.hasNext should be(true)
       client.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "x", "ad36ec72-5b66-44f0-89be-668882c08ca5"))
@@ -97,6 +98,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     val node = fixutreNode
     val client = newClient
 
+    client.query("use vdna")
     client.query("SELECT * from events ") match {
       case None ⇒ throw new IllegalArgumentException
       case Some(schema) ⇒ {
@@ -106,12 +108,14 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     }
     node.query("vdna", "COUNT events").asInstanceOf[CountScanner].count should be(0)
 
+    client.query("USE vdna")
     client.query("COUNT events") should be(None)
     client.getCount should be(0)
 
     fixutreLoadDataSyncs
     fixutreLoadPageviews
 
+    client.query("use vdna")
     client.query("select * from events where user_uid='37b22cfb-a29e-42c3-a3d9-12d32850e103'") match {
       case None ⇒ throw new IllegalArgumentException
       case Some(schema) ⇒ {
@@ -128,6 +132,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
       }
     }
 
+    client.query("use vdna")
     client.query("select * from events where column contains 'x'") match {
       case None ⇒ throw new IllegalArgumentException
       case Some(schema) ⇒ {

@@ -103,7 +103,12 @@ public class Pipe {
     final public void close() throws IOException {
         if (inputPipe != null) inputPipe.close();
         inputPipe = null;
-        if (outputPipe != null) outputPipe.close();
+        if (outputPipe != null) {
+            if (outputPipe instanceof LZ4BlockOutputStream) {
+                ((LZ4BlockOutputStream)outputPipe).finish();
+            }
+            outputPipe.close();
+        }
         outputPipe = null;
     }
     final public void writeHeader(String value) throws IOException {

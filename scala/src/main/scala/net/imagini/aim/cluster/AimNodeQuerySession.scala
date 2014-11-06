@@ -3,22 +3,30 @@ package net.imagini.aim.cluster
 import java.io.EOFException
 import java.io.IOException
 import java.net.SocketException
-
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.tools.CountScanner
 import net.imagini.aim.tools.StreamUtils
 import net.imagini.aim.types.Aim
 import net.imagini.aim.utils.Tokenizer
+import net.imagini.aim.types.AimQueryException
+import net.imagini.aim.client.AimClient
+import net.imagini.aim.cluster.Protocol._
+import net.imagini.aim.tools.StreamMerger
 
 class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
 
   private var keyspace: Option[String] = None
+  private val peerClients: Seq[AimClient] = if (pipe.protocol.equals(QUERY_INTERNAL)) Seq() else node.peers.map(peer ⇒ {
+    new AimClient(peer._2.getHost, peer._2.getPort, QUERY_INTERNAL)
+  }).toSeq
+
   override def accept = {
     try {
-      pipe.read.trim match {
-        case command: String if (command.toUpperCase.startsWith("CLOSE")) ⇒ {
-          close
-        }
+      val request = pipe.read
+      if (pipe.protocol == QUERY_USER) {
+        peerClients.foreach(peer ⇒ peer.query(request))
+      }
+      request.trim match {
         case command: String if (command.toUpperCase.startsWith("TRANSFORM")) ⇒ keyspace match {
           case Some(k) ⇒ {
             node.transform("addthis", "select vdna_user_uid from syncs join select timestamp,url from views", "vdna", "pageviews")
@@ -27,11 +35,8 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
           }
           case None ⇒ throw new IllegalStateException("No keyspace selected, usage USE <keyspace>")
         }
-        case command: String if (command.toUpperCase.startsWith("USE")) ⇒ useKeySpace(command)
-        //        case query: String if (query.toUpperCase.startsWith("DESCRIBE")) ⇒ keyspace match {
-        //TODO          case Some(k) ⇒ handleSelectStream(node.describe(k,query))
-        //          case None ⇒ throw new IllegalStateException("No keyspace selected, usage USE <keyspace>")
-        //        }
+        case command: String if (command.toUpperCase.startsWith("CLOSE")) ⇒ close
+        case command: String if (command.toUpperCase.startsWith("USE"))   ⇒ useKeySpace(command)
         case query: String if (query.toUpperCase.startsWith("STAT")) ⇒ keyspace match {
           case Some(k) ⇒ handleSelectStream(node.stats(k))
           case None    ⇒ throw new IllegalStateException("No keyspace selected, usage USE <keyspace>")
@@ -43,12 +48,6 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
       }
     } catch {
       case e: SocketException ⇒ throw new EOFException
-      case e: IOException ⇒ {
-        log.error(e.getMessage, e)
-        pipe.write("ERROR")
-        pipe.write(exceptionAsString(e))
-        pipe.flush
-      }
       case e: Throwable ⇒ {
         log.error(e.getMessage, e)
         pipe.write("ERROR")
@@ -71,33 +70,37 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
     pipe.flush
   }
 
-  private def handleSelectStream(scanner: AbstractScanner) = {
-    scanner match {
-      case scanner: CountScanner ⇒ {
-        val count = scanner.count.toString
+  private def handleSelectStream(localScanner: AbstractScanner) = {
+
+    localScanner match {
+      case localScanner: CountScanner ⇒ {
+        val count = localScanner.count.toString
         pipe.write("COUNT")
         pipe.write(count)
         pipe.flush
       }
-      case scanner: AbstractScanner ⇒ {
+      case localScanner: AbstractScanner ⇒ {
         pipe.write("RESULT")
-        pipe.write(scanner.schema.toString)
-        try {
-          while (scanner.next) {
-            val row = scanner.selectRow
-            pipe.writeInt(scanner.schema.size)
-            for ((c, t) ← ((0 to scanner.schema.size - 1) zip scanner.schema.fields)) {
-              val dataType = t.getDataType
-              pipe.write(dataType.getDataType, row(c))
+        pipe.write(localScanner.schema.toString)
+
+        var stream = pipe.protocol match {
+          case QUERY_INTERNAL ⇒ new ScannerInputStream(localScanner)
+          case QUERY_USER ⇒ {
+            if (peerClients.forall(peer ⇒ !peer.getSchema.isEmpty && peer.getSchema.get.toString.equals(localScanner.schema.toString))) {
+              val streams = peerClients.map(peer ⇒ peer.getInputStream).toArray ++ Array(new ScannerInputStream(localScanner))
+              new StreamMerger(localScanner.schema, 1, streams)
+            } else {
+              throw new AimQueryException("Unexpected response from peers")
             }
           }
-          throw new EOFException
-        } catch {
-          case e: Throwable ⇒ {
-            pipe.writeInt(0)
-            pipe.write(if (e.isInstanceOf[EOFException]) "" else exceptionAsString(e)) //success flag
-            pipe.flush
-          }
+          case _ ⇒ throw new AimQueryException("Invalid query protocol")
+        }
+
+        try {
+          StreamUtils.copy(stream, pipe.getOutputStream)
+        } finally {
+          pipe.flush
+          pipe.close
         }
       }
     }

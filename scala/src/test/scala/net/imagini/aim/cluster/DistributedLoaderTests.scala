@@ -4,6 +4,7 @@ import net.imagini.aim.client.Loader
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import net.imagini.aim.client.AimClient
+import java.io.EOFException
 
 class DistributedLoaderTests  extends FlatSpec with Matchers {
   val manager = new DriftManagerLocal(4)
@@ -23,7 +24,12 @@ class DistributedLoaderTests  extends FlatSpec with Matchers {
   val client = new AimClient("localhost", 9997)
   client.query("USE vdna")
   client.query("STATS") 
-  client.printResult
+  client.hasNext should be(true); client.fetchRecordLine should be("events,1,1,39,39,1918,2322")
+  client.hasNext should be(true); client.fetchRecordLine should be("events,3,1,38,38,1586,2173")
+  client.hasNext should be(true); client.fetchRecordLine should be("events,4,1,43,43,2081,2604")
+  client.hasNext should be(true); client.fetchRecordLine should be("events,2,1,19,19,905,1050")
+  client.hasNext should be(false); 
+  an[EOFException] must be thrownBy(client.fetchRecordLine)
 
   node1.shutdown
   node2.shutdown

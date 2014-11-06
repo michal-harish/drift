@@ -11,19 +11,35 @@ import net.imagini.aim.utils.ByteUtils;
 
 public class StreamUtils {
 
+    static public long copy(InputStream in, OutputStream out) throws IOException {
+        long count = 0L;
+        int n = 0;
+        byte[] buffer = new byte[65535];
+        do {
+            n = in.read(buffer);
+            if (-1 != n) {
+                out.write(buffer, 0, n);
+                count += n;
+            }
+        } while (-1 != n);
+        return count;
+    }
+
     public static int write(ByteBuffer value, OutputStream out)
             throws IOException {
-//        System.err.println("WRITE TYPE FROM BUFFER " + type + " " + type.asString(value));
+        // System.err.println("WRITE TYPE FROM BUFFER " + type + " " +
+        // type.asString(value));
         byte[] array = value.array();
         int offset = value.arrayOffset() + value.position();
         int size = value.limit() - offset;
         out.write(array, offset, size);
         return size;
     }
-    
+
     public static int write(AimDataType type, ByteBuffer value, OutputStream out)
             throws IOException {
-//        System.err.println("WRITE TYPE FROM BUFFER " + type + " " + type.asString(value));
+        // System.err.println("WRITE TYPE FROM BUFFER " + type + " " +
+        // type.asString(value));
         byte[] array = value.array();
         int offset = value.arrayOffset() + value.position();
         int size = type.getLen();
@@ -40,13 +56,14 @@ public class StreamUtils {
         if (size == -1) {
             size = ByteUtils.asIntValue(value) + 4;
         }
-//        System.err.println("WRITE TYPE FROM ARRAY[" + size + "] " + type + " " + type.convert(value));
+        // System.err.println("WRITE TYPE FROM ARRAY[" + size + "] " + type +
+        // " " + type.convert(value));
         out.write(value, 0, size);
         return size;
     }
 
     static public void writeInt(OutputStream out, int v) throws IOException {
-//         System.err.println("WRITE INT " + v);
+        // System.err.println("WRITE INT " + v);
         out.write((v >>> 24) & 0xFF);
         out.write((v >>> 16) & 0xFF);
         out.write((v >>> 8) & 0xFF);
@@ -58,10 +75,10 @@ public class StreamUtils {
         val = ((((in.read() & 0xff)) << 24) + (((in.read() & 0xff)) << 16)
                 + (((in.read() & 0xff)) << 8) + (((in.read() & 0xff)) << 0));
         if (val < 0) {
-//             System.err.println("READ INT EOF");
+            // System.err.println("READ INT EOF");
             throw new EOFException();
         } else {
-//             System.err.println("READ INT " + val);
+            // System.err.println("READ INT " + val);
             return val;
         }
 
@@ -89,13 +106,14 @@ public class StreamUtils {
             result = new byte[size];
             read(in, result, 0, size);
         }
-//         System.err.println("READ TYPE AS NEW byte[] " + type + " " + type.convert(result));
+        // System.err.println("READ TYPE AS NEW byte[] " + type + " " +
+        // type.convert(result));
         return result;
     }
 
     static public int read(InputStream in, AimDataType type, ByteBuffer buf)
             throws IOException {
-//         System.err.println("READ TYPE INTO Buffer " + type);
+        // System.err.println("READ TYPE INTO Buffer " + type);
         int size = type.getLen();
         if (size == -1) {
             size = StreamUtils.readInt(in);
@@ -107,7 +125,7 @@ public class StreamUtils {
 
     static public long skip(InputStream in, AimDataType type)
             throws IOException {
-//         System.err.println("SKIP TYPE " + type);
+        // System.err.println("SKIP TYPE " + type);
         int skipLen = readSize(in, type);
         long totalSkipped = 0;
         while (totalSkipped < skipLen) {

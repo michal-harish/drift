@@ -61,16 +61,7 @@ class Loader(host: String, port: Int, protocol: Protocol,
   val schema = AimSchema.fromString(schemaDeclaration)
 
   def streamInput: Int = {
-    var count: Long = 0
-    var n: Int = 0
-    val buffer = new Array[Byte](65535)
-    do {
-      n = in.read(buffer)
-      if (-1 != n) {
-        pipe.getOutputStream.write(buffer, 0, n)
-        count += n
-      }
-    } while (-1 != n)
+    StreamUtils.copy(in, pipe.getOutputStream)
     ackLoadedCount
   }
 
