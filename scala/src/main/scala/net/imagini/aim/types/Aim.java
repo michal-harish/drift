@@ -90,7 +90,7 @@ public enum Aim implements AimDataType {
             case BYTE: return value.get(value.position()) % numPartitions;
             case INT: return ByteUtils.asIntValue(value) % numPartitions;
             case LONG: return (int)ByteUtils.asLongValue(value) % numPartitions;
-            case STRING: return Math.abs(ByteUtils.crc32(value.array(), value.position() + value.arrayOffset() + 4, ByteUtils.asIntValue(value))) % numPartitions; 
+            case STRING: return Math.abs(ByteUtils.crc32(value.array(), value.position() + 4, ByteUtils.asIntValue(value))) % numPartitions; 
             default: throw new IllegalArgumentException();
         }
     }
@@ -131,8 +131,7 @@ public enum Aim implements AimDataType {
             case LONG:
                 return String.valueOf(ByteUtils.asLongValue(value));
             case STRING:
-                return new String(value.array(), value.arrayOffset()
-                        + value.position() + 4, ByteUtils.asIntValue(value));
+                return new String(value.array(), value.position() + 4, ByteUtils.asIntValue(value));
             default:
                 return "";
             }

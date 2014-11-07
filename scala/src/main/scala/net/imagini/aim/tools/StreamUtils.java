@@ -30,7 +30,7 @@ public class StreamUtils {
         // System.err.println("WRITE TYPE FROM BUFFER " + type + " " +
         // type.asString(value));
         byte[] array = value.array();
-        int offset = value.arrayOffset() + value.position();
+        int offset = value.position();
         int size = value.limit() - offset;
         out.write(array, offset, size);
         return size;
@@ -41,7 +41,7 @@ public class StreamUtils {
         // System.err.println("WRITE TYPE FROM BUFFER " + type + " " +
         // type.asString(value));
         byte[] array = value.array();
-        int offset = value.arrayOffset() + value.position();
+        int offset = value.position();
         int size = type.getLen();
         if (size == -1) {
             size = ByteUtils.asIntValue(array, offset) + 4;
@@ -151,7 +151,7 @@ public class StreamUtils {
             throws IOException {
         int totalRead = 0;
         while (totalRead < len) {
-            int read = in.read(buf.array(), buf.arrayOffset() + buf.position(),
+            int read = in.read(buf.array(), buf.position(),
                     len - totalRead);
             if (read < 0)
                 throw new EOFException();

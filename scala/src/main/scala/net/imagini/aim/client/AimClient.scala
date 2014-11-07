@@ -19,7 +19,6 @@ object AimClient extends App {
 
   var host: String = "localhost"
   var port: Int = 4000
-  var keyspace: String = null
   var table: String = null
   val argsIterator = args.iterator
   var query: Option[String] = None
@@ -28,16 +27,14 @@ object AimClient extends App {
     argsIterator.next match {
       case "--host"      ⇒ host = argsIterator.next
       case "--port"      ⇒ port = argsIterator.next.toInt
-      case "--keyspace"  ⇒ keyspace = argsIterator.next
       case "--separator" ⇒ separator = argsIterator.next
       case arg: String   ⇒ query = Some(arg)
     }
   }
   query match {
-    case None ⇒ println("Usage: java jar drift-client.jar --keyspace <name> [--host <localhost> --port <4000> --separator<\\t>] '<query>'")
+    case None ⇒ println("Usage: java jar drift-client.jar [--host <localhost> --port <4000> --separator<\\t>] '<query>'")
     case Some(query) ⇒ {
       val client = new AimClient(host, port)
-      client.query("USE " + keyspace)
       client.query(query) match {
         case None ⇒ println("Invalid DRFIT Query")
         case Some(schema) ⇒ {
@@ -69,7 +66,6 @@ class AimClient(val host: String, val port: Int, val protocol: Protocol) {
     }
   }
   def getSchema: Option[AimSchema] = schema
-  private var keyspace: Option[String] = None
   private var responseProcessed: Option[Boolean] = None
 
   def query(query: String): Option[AimSchema] = {

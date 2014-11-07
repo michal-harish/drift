@@ -28,7 +28,7 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
       }
       request match {
         case command: String if (command.toUpperCase.startsWith("TRANSFORM")) ⇒ {
-          node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from views", "vdna", "pageviews")
+          node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
           pipe.write("OK")
           pipe.flush
         }

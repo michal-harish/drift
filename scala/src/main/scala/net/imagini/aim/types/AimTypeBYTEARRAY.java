@@ -18,11 +18,11 @@ public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
     }
 
     @Override public String asString(ByteBuffer value) {
-        return new String(value.array(), value.arrayOffset() + value.position(),size);
+        return new String(value.array(), value.position(),size);
     }
 
     @Override public int partition(ByteBuffer value, int numPartitions) {
-        return ByteUtils.sum(value.array(), value.arrayOffset() + value.position(), size)  % numPartitions;
+        return ByteUtils.sum(value.array(), value.position(), size)  % numPartitions;
     }
 
     @Override public byte[] convert(String value) {

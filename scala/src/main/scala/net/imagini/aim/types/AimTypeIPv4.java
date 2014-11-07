@@ -21,7 +21,7 @@ public class AimTypeIPv4 extends AimTypeAbstract {
 
     @Override public String asString(ByteBuffer value) {
         try {
-            return InetAddress.getByAddress(Arrays.copyOfRange(value.array(), value.arrayOffset() + value.position(), 4)).toString();
+            return InetAddress.getByAddress(Arrays.copyOfRange(value.array(), value.position(), 4)).toString();
         } catch (UnknownHostException e) {
             return null;
         }

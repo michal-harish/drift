@@ -11,10 +11,6 @@ import java.nio.ByteOrder;
  */
 public class ByteUtils {
 
-    public static int compareUnisgned(byte a, byte b) {
-        return (a & 0xFF) - (b & 0xFF);
-    }
-
     /**
      * byte array utils
      */
@@ -45,6 +41,74 @@ public class ByteUtils {
         result[offset + 1] = (byte) ((value >>> 16) & 0xFF);
         result[offset + 2] = (byte) ((value >>> 8) & 0xFF);
         result[offset + 3] = (byte) ((value >>> 0) & 0xFF);
+    }
+
+    /**
+     * Compares the current buffer position if treated as given type with the
+     * given value but does not advance
+     */
+    final public static int compare(byte[] lArray, int leftOffset, byte[] rArray, int rightOffset, int len) {
+        int ni;
+        int i = leftOffset;
+        int nj;
+        int j = rightOffset;
+        int n;
+        int k = 0;
+        if (len == -1) {
+            ni = ByteUtils.asIntValue(lArray, i) + 4;
+            i += 4;
+            nj = ByteUtils.asIntValue(rArray, j) + 4;
+            j += 4;
+            n = Math.min(ni, nj);
+            k += 4;
+        } else {
+            n = ni = nj = len;
+        }
+        if (ni == nj) {
+            for (; k < n; k++, i++, j++) {
+                int cmp = (lArray[i] & 0xFF) - (rArray[j] & 0xFF);
+                if (cmp != 0) {
+                    return cmp;
+                }
+            }
+        }
+        return ni - nj;
+    }
+
+    /**
+     * Checks if the current buffer position if treated as given type would
+     * contain the given value but does not advance
+     */
+    final public static boolean contains(byte[] cArray, int cOffset, byte[] vArray, int vOffset, int len) {
+        int vLimit;
+        int ni;
+        int i = cOffset;
+        int nj;
+        int j = vOffset;
+        if (len == -1) {
+            vLimit = vArray.length;
+            ni = ByteUtils.asIntValue(cArray, i) + 4;
+            i += 4;
+            nj = ByteUtils.asIntValue(vArray, 0) + 4;
+            j += 4;
+        } else {
+            vLimit = vOffset + len;
+            ni = nj = len;
+        }
+        if (nj > ni) {
+            return false;
+        } else {
+            ni += cOffset;
+            int v = j;
+            for (; i < ni; i++) {
+                if (vArray[v] != cArray[i]) {
+                    v = j;
+                } else if (++v == vLimit) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     /**
@@ -86,7 +150,7 @@ public class ByteUtils {
     }
 
     static public int asIntValue(final ByteBuffer value) {
-        return asIntValue(value.array(), value.arrayOffset() + value.position());
+        return asIntValue(value.array(), value.position());
     }
 
     static public long asLongValue(final ByteBuffer value) {
@@ -94,8 +158,7 @@ public class ByteUtils {
     }
 
     static public long asLongValue(final ByteBuffer value, final int ofs) {
-        return asLongValue(value.array(),
-                value.arrayOffset() + value.position() + ofs);
+        return asLongValue(value.array(), value.position() + ofs);
     }
 
     final public static boolean equals(ByteBuffer left, ByteBuffer right,
@@ -108,69 +171,19 @@ public class ByteUtils {
      * given value but does not advance
      */
     final public static int compare(ByteBuffer left, ByteBuffer right, int len) {
-        byte[] lArray = left.array();
-        byte[] rArray = right.array();
-        int ni;
-        int i = left.position() + left.arrayOffset();
-        int nj;
-        int j = right.position() + right.arrayOffset();
-        int n;
-        int k = 0;
-        if (len == -1) {
-            ni = ByteUtils.asIntValue(lArray, i) + 4;
-            i += 4;
-            nj = ByteUtils.asIntValue(rArray, j) + 4;
-            j += 4;
-            n = Math.min(ni, nj);
-            k += 4;
-        } else {
-            n = ni = nj = len;
-        }
-        if (ni == nj) {
-            for (; k < n; k++, i++, j++) {
-                int cmp = (lArray[i] & 0xFF) - (rArray[j] & 0xFF);
-                if (cmp != 0) {
-                    return cmp;
-                }
-            }
-        }
-        return ni - nj;
+        return compare(
+            left.array(), left.position(),
+            right.array(), right.position(),
+            len
+        );
     }
 
-    /**
-     * Checks if the current buffer position if treated as given type would
-     * contain the given value but does not advance
-     */
     final public static boolean contains(ByteBuffer container, ByteBuffer value, int len) {
-        byte[] cArray = container.array();
-        byte[] vArray = value.array();
-        int vLimit = value.limit() + value.arrayOffset();
-        int ni;
-        int i = container.position() + container.arrayOffset();
-        int nj;
-        int j = value.position() + value.arrayOffset();
-        if (len == -1) {
-            ni = ByteUtils.asIntValue(cArray, i) + 4;
-            i += 4;
-            nj = ByteUtils.asIntValue(vArray, 0) + 4;
-            j += 4;
-        } else {
-            ni = nj = len;
-        }
-        if (nj > ni) {
-            return false;
-        } else {
-            ni += container.position() + container.arrayOffset();
-            int v = j;
-            for (; i < ni; i++) {
-                if (vArray[v] != cArray[i]) {
-                    v = j;
-                } else if (++v == vLimit) {
-                    return true;
-                }
-            }
-            return false;
-        }
+        return contains(
+            container.array(), container.position(),
+            value.array(), value.position(),
+            len
+        );
     }
 
     public static int crc32(byte[] array, int offset, int size) {

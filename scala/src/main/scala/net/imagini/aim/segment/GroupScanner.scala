@@ -3,18 +3,17 @@ package net.imagini.aim.segment
 import java.io.EOFException
 import java.nio.ByteBuffer
 import java.util.LinkedHashMap
-
 import scala.Array.canBuildFrom
 import scala.Array.fallbackCanBuildFrom
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.immutable.ListMap
-
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.tools.RowFilter
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
 import net.imagini.aim.types.AimTypeAbstract
 import net.imagini.aim.utils.ByteUtils
+import net.imagini.aim.utils.Pointer
 
 //TODO either optimize with selectBuffer or simply extend MergeScanner
 class GroupScanner(
@@ -51,7 +50,7 @@ class GroupScanner(
   groupFilter.updateFormula(merge.schema.names)
   groupFunctions.map(_.filter.updateFormula(merge.schema.names))
   private val mergeColumnIndex: Array[Int] = schema.names.map(n ⇒ if (merge.schema.has(n)) merge.schema.get(n) else -1)
-  private var groupKey: Option[ByteBuffer] = None
+  private var groupKey: Option[Pointer] = None
   private var eof = false
 
   override def rewind = {
@@ -81,7 +80,7 @@ class GroupScanner(
     }
   }
 
-  override def selectKey: ByteBuffer = if (eof) throw new EOFException else groupKey.get
+  override def selectKey: ByteBuffer = if (eof) throw new EOFException else groupKey.get.byteBuffer
 
   override def selectRow: Array[ByteBuffer] = if (eof) throw new EOFException else {
     val mergeRow = merge.selectRow
@@ -97,7 +96,7 @@ class GroupScanner(
     } else {
       merge.next
     }
-    while (ByteUtils.equals(merge.selectKey, groupKey.get, keyLen)) {
+    while (ByteUtils.equals(merge.selectKey, groupKey.get.byteBuffer, keyLen)) {
       if (rowFilter.matches(merge.selectRow)) {
         return true
       } else {
@@ -109,7 +108,7 @@ class GroupScanner(
 
   private def skipToNextGroup = {
     if (groupKey != None) {
-      while (ByteUtils.equals(merge.selectKey, groupKey.get, keyLen)) {
+      while (ByteUtils.equals(merge.selectKey, groupKey.get.byteBuffer, keyLen)) {
         merge.next
       }
     }
@@ -123,10 +122,10 @@ class GroupScanner(
       merge.next
     }
     do {
-      groupKey = Some(merge.selectKey.slice)
+      groupKey = Some(new Pointer(merge.selectKey))
       merge.mark
       try {
-        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && ByteUtils.equals(merge.selectKey, groupKey.get, keyLen)) {
+        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && ByteUtils.equals(merge.selectKey, groupKey.get.byteBuffer, keyLen)) {
           if (!satisfiesFilter && groupFilter.matches(merge.selectRow)) {
             satisfiesFilter = true
           }
@@ -158,11 +157,11 @@ class AimTypeGROUP(val schema: AimSchema, val definition: String) extends AimTyp
   val field = body.substring(0, body.indexOf(" "))
   val dataType = schema.field(field).getDataType
   val filter = RowFilter.fromString(schema, body.substring(body.indexOf(" where ") + 7).trim)
-  private var buffer: ByteBuffer = null
-  def reset = buffer = null
-  def satisfied = buffer != null
-  def satisfy(value: ByteBuffer) = buffer = value.slice()
-  def toByteBuffer = { buffer.rewind(); buffer }
+  private var pointer: Pointer = null
+  def reset = pointer = null
+  def satisfied = pointer != null
+  def satisfy(value: ByteBuffer) = pointer = new Pointer(value);
+  def toByteBuffer = pointer.byteBuffer
   override def getDataType = dataType
   override def toString = "GROUP[" + field + " WHERE" + filter + "]"
   override def convert(value: String): Array[Byte] = dataType.convert(value)

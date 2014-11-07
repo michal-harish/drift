@@ -31,14 +31,14 @@ object AimNode extends App {
   }
 
   //SPAWNING CLUSTER
-  val manager = new DriftManagerZk(zkConnect, 1)
+  val manager = new DriftManagerZk(zkConnect, 2)
   new AimNode(1, "localhost:4000", manager)
-//  new AimNode(2, "localhost:4001", manager)
+  new AimNode(2, "localhost:4001", manager)
 //  new AimNode(3, "localhost:4002", manager)
 //  new AimNode(4, "localhost:4003", manager)
 
   //CREATING TABLES
-  val storageType = classOf[BlockStorageMem]
+  val storageType = classOf[BlockStorageLZ4]
   manager.createTable("addthis", "views", "at_id(STRING), url(STRING), timestamp(LONG)", 50000000, storageType)
   manager.createTable("addthis", "syncs", "at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(LONG)", 200000000, storageType)
   manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), type(STRING), url(STRING)", 100000000, storageType)
@@ -48,7 +48,6 @@ object AimNode extends App {
   //ATTACH CONSOLE
   val console = new AimConsole("localhost", 4000)
   console.start
-  console.query("use addthis")
 
   //WAIT FOR DISTRIBUTED SHUTDOWN
   manager.synchronized(manager.wait)
@@ -74,7 +73,11 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
     })
   }).toMap
   def stats(keyspaceName: String): AbstractScanner = {
-    new StatScanner(id, keyspaceRefs.get(keyspaceName).asScala.map { case (t, partition) ⇒ t -> partition }.toMap)
+    if (keyspaceName == null || keyspaceName.isEmpty) {
+      new StatScanner(id, keyspaceRefs.asScala.flatMap(k => k._2.asScala.map { case (t, partition) ⇒ k._1 + "." +t -> partition }).toMap)
+    } else {
+      new StatScanner(id, keyspaceRefs.get(keyspaceName).asScala.map { case (t, partition) ⇒ t -> partition }.toMap)
+    }
   }
   def query(query: String) = new QueryParser(regions).parse(query)
 
@@ -86,6 +89,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
     while(scanner.next) {
       segment = dest.appendRecord(segment, scanner.selectRow)
     }
+    dest.add(segment)
     log.info("TRANSFORM INTO " + destKeyspace + "." + destTable + " in " + (System.currentTimeMillis - t))
   }
 

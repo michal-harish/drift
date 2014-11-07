@@ -11,6 +11,7 @@ import net.imagini.aim.cluster.Protocol
 import net.imagini.aim.types.AimSchema
 import java.nio.ByteBuffer
 import net.imagini.aim.tools.StreamUtils
+import net.jpountz.lz4.LZ4BlockOutputStream
 
 object Loader extends App {
   var host: String = "localhost"
@@ -51,6 +52,7 @@ class Loader(host: String, port: Int, protocol: Protocol,
   val log = Logger[this.type]
   val in: InputStream = if (fileinput == null) System.in else fileinput
   val socket = new Socket(InetAddress.getByName(host), port)
+  //TODO if not gzip-ed stream than use lz4(1)
   val pipe = new Pipe(socket, protocol, if (gzip) 3 else 2)
 
   //handshake
