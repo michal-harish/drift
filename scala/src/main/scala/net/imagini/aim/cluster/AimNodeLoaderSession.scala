@@ -20,7 +20,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
 
   val keyspace = pipe.readHeader
   val table = pipe.readHeader
-  val partition = node.keyspace(keyspace)(table)
+  val partition = node.regions(keyspace+"." + table)
   val separator = pipe.readHeader
   val schema = partition.schema
   val keyType = schema.get(0)
@@ -112,28 +112,4 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
       }
     }
   }
-
-  //TODO optimized parsing
-  //  var position = -1
-  //  var limit = -1
-  //  var mark = -1
-  //  val buf = new Array[Byte](1000)
-  //  private def readColumn: String = {
-  //    var result: String = ""
-  //    while (true) {
-  //      position += 1
-  //      if (position >= limit) {
-  //        if (mark >= 0) {
-  //          result += new String(buf, 0, limit)
-  //        }
-  //        position = 0
-  //        mark = 0
-  //        limit = pipe.getInputStream.read(buf, 0, buf.length)
-  //      }
-  //      if (limit == -1) {
-  //        return result;
-  //      }
-  //    }
-  //    throw new EOFException
-  //  }
 }

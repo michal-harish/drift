@@ -49,8 +49,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     fixutreLoadDataSyncs
     fixutreLoadPageviews
     val client = newClient
-    client.query("use vdna")
-    if (client.query("select * from events") != None) {
+    if (client.query("select * from vdna.events") != None) {
       client.hasNext should be(true)
       client.fetchRecordStrings(0) should equal("04732d65-d530-4b18-a583-53799838731a")
       client.hasNext should be(true)
@@ -79,8 +78,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     fixutreLoadDataSyncs
 
     val client = newClient
-    client.query("use vdna")
-    if (client.query("select * from events") != None) {
+    if (client.query("select * from vdna.events") != None) {
       client.hasNext should be(true)
       client.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "x", "ad36ec72-5b66-44f0-89be-668882c08ca5"))
       client.hasNext should be(true)
@@ -98,25 +96,22 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     val node = fixutreNode
     val client = newClient
 
-    client.query("use vdna")
-    client.query("SELECT * from events ") match {
+    client.query("SELECT * from vdna.events ") match {
       case None ⇒ throw new IllegalArgumentException
       case Some(schema) ⇒ {
         client.hasNext should be(false)
         an[EOFException] must be thrownBy (client.fetchRecordStrings)
       }
     }
-    node.query("vdna", "COUNT events").asInstanceOf[CountScanner].count should be(0)
+    node.query("COUNT vdna.events").asInstanceOf[CountScanner].count should be(0)
 
-    client.query("USE vdna")
-    client.query("COUNT events") should be(None)
+    client.query("COUNT vdna.events") should be(None)
     client.getCount should be(0)
 
     fixutreLoadDataSyncs
     fixutreLoadPageviews
 
-    client.query("use vdna")
-    client.query("select * from events where user_uid='37b22cfb-a29e-42c3-a3d9-12d32850e103'") match {
+    client.query("select * from vdna.events where user_uid='37b22cfb-a29e-42c3-a3d9-12d32850e103'") match {
       case None ⇒ throw new IllegalArgumentException
       case Some(schema) ⇒ {
         client.hasNext should be(true)
@@ -132,8 +127,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
       }
     }
 
-    client.query("use vdna")
-    client.query("select * from events where column contains 'x'") match {
+    client.query("select * from vdna.events where column contains 'x'") match {
       case None ⇒ throw new IllegalArgumentException
       case Some(schema) ⇒ {
         client.fetchRecordStrings should be(Array("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "x", "ad36ec72-5b66-44f0-89be-668882c08ca5"))
@@ -147,12 +141,8 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
   }
 
   "Partition " should "understand simple query" in {
-    val regions = Map[String, AimPartition](
-      "pageviews" -> pageviews,
-      "conversions" -> conversions,
-      "flags" -> flags)
     val parser = new QueryParser(regions)
-    val scanner = parser.parse("select * from pageviews  where url contains 'travel'")
+    val scanner = parser.parse("select * from vdna.pageviews where url contains 'travel'")
     scanner.next should be(true);
     scanner.next should be(true);
     scanner.next should be(true);
@@ -163,24 +153,20 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     scanner.next should be(true); scanner.selectLine(",") should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103,www.travel.com/offers,2014-10-10 13:01:03")
     scanner.next should be(false);
 
-    val scanner2 = parser.parse("select * from pageviews where user_uid='37b22cfb-a29e-42c3-a3d9-12d32850e103'")
+    val scanner2 = parser.parse("select * from vdna.pageviews where user_uid='37b22cfb-a29e-42c3-a3d9-12d32850e103'")
     scanner2.next should be(true); scanner2.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103,www.auto.com/mycar,2014-10-10 11:59:01")
     scanner2.next should be(true); scanner2.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103,www.travel.com/offers,2014-10-10 12:01:02")
     scanner2.next should be(true); scanner2.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103,www.travel.com/offers/holiday,2014-10-10 12:01:03")
     scanner2.next should be(false);
 
-    val scanner3 = parser.parse("count pageviews where user_uid='37b22cfb-a29e-42c3-a3d9-12d32850e103'")
+    val scanner3 = parser.parse("count vdna.pageviews where user_uid='37b22cfb-a29e-42c3-a3d9-12d32850e103'")
     scanner3.count should be(3L)
   }
 
   "Partition " should "understand complex join query" in {
-    val regions = Map[String, AimPartition](
-      "pageviews" -> pageviews,
-      "conversions" -> conversions,
-      "flags" -> flags)
     val parser = new QueryParser(regions)
-    val scanner = parser.parse("select user_uid from flags where value='true' and flag='quizzed' or flag='cc' "
-      + "JOIN (SELECT user_uid,url,timestamp FROM pageviews WHERE timestamp > '2014-10-10 11:59:01' UNION SELECT * FROM conversions)")
+    val scanner = parser.parse("select user_uid from vdna.flags where value='true' and flag='quizzed' or flag='cc' "
+      + "JOIN (SELECT user_uid,url,timestamp FROM vdna.pageviews WHERE timestamp > '2014-10-10 11:59:01' UNION SELECT * FROM vdna.conversions)")
 
     scanner.next should be(true); scanner.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103, ,www.travel.com/offers,2014-10-10 12:01:02")
     scanner.next should be(true); scanner.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103, ,www.travel.com/offers/holiday,2014-10-10 12:01:03")
@@ -190,20 +176,17 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     scanner.next should be(true); scanner.selectLine(",") should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103, ,www.travel.com/offers,2014-10-10 13:01:03")
     scanner.next should be(false)
     an[EOFException] must be thrownBy (scanner.selectLine(","))
-    val scanner3 = parser.parse("count (SELECT user_uid,url,timestamp FROM pageviews WHERE timestamp > '2014-10-10 11:59:01' UNION SELECT * FROM conversions)")
+    val scanner3 = parser.parse("count (SELECT user_uid,url,timestamp FROM vdna.pageviews WHERE timestamp > '2014-10-10 11:59:01' UNION SELECT * FROM vdna.conversions)")
     scanner3.count should be(7L)
 
   }
 
   "Partition " should "understand complex join query with subquery" in {
-    val regions = Map[String, AimPartition](
-      "pageviews" -> pageviews,
-      "conversions" -> conversions,
-      "flags" -> flags)
+    
     val parser = new QueryParser(regions)
 
-    val scanner = parser.parse("SELECT user_uid,url,conversion FROM ( select user_uid from flags where value='true' and flag='quizzed' or flag='cc' "
-      + "JOIN ( SELECT user_uid,url,timestamp FROM pageviews UNION SELECT * FROM conversions) ) WHERE timestamp > '2014-10-10 11:59:01'")
+    val scanner = parser.parse("SELECT user_uid,url,conversion FROM ( select user_uid from vdna.flags where value='true' and flag='quizzed' or flag='cc' "
+      + "JOIN ( SELECT user_uid,url,timestamp FROM vdna.pageviews UNION SELECT * FROM vdna.conversions) ) WHERE timestamp > '2014-10-10 11:59:01'")
 
     scanner.next should be(true); scanner.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103,www.travel.com/offers, ")
     scanner.next should be(true); scanner.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103,www.travel.com/offers/holiday, ")
@@ -215,6 +198,11 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     an[EOFException] must be thrownBy (scanner.selectLine(","))
 
   }
+  private val regions = Map[String, AimPartition](
+      "vdna.pageviews" -> pageviews,
+      "vdna.conversions" -> conversions,
+      "vdna.flags" -> flags)
+
   private def pageviews: AimPartition = {
     val schemaPageviews = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
     val sA1 = new AimSegmentQuickSort(schemaPageviews, classOf[BlockStorageLZ4])

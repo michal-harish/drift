@@ -57,13 +57,13 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
 
     //PARTION
     val regions = Map[String, AimPartition](
-      "pageviews" -> partitionPageviews1,
-      "conversions" -> partitionConversions1,
-      "flags" -> partitionUserFlags1)
+      "vdna.pageviews" -> partitionPageviews1,
+      "vdna.conversions" -> partitionConversions1,
+      "vdna.flags" -> partitionUserFlags1)
     val parser = new QueryParser(regions)
-    val tsetJoin = parser.parse("select user_uid from flags where value='true' and flag='quizzed' or flag='cc' join " +
-        "(select user_uid,url,timestamp from pageviews where url contains 'travel.com' union " 
-        +"select user_uid,url,timestamp,conversion from conversions)");
+    val tsetJoin = parser.parse("select user_uid from vdna.flags where value='true' and flag='quizzed' or flag='cc' join " +
+        "(select user_uid,url,timestamp from vdna.pageviews where url contains 'travel.com' union " 
+        +"select user_uid,url,timestamp,conversion from vdna.conversions)");
 
     /**
      * Expected result contains only first and third user, combined schema from pageviews and conversions

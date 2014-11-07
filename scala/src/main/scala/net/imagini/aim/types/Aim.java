@@ -86,10 +86,11 @@ public enum Aim implements AimDataType {
     @Override
     public int partition(ByteBuffer value, int numPartitions) {
         switch (this) {
-            case BOOL: case BYTE: return value.get(value.position()) % numPartitions;
+            case BOOL: 
+            case BYTE: return value.get(value.position()) % numPartitions;
             case INT: return ByteUtils.asIntValue(value) % numPartitions;
             case LONG: return (int)ByteUtils.asLongValue(value) % numPartitions;
-            case STRING: return ByteUtils.asIntValue(value) % numPartitions; //TODO crc32 checksum & numPartitions
+            case STRING: return Math.abs(ByteUtils.crc32(value.array(), value.position() + value.arrayOffset() + 4, ByteUtils.asIntValue(value))) % numPartitions; 
             default: throw new IllegalArgumentException();
         }
     }

@@ -3,6 +3,8 @@ package net.imagini.aim.types;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import net.imagini.aim.utils.ByteUtils;
+
 public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
     final public int size;
     public AimTypeBYTEARRAY(int size) {  this.size = size; }
@@ -20,11 +22,7 @@ public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
     }
 
     @Override public int partition(ByteBuffer value, int numPartitions) {
-        int sum = 0;
-        byte[] array = value.array();
-        int start = value.arrayOffset() + value.position();
-        for (int i = start; i<start + size; i++) sum ^=  array[i];
-        return sum % numPartitions;
+        return ByteUtils.sum(value.array(), value.arrayOffset() + value.position(), size)  % numPartitions;
     }
 
     @Override public byte[] convert(String value) {

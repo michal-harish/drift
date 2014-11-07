@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.collection.JavaConverters.mapAsScalaConcurrentMapConverter
+import scala.collection.JavaConverters._
 import grizzled.slf4j.Logger
 import net.imagini.aim.client.AimConsole
 import net.imagini.aim.partition.AimPartition
@@ -31,11 +31,11 @@ object AimNode extends App {
   }
 
   //SPAWNING CLUSTER
-  val manager = new DriftManagerZk(zkConnect, 4)
+  val manager = new DriftManagerZk(zkConnect, 1)
   new AimNode(1, "localhost:4000", manager)
-  new AimNode(2, "localhost:4001", manager)
-  new AimNode(3, "localhost:4002", manager)
-  new AimNode(4, "localhost:4003", manager)
+//  new AimNode(2, "localhost:4001", manager)
+//  new AimNode(3, "localhost:4002", manager)
+//  new AimNode(4, "localhost:4003", manager)
 
   //CREATING TABLES
   val storageType = classOf[BlockStorageMem]
@@ -48,7 +48,7 @@ object AimNode extends App {
   //ATTACH CONSOLE
   val console = new AimConsole("localhost", 4000)
   console.start
-  console.query("user addthis")
+  console.query("use addthis")
 
   //WAIT FOR DISTRIBUTED SHUTDOWN
   manager.synchronized(manager.wait)
@@ -65,17 +65,23 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   var expectedNumNodes:Int = -1
   private var suspended = new AtomicBoolean(true)
   private var keyspaceRefs = new ConcurrentHashMap[String, ConcurrentMap[String, AimPartition]]()
-  def keyspaces: List[String] = keyspaceRefs.asScala.keys.toList
-  def keyspace(k: String): Map[String, AimPartition] = keyspaceRefs.get(k).asScala.toMap
+  def regions: Map[String, AimPartition] = keyspaceRefs.asScala.flatMap( r => {
+    val keyspace = r._1
+    r._2.asScala.map(partition => {
+      val table = partition._1
+      val region = partition._2
+      keyspace+"."+table -> region
+    })
+  }).toMap
   def stats(keyspaceName: String): AbstractScanner = {
-    new StatScanner(id, keyspace(keyspaceName).map { case (t, partition) ⇒ t -> partition }.toMap)
+    new StatScanner(id, keyspaceRefs.get(keyspaceName).asScala.map { case (t, partition) ⇒ t -> partition }.toMap)
   }
-  def query(keyspaceName: String, query: String) = new QueryParser(keyspace(keyspaceName)).parse(query)
+  def query(query: String) = new QueryParser(regions).parse(query)
 
-  def transform(srcKeysapce: String, srcQuery: String, destKeyspace: String, destTable: String) = {
+  def transform(srcQuery: String, destKeyspace: String, destTable: String) = {
     val t = System.currentTimeMillis
-    val scanner = query(srcKeysapce, srcQuery)
-    val dest = keyspace(destKeyspace)(destTable)
+    val scanner = query(srcQuery)
+    val dest = keyspaceRefs.get(destKeyspace).get(destTable)
     var segment = dest.createNewSegment
     while(scanner.next) {
       segment = dest.appendRecord(segment, scanner.selectRow)

@@ -57,21 +57,28 @@ class AimClient(val host: String, val port: Int, val protocol: Protocol) {
   private var error: Option[String] = None
   private var schema: Option[AimSchema] = None
   private var next: Option[Array[Array[Byte]]] = None
-  private var count: Long = 0
-  def getCount: Long = count
+  private var numRecords: Option[Long] = None
+  def getCount: Long = numRecords match {
+    case Some(count) ⇒ count
+    case None ⇒ schema match {
+      case None ⇒ {
+        numRecords = Some(pipe.readInt)
+        numRecords.get
+      }
+      case Some(schema) ⇒ throw new IllegalStateException
+    }
+  }
   def getSchema: Option[AimSchema] = schema
+  private var keyspace: Option[String] = None
+  private var responseProcessed: Option[Boolean] = None
 
   def query(query: String): Option[AimSchema] = {
     if (socket == null || hasNext) {
       reconnect
     }
-    count = 0
     pipe.write(query).flush
-    if (processResponse(pipe)) {
-      schema
-    } else {
-      None
-    }
+    prepareResponse(pipe)
+    schema
   }
 
   def getInputStream = pipe.getInputStream
@@ -83,11 +90,11 @@ class AimClient(val host: String, val port: Int, val protocol: Protocol) {
         case Some(rowData) ⇒ true
         case None ⇒ {
           try {
-            count += 1
+            numRecords = Some(numRecords.get + 1)
             loadNextRecord
           } catch {
             case e: EOFException ⇒ {
-              count -= 1
+              numRecords = Some(numRecords.get - 1)
               schema = None
               socket = null
               close
@@ -172,26 +179,21 @@ class AimClient(val host: String, val port: Int, val protocol: Protocol) {
     }
   }
 
-  private def processResponse(pipe: Pipe): Boolean = {
-    next = None
-    count = -1
+  private def prepareResponse(pipe: Pipe) = {
     pipe.read match {
-      case "OK" ⇒ {
+      case "OK"     ⇒ schema = None
+      case "COUNT"  ⇒ {
+        numRecords = None
         schema = None
-        true
+      }
+      case "RESULT" ⇒ {
+        numRecords = Some(0)
+        schema = Some(AimSchema.fromString(pipe.read))
       }
       case "ERROR" ⇒ {
         schema = None
         val error = pipe.read
         throw new AimQueryException(error)
-      }
-      case "COUNT" ⇒ {
-        count = java.lang.Long.valueOf(pipe.read)
-        false
-      }
-      case "RESULT" ⇒ {
-        schema = Some(AimSchema.fromString(pipe.read))
-        true
       }
       case _ ⇒ {
         schema = None

@@ -45,8 +45,8 @@ public class AimTypeUUID extends AimTypeAbstract {
         return "'"+value+"'";
     }
     @Override public int partition(ByteBuffer value, int numPartitions) {
-        //TODO this can probably be done directly without constructing UUID but make sure it's as uniform as in UUID
-        int hash = new UUID(ByteUtils.asLongValue(value) , ByteUtils.asLongValue(value,8)).hashCode();
+        long hilo = ByteUtils.asLongValue(value) ^ ByteUtils.asLongValue(value,8);
+        int hash = ((int)(hilo >> 32)) ^ (int) hilo;
         return (hash == Integer.MIN_VALUE ? Integer.MAX_VALUE : Math.abs(hash)) % numPartitions;
     }
 }

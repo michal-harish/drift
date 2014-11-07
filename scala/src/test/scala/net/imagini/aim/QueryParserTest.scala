@@ -20,37 +20,37 @@ import net.imagini.aim.partition.PUnionJoin
 class QueryParserTest extends FlatSpec with Matchers {
 
   val regions = Map[String, AimPartition](
-    "pageviews" -> pageviews,
-    "conversions" -> conversions,
-    "flags" -> flags)
+    "vdna.pageviews" -> pageviews,
+    "vdna.conversions" -> conversions,
+    "vdna.flags" -> flags)
   val parser = new QueryParser(regions)
 
-  parser.frame("select * from pageviews where url contains 'travel'") should be(
-    PSelect(PTable("pageviews"), "url contains 'travel'", PWildcard(PTable("pageviews"))))
+  parser.frame("select * from vdna.pageviews where url contains 'travel'") should be(
+    PSelect(PTable("vdna","pageviews"), "url contains 'travel'", PWildcard(PTable("vdna","pageviews"))))
 
-  parser.frame("SELECT user_uid,url,timestamp FROM pageviews WHERE timestamp > '2014-10-09 13:59:01' UNION SELECT * FROM conversions") should be(
+  parser.frame("SELECT user_uid,url,timestamp FROM vdna.pageviews WHERE timestamp > '2014-10-09 13:59:01' UNION SELECT * FROM vdna.conversions") should be(
     PUnionJoin(
-      PSelect(PTable("pageviews"), "timestamp > '2014-10-09 13:59:01'", PVar("user_uid"), PVar("url"), PVar("timestamp")),
-      PSelect(PTable("conversions"), "*", PWildcard(PTable("conversions"))),
-      PVar("user_uid"), PVar("url"), PVar("timestamp"), PWildcard(PTable("conversions"))))
+      PSelect(PTable("vdna","pageviews"), "timestamp > '2014-10-09 13:59:01'", PVar("user_uid"), PVar("url"), PVar("timestamp")),
+      PSelect(PTable("vdna","conversions"), "*", PWildcard(PTable("vdna","conversions"))),
+      PVar("user_uid"), PVar("url"), PVar("timestamp"), PWildcard(PTable("vdna","conversions"))))
 
-  parser.frame("select user_uid from flags where value='true' and flag='quizzed' or flag='cc' JOIN SELECT * FROM conversions") should be(
+  parser.frame("select user_uid from vdna.flags where value='true' and flag='quizzed' or flag='cc' JOIN SELECT * FROM vdna.conversions") should be(
     PEquiJoin(
-      PSelect(PTable("flags"), "value = 'true' and flag = 'quizzed' or flag = 'cc'", PVar("user_uid")),
-      PSelect(PTable("conversions"), "*", PWildcard(PTable("conversions"))),
-      PVar("user_uid"), PWildcard(PTable("conversions"))))
+      PSelect(PTable("vdna","flags"), "value = 'true' and flag = 'quizzed' or flag = 'cc'", PVar("user_uid")),
+      PSelect(PTable("vdna","conversions"), "*", PWildcard(PTable("vdna","conversions"))),
+      PVar("user_uid"), PWildcard(PTable("vdna","conversions"))))
 
 
-  parser.frame("select user_uid from flags where value='true' and flag='quizzed' or flag='cc' "
-    + "JOIN (SELECT user_uid,url,timestamp FROM pageviews WHERE timestamp > '2014-10-09 13:59:01' UNION SELECT * FROM conversions)") should be(
+  parser.frame("select user_uid from vdna.flags where value='true' and flag='quizzed' or flag='cc' "
+    + "JOIN (SELECT user_uid,url,timestamp FROM vdna.pageviews WHERE timestamp > '2014-10-09 13:59:01' UNION SELECT * FROM vdna.conversions)") should be(
     PEquiJoin(
-      PSelect(PTable("flags"), "value = 'true' and flag = 'quizzed' or flag = 'cc'", PVar("user_uid")),
+      PSelect(PTable("vdna","flags"), "value = 'true' and flag = 'quizzed' or flag = 'cc'", PVar("user_uid")),
       PUnionJoin(
-        PSelect(PTable("pageviews"), "timestamp > '2014-10-09 13:59:01'", PVar("user_uid"), PVar("url"), PVar("timestamp")),
-        PSelect(PTable("conversions"), "*", PWildcard(PTable("conversions"))), 
-        PVar("user_uid"), PVar("url"), PVar("timestamp"), PWildcard(PTable("conversions"))
+        PSelect(PTable("vdna","pageviews"), "timestamp > '2014-10-09 13:59:01'", PVar("user_uid"), PVar("url"), PVar("timestamp")),
+        PSelect(PTable("vdna","conversions"), "*", PWildcard(PTable("vdna","conversions"))), 
+        PVar("user_uid"), PVar("url"), PVar("timestamp"), PWildcard(PTable("vdna","conversions"))
       ),
-      PVar("user_uid"), PVar("user_uid"), PVar("url"), PVar("timestamp"), PWildcard(PTable("conversions"))
+      PVar("user_uid"), PVar("user_uid"), PVar("url"), PVar("timestamp"), PWildcard(PTable("vdna","conversions"))
     ))
 
   private def pageviews: AimPartition = {

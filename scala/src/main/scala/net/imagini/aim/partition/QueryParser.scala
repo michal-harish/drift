@@ -11,7 +11,9 @@ import net.imagini.aim.tools.CountScanner
 abstract class PFrame
 case class PCount(frame: PDataFrame) extends PFrame
 abstract class PDataFrame(val fields: PExp*) extends PFrame
-case class PTable(name: String) extends PDataFrame()
+case class PTable(keyspace: String, name: String) extends PDataFrame() {
+  def region: String = keyspace + "." + name
+}
 abstract class PJoin(left: PDataFrame, right: PDataFrame, fields: PExp*) extends PDataFrame(fields: _*)
 case class PSelect(table: PTable, filter: String, override val fields: PExp*) extends PDataFrame(fields: _*)
 case class PSubquery(subquery: PDataFrame, filter: String, override val fields: PExp*) extends PDataFrame(fields: _*)
@@ -40,7 +42,7 @@ class QueryParser(val regions: Map[String, AimPartition]) extends App {
     frame match {
       case count: PCount ⇒ compile(count.frame, true)
       case select: PSelect ⇒ {
-        val region = if (!regions.contains(select.table.name)) throw new AimQueryException("Unknown table") else regions(select.table.name)
+        val region = if (!regions.contains(select.table.region)) throw new AimQueryException("Unknown table " + select.table.region) else regions(select.table.region)
         val schema = region.schema
         val filter = RowFilter.fromString(schema, select.filter)
         val fields = compile(select.fields)
@@ -84,7 +86,7 @@ class QueryParser(val regions: Map[String, AimPartition]) extends App {
   def compile(exp: Seq[PExp]): Array[String] = {
     exp.flatMap(_ match {
       case w: PWildcard ⇒ w.dataframe match {
-        case t: PTable     ⇒ regions(t.name).schema.names
+        case t: PTable     ⇒ regions(t.region).schema.names
         case f: PDataFrame ⇒ compile(f.fields)
       }
       case v: PVar ⇒ Array(v.name)
@@ -126,9 +128,12 @@ class QueryParser(val regions: Map[String, AimPartition]) extends App {
             case _   ⇒ PCount(PSubquery(frame, filter))
           }
         }
-        case name: String ⇒ {
-          frame = PTable(name);
-          return PCount(PSelect(frame.asInstanceOf[PTable], asFilter(q)))
+        case keyspace: String ⇒ q.dequeue match {
+          case "." ⇒ {
+            frame = PTable(keyspace, q.dequeue)
+            return PCount(PSelect(frame.asInstanceOf[PTable], asFilter(q)))
+          }
+          case q: String ⇒ throw new AimQueryException("Invalid from statement, should be <keyspace>.<table>")
         }
       }
     }
@@ -142,7 +147,7 @@ class QueryParser(val regions: Map[String, AimPartition]) extends App {
     while (!q.isEmpty && state != "FINISHED") state match {
       case "FIELDS" ⇒ q.dequeue match {
         case s: String if (s.toUpperCase.equals("FROM")) ⇒ state = "FROM"
-        case "," if (fields == null)                     ⇒ throw new IllegalArgumentException
+        case "," if (fields == null)                     ⇒ throw new AimQueryException("Invalid select expression")
         case "," if (fields != null)                     ⇒ {}
         case "*"                                         ⇒ wildcard = true
         case field: String                               ⇒ fields :+= PVar(field)
@@ -153,10 +158,13 @@ class QueryParser(val regions: Map[String, AimPartition]) extends App {
           if (wildcard) fields :+= PWildcard(frame)
           return PSubquery(frame, asFilter(q), fields: _*)
         }
-        case name: String ⇒ {
-          frame = PTable(name)
-          if (wildcard) fields :+= PWildcard(frame)
-          return PSelect(frame.asInstanceOf[PTable], asFilter(q), fields: _*)
+        case keyspace: String ⇒ q.dequeue match {
+          case "." ⇒ {
+            frame = PTable(keyspace, q.dequeue)
+            if (wildcard) fields :+= PWildcard(frame)
+            return PSelect(frame.asInstanceOf[PTable], asFilter(q), fields: _*)
+          }
+          case q: String ⇒ throw new AimQueryException("Invalid from statement, should be <keyspace>.<table>")
         }
       }
       case a ⇒ throw new IllegalStateException(a)

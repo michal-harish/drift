@@ -94,16 +94,18 @@ public class ByteUtils {
     }
 
     static public long asLongValue(final ByteBuffer value, final int ofs) {
-        return asLongValue(value.array(), value.arrayOffset() + value.position() + ofs);
+        return asLongValue(value.array(),
+                value.arrayOffset() + value.position() + ofs);
     }
 
-    final public static boolean equals(ByteBuffer left, ByteBuffer right, int len) {
+    final public static boolean equals(ByteBuffer left, ByteBuffer right,
+            int len) {
         return compare(left, right, len) == 0;
     }
 
     /**
-     * Compares the current buffer position if treated as given type with the given value
-     * but does not advance
+     * Compares the current buffer position if treated as given type with the
+     * given value but does not advance
      */
     final public static int compare(ByteBuffer left, ByteBuffer right, int len) {
         byte[] lArray = left.array();
@@ -111,7 +113,7 @@ public class ByteUtils {
         int ni;
         int i = left.position() + left.arrayOffset();
         int nj;
-        int j = right.position()+ right.arrayOffset();
+        int j = right.position() + right.arrayOffset();
         int n;
         int k = 0;
         if (len == -1) {
@@ -126,7 +128,7 @@ public class ByteUtils {
         }
         if (ni == nj) {
             for (; k < n; k++, i++, j++) {
-                int cmp = (lArray[i] & 0xFF)  - (rArray[j] & 0xFF);
+                int cmp = (lArray[i] & 0xFF) - (rArray[j] & 0xFF);
                 if (cmp != 0) {
                     return cmp;
                 }
@@ -136,8 +138,8 @@ public class ByteUtils {
     }
 
     /**
-     * Checks if the current buffer position if treated as given type would contain the given value
-     * but does not advance
+     * Checks if the current buffer position if treated as given type would
+     * contain the given value but does not advance
      */
     final public static boolean contains(ByteBuffer container, ByteBuffer value, int len) {
         byte[] cArray = container.array();
@@ -171,5 +173,25 @@ public class ByteUtils {
         }
     }
 
+    public static int crc32(byte[] array, int offset, int size) {
+        int crc = 0xFFFF;
+        for (int pos = offset; pos <= offset + size; pos++) {
+            crc ^= (int) array[pos];
+            for (int i = 8; i != 0; i--) {
+                if ((crc & 0x0001) != 0) {
+                    crc >>= 1;
+                    crc ^= 0xA001;
+                } else {
+                    crc >>= 1;
+                }
+            }
+        }
+        return crc;
+    }
 
+    public static int sum(byte[] array, int offset, int size) {
+        int sum = 0;
+        for (int i = offset; i< offset + size; i++) sum ^=  array[i];
+        return sum;
+    }
 }
