@@ -1,10 +1,9 @@
 package net.imagini.aim.cluster
 
 import java.io.InputStream
-import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicInteger
-
 import net.imagini.aim.tools.AbstractScanner
+import net.imagini.aim.utils.View
 
 /**
  * we want to read byte by byte all the available records in the provided scanner
@@ -12,13 +11,13 @@ import net.imagini.aim.tools.AbstractScanner
 final class ScannerInputStream(val scanner: AbstractScanner) extends InputStream {
 
   val numColumns = scanner.schema.size
-  var row: Array[ByteBuffer] = null
+  var row: Array[View] = null
   var column = -1
   var offset = new AtomicInteger(-1)
   var length = -1
 
   override def read: Int = if (checkNextByte) {
-    row(column).get(row(column).position + offset.getAndIncrement) & 0xff
+    row(column).array(row(column).offset + offset.getAndIncrement) & 0xff
   } else {
     -1
   }

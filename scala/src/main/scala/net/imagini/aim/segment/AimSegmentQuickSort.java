@@ -13,6 +13,7 @@ import java.util.Map;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.SortOrder;
+import net.imagini.aim.types.TypeUtils;
 import net.imagini.aim.utils.BlockStorage;
 import net.imagini.aim.utils.ByteKey;
 
@@ -39,12 +40,11 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
     public AimSegment appendRecord(ByteBuffer record) throws IOException {
         try {
             checkWritable(true);
-
             AimDataType sortType = schema.dataType(sortColumn);
             ByteKey sortValue = new ByteKey(
                 Arrays.copyOfRange(record.array(), 
                 record.position(), 
-                record.position() + sortType.sizeOf(record)) 
+                record.position() + TypeUtils.sizeOf(sortType, record)) 
             );
 
             // close record

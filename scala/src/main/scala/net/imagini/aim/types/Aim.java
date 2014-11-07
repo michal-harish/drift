@@ -1,8 +1,7 @@
 package net.imagini.aim.types;
 
-import java.nio.ByteBuffer;
-
 import net.imagini.aim.utils.ByteUtils;
+import net.imagini.aim.utils.View;
 
 public enum Aim implements AimDataType {
 
@@ -54,28 +53,32 @@ public enum Aim implements AimDataType {
         if (value == null || value.equals(EMPTY)) {
             return null;
         }
-        ByteBuffer bb;
+        byte[] b;
         if (this.equals(Aim.BOOL)) {
-            bb = ByteBuffer.allocate(1);
-            bb.put((byte) (Boolean.valueOf(value) ? 1 : 0));
+            b = new byte[1];
+            b[0] = (byte)(Boolean.valueOf(value) ? 1 : 0);
         } else if (this.equals(Aim.BYTE)) {
-            bb = ByteBuffer.allocate(1);
-            bb.put(Byte.valueOf(value));
+            b = new byte[1];
+            b[0] = Byte.valueOf(value);
         } else if (this.equals(Aim.INT)) {
-            bb = ByteUtils.createIntBuffer(Integer.valueOf(value));
+            b = new byte[4];
+            ByteUtils.putIntValue(Integer.valueOf(value), b, 0);
         } else if (this.equals(Aim.LONG)) {
-            bb = ByteUtils.createLongBuffer(Long.valueOf(value));
+            b = new byte[8];
+            ByteUtils.putLongValue(Long.valueOf(value), b, 0);
         } else if (this.equals(Aim.STRING)) {
-            bb = ByteUtils.createStringBuffer(value);
+            b = new byte[value.length() + 4];
+            ByteUtils.putIntValue(value.length(), b, 0);
+            value.getBytes(0, value.length(), b, 4);
         } else {
             throw new IllegalArgumentException("Unknown data type "
                     + this.getClass().getSimpleName());
         }
-        return bb.array();
+        return b;
     }
 
     @Override
-    public int sizeOf(ByteBuffer value) {
+    public int sizeOf(View value) {
         if (this.size == -1) {
             return ByteUtils.asIntValue(value) + 4;
         } else {
@@ -84,13 +87,13 @@ public enum Aim implements AimDataType {
     }
 
     @Override
-    public int partition(ByteBuffer value, int numPartitions) {
+    public int partition(View value, int numPartitions) {
         switch (this) {
             case BOOL: 
-            case BYTE: return value.get(value.position()) % numPartitions;
+            case BYTE: return value.array[value.offset] % numPartitions;
             case INT: return ByteUtils.asIntValue(value) % numPartitions;
             case LONG: return (int)ByteUtils.asLongValue(value) % numPartitions;
-            case STRING: return Math.abs(ByteUtils.crc32(value.array(), value.position() + 4, ByteUtils.asIntValue(value))) % numPartitions; 
+            case STRING: return Math.abs(ByteUtils.crc32(value.array, value.offset + 4, ByteUtils.asIntValue(value))) % numPartitions; 
             default: throw new IllegalArgumentException();
         }
     }
@@ -117,21 +120,21 @@ public enum Aim implements AimDataType {
     }
 
     @Override
-    public String asString(ByteBuffer value) {
-        if (value == null) {
+    public String asString(View view) {
+        if (view == null) {
             return EMPTY;
         } else
             switch (this) {
             case BOOL:
-                return String.valueOf(value.get(value.position()) > 0);
+                return String.valueOf(view.array[view.offset] > 0);
             case BYTE:
-                return String.valueOf(value.position());
+                return String.valueOf(view.offset);
             case INT:
-                return String.valueOf(ByteUtils.asIntValue(value));
+                return String.valueOf(ByteUtils.asIntValue(view));
             case LONG:
-                return String.valueOf(ByteUtils.asLongValue(value));
+                return String.valueOf(ByteUtils.asLongValue(view));
             case STRING:
-                return new String(value.array(), value.position() + 4, ByteUtils.asIntValue(value));
+                return new String(view.array, view.offset + 4, ByteUtils.asIntValue(view));
             default:
                 return "";
             }

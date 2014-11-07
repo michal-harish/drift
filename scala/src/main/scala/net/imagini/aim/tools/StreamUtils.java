@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.utils.ByteUtils;
+import net.imagini.aim.utils.View;
 
 public class StreamUtils {
 
@@ -123,6 +124,19 @@ public class StreamUtils {
         return size;
     }
 
+    static public int read(InputStream in, AimDataType type, View view)
+            throws IOException {
+        // System.err.println("READ TYPE INTO Buffer " + type);
+        int size = type.getLen();
+        if (size == -1) {
+            size = StreamUtils.readInt(in);
+            ByteUtils.putIntValue(size, view.array, view.offset);
+            view.offset+=4;
+        }
+        read(in, view.array, view.offset, size);
+        view.offset+=size;
+        return size;
+    }
     static public long skip(InputStream in, AimDataType type)
             throws IOException {
         // System.err.println("SKIP TYPE " + type);

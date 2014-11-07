@@ -7,8 +7,8 @@ import java.util.LinkedHashMap
 import net.imagini.aim.types.AimType
 import scala.collection.immutable.ListMap
 import scala.collection.JavaConverters._
-import java.nio.ByteBuffer
 import java.io.EOFException
+import net.imagini.aim.utils.View
 
 class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val scanner: AbstractScanner) extends AbstractScanner {
 
@@ -22,9 +22,9 @@ class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val s
 
   private val selectIndex = schema.names.map(t ⇒ scanner.schema.get(t))
 
-  private var selectedKey: ByteBuffer = null
+  private var selectedKey: View = null
 
-  private val selectBuffer: Array[ByteBuffer] = new Array[ByteBuffer](schema.size)
+  private val selectBuffer: Array[View] = new Array[View](schema.size)
 
   private var eof = false
 
@@ -54,9 +54,9 @@ class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val s
     true
   }
 
-  override def selectKey: ByteBuffer = if (eof) throw new EOFException else selectedKey
+  override def selectKey: View = if (eof) throw new EOFException else selectedKey
 
-  override def selectRow: Array[ByteBuffer] = if (eof) throw new EOFException else selectBuffer
+  override def selectRow: Array[View] = if (eof) throw new EOFException else selectBuffer
 
   private def move = eof match {
     case true ⇒ {

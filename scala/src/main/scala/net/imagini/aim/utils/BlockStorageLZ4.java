@@ -15,7 +15,6 @@ import net.jpountz.lz4.LZ4Factory;
  * 
  * Although we've tried to use direct buffers, it seems that it doesn't give
  * that much performance - the zero copy approach itself has much larger effect
- * - so given the headaches with memory leaks we user array-backed ByteBuffer.
  * 
  * @author mharis
  */

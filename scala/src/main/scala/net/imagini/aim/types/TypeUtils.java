@@ -8,6 +8,15 @@ import net.imagini.aim.utils.ByteUtils;
 public class TypeUtils {
 
 
+    final public static int sizeOf(AimDataType type, ByteBuffer src) {
+        int len = type.getLen(); 
+        if (len == -1) {
+            return ByteUtils.asIntValue(src) + 4;
+        } else {
+            return len;
+        }
+    }
+
     final public static long copy(ByteBuffer src, AimDataType dataType, ByteBuffer dest) {
         int head = 0;
         int size = dataType.getLen();
@@ -23,15 +32,13 @@ public class TypeUtils {
         return head + size;
     }
 
-    final static public int copy(byte[] src, AimDataType type, ByteBuffer dest)
+    final static public int copy(byte[] src, int srcOffset, AimDataType type, ByteBuffer dest)
             throws IOException {
         int size = type.getLen();
         if (size == -1) {
-            size = ByteUtils.asIntValue(src);
-            dest.put(src, 0, size + 4);
-            return size + 4;
-        } 
-        dest.put(src, 0, size);
+            size = ByteUtils.asIntValue(src, srcOffset) + 4;
+        }
+        dest.put(src, srcOffset, size);
         return size;
     }
 }

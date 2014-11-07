@@ -19,6 +19,7 @@ import net.imagini.aim.utils.BlockStorage
 import net.imagini.aim.segment.AimSegmentQuickSort
 import java.nio.ByteBuffer
 import net.imagini.aim.utils.BlockStorageLZ4
+import net.imagini.aim.utils.View
 
 class AimPartition(
   val schema: AimSchema,
@@ -50,8 +51,8 @@ class AimPartition(
     }
   }
 
-  def appendRecord(segment: AimSegment, record: Array[ByteBuffer]): AimSegment = {
-    val size = record.map(b => b.limit - b.position).foldLeft(0)(_ + _)
+  def appendRecord(segment: AimSegment, record: Array[View]): AimSegment = {
+    val size = record.map(b => b.size).foldLeft(0)(_ + _)
     val theSegment = checkSegment(segment, size)
     theSegment.appendRecord(record)
     theSegment

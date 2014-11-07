@@ -1,7 +1,6 @@
 package net.imagini.aim.segment
 
 import java.io.EOFException
-import java.nio.ByteBuffer
 import java.util.LinkedHashMap
 import scala.Array.canBuildFrom
 import scala.Array.fallbackCanBuildFrom
@@ -13,7 +12,7 @@ import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
 import net.imagini.aim.types.AimTypeAbstract
 import net.imagini.aim.utils.ByteUtils
-import net.imagini.aim.utils.Pointer
+import net.imagini.aim.utils.View
 
 //TODO either optimize with selectBuffer or simply extend MergeScanner
 class GroupScanner(
@@ -50,7 +49,7 @@ class GroupScanner(
   groupFilter.updateFormula(merge.schema.names)
   groupFunctions.map(_.filter.updateFormula(merge.schema.names))
   private val mergeColumnIndex: Array[Int] = schema.names.map(n ⇒ if (merge.schema.has(n)) merge.schema.get(n) else -1)
-  private var groupKey: Option[Pointer] = None
+  private var groupKey: Option[View] = None
   private var eof = false
 
   override def rewind = {
@@ -80,12 +79,12 @@ class GroupScanner(
     }
   }
 
-  override def selectKey: ByteBuffer = if (eof) throw new EOFException else groupKey.get.byteBuffer
+  override def selectKey: View = if (eof) throw new EOFException else groupKey.get
 
-  override def selectRow: Array[ByteBuffer] = if (eof) throw new EOFException else {
+  override def selectRow: Array[View] = if (eof) throw new EOFException else {
     val mergeRow = merge.selectRow
     (schema.fields, (0 to schema.fields.length)).zipped.map((f, c) ⇒ f match {
-      case function: AimTypeGROUP ⇒ function.toByteBuffer
+      case function: AimTypeGROUP ⇒ function.toView
       case field: AimType         ⇒ mergeRow(mergeColumnIndex(c))
     })
   }
@@ -96,7 +95,7 @@ class GroupScanner(
     } else {
       merge.next
     }
-    while (ByteUtils.equals(merge.selectKey, groupKey.get.byteBuffer, keyLen)) {
+    while (ByteUtils.equals(merge.selectKey, groupKey.get, keyLen)) {
       if (rowFilter.matches(merge.selectRow)) {
         return true
       } else {
@@ -108,7 +107,7 @@ class GroupScanner(
 
   private def skipToNextGroup = {
     if (groupKey != None) {
-      while (ByteUtils.equals(merge.selectKey, groupKey.get.byteBuffer, keyLen)) {
+      while (ByteUtils.equals(merge.selectKey, groupKey.get, keyLen)) {
         merge.next
       }
     }
@@ -122,10 +121,10 @@ class GroupScanner(
       merge.next
     }
     do {
-      groupKey = Some(new Pointer(merge.selectKey))
+      groupKey = Some(new View(merge.selectKey))
       merge.mark
       try {
-        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && ByteUtils.equals(merge.selectKey, groupKey.get.byteBuffer, keyLen)) {
+        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && ByteUtils.equals(merge.selectKey, groupKey.get, keyLen)) {
           if (!satisfiesFilter && groupFilter.matches(merge.selectRow)) {
             satisfiesFilter = true
           }
@@ -157,16 +156,16 @@ class AimTypeGROUP(val schema: AimSchema, val definition: String) extends AimTyp
   val field = body.substring(0, body.indexOf(" "))
   val dataType = schema.field(field).getDataType
   val filter = RowFilter.fromString(schema, body.substring(body.indexOf(" where ") + 7).trim)
-  private var pointer: Pointer = null
+  private var pointer: View = null
   def reset = pointer = null
   def satisfied = pointer != null
-  def satisfy(value: ByteBuffer) = pointer = new Pointer(value);
-  def toByteBuffer = pointer.byteBuffer
+  def satisfy(value: View) = pointer = new View(value);
+  def toView = pointer
   override def getDataType = dataType
   override def toString = "GROUP[" + field + " WHERE" + filter + "]"
   override def convert(value: String): Array[Byte] = dataType.convert(value)
   override def convert(value: Array[Byte]): String = dataType.convert(value)
-  override def asString(value: ByteBuffer): String = dataType.asString(value)
-  override def partition(value: ByteBuffer, numPartitions: Int): Int = throw new IllegalArgumentException
+  override def asString(value: View): String = dataType.asString(value)
+  override def partition(value: View, numPartitions: Int): Int = throw new IllegalArgumentException
   def typeTuple: (String, AimTypeGROUP) = alias -> this
 }

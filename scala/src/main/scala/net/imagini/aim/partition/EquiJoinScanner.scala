@@ -7,9 +7,9 @@ import java.util.LinkedHashMap
 import scala.collection.immutable.ListMap
 import net.imagini.aim.types.AimType
 import scala.collection.JavaConverters._
-import java.nio.ByteBuffer
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.utils.ByteUtils
+import net.imagini.aim.utils.View
 
 class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 
@@ -27,8 +27,8 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
 
   private val leftSelectIndex:Array[Int] = selectMap.keys.filter(left.schema.has(_)).map(left.schema.get(_)).toArray
   private val rightSelectIndex:Array[Int] = selectMap.keys.filter(f =>(!left.schema.has(f) && right.schema.has(f))).map(right.schema.get(_)).toArray
-  private var selectedKey: ByteBuffer = null
-  private val selectBuffer: Array[ByteBuffer] = new Array[ByteBuffer](schema.size)
+  private var selectedKey: View = null
+  private val selectBuffer: Array[View] = new Array[View](schema.size)
   private var eof = false
   left.next
 
@@ -51,9 +51,9 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
     move
   }
 
-  override def selectKey: ByteBuffer = if (eof) throw new EOFException else selectedKey
+  override def selectKey: View = if (eof) throw new EOFException else selectedKey
 
-  override def selectRow: Array[ByteBuffer] = if (eof) throw new EOFException else selectBuffer
+  override def selectRow: Array[View] = if (eof) throw new EOFException else selectBuffer
 
   override def next: Boolean = {
     if (eof) return false

@@ -1,6 +1,5 @@
 package net.imagini.aim.partition
 
-import java.nio.ByteBuffer
 import scala.collection.immutable.SortedMap
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.types.Aim
@@ -9,6 +8,7 @@ import net.imagini.aim.utils.ByteUtils
 import net.imagini.aim.cluster.AimNode
 import java.io.EOFException
 import net.imagini.aim.types.AimType
+import net.imagini.aim.utils.View
 
 class StatScanner(val partition: Int, val regions: Map[String,AimPartition]) extends AbstractScanner {
 
@@ -18,16 +18,16 @@ class StatScanner(val partition: Int, val regions: Map[String,AimPartition]) ext
 
   override val keyLen = keyType.getDataType.getLen
 
-  private val data: SortedMap[String,Array[ByteBuffer]] = SortedMap(regions.map(r => {
+  private val data: SortedMap[String,Array[View]] = SortedMap(regions.map(r => {
         r._1 -> Array( 
-            ByteUtils.wrap(schema.get(0).convert(r._1)),
-            ByteUtils.wrap(schema.get(1).convert(partition.toString)),
-            ByteUtils.wrap(schema.get(2).convert(r._2.numSegments.toString)),
-            ByteUtils.wrap(schema.get(3).convert(r._2.getCount.toString)),
+            new View(schema.get(0).convert(r._1)),
+            new View(schema.get(1).convert(partition.toString)),
+            new View(schema.get(2).convert(r._2.numSegments.toString)),
+            new View(schema.get(3).convert(r._2.getCount.toString)),
             //TODO count(!) count distinct should be different from count(*)
-            ByteUtils.wrap(schema.get(4).convert(r._2.getCount.toString)),
-            ByteUtils.wrap(schema.get(5).convert(r._2.getCompressedSize.toString)),
-            ByteUtils.wrap(schema.get(6).convert(r._2.getUncompressedSize.toString))
+            new View(schema.get(4).convert(r._2.getCount.toString)),
+            new View(schema.get(5).convert(r._2.getCompressedSize.toString)),
+            new View(schema.get(6).convert(r._2.getUncompressedSize.toString))
          )
   }).toSeq:_* )
 
@@ -42,9 +42,9 @@ class StatScanner(val partition: Int, val regions: Map[String,AimPartition]) ext
     currentRow < data.size
   }
 
-  override def selectKey: ByteBuffer = if (currentRow < data.size) data(rowIndex(currentRow))(0) else throw new EOFException
+  override def selectKey: View = if (currentRow < data.size) data(rowIndex(currentRow))(0) else throw new EOFException
 
-  override def selectRow: Array[ByteBuffer] = if (currentRow < data.size) data(rowIndex(currentRow)) else throw new EOFException
+  override def selectRow: Array[View] = if (currentRow < data.size) data(rowIndex(currentRow)) else throw new EOFException
 
   override def mark = rowMark = currentRow
 

@@ -37,7 +37,7 @@ class LZ4Test extends FlatSpec with Matchers {
   val scanner = new ColumnScanner(instance, Aim.STRING)
   var ch: Char = 0
   var actualValue = "";
-  while (!scanner.eof()) {
+  while (!scanner.eof) {
     ch = scanner.read.toChar
     actualValue += ch
   }

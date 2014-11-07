@@ -1,11 +1,9 @@
 package net.imagini.aim.tools
 
-import java.nio.ByteBuffer
-
 import scala.Array.canBuildFrom
-
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
+import net.imagini.aim.utils.View
 
 trait AbstractScanner {
 
@@ -19,9 +17,9 @@ trait AbstractScanner {
 
   def next: Boolean
 
-  def selectRow: Array[ByteBuffer]
+  def selectRow: Array[View] //TODO instead of Array this can be only View
 
-  def selectKey: ByteBuffer 
+  def selectKey: View
 
   def mark
 

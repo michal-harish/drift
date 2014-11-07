@@ -1,11 +1,9 @@
 package net.imagini.aim.tools;
 
-import java.io.EOFException;
-import java.nio.ByteBuffer;
-
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimType;
 import net.imagini.aim.utils.BlockStorage;
+import net.imagini.aim.utils.View;
 
 /**
  * Not thread-safe but light-weight context object that wraps around shared
@@ -13,14 +11,14 @@ import net.imagini.aim.utils.BlockStorage;
  * 
  * @author mharis
  */
-public class ColumnScanner {
+public class ColumnScanner /*extends View*/ {
 
     final public AimType aimType;
     final public AimDataType dataType;
     final private BlockStorage blockStorage;
-    private boolean eof = false;
+    public boolean eof = false;
     private int currentBlock = -1;
-    volatile private ByteBuffer buffer = null;
+    public View view = null;
     private int markBlock = -1;
     private int markPosition = -1;
 
@@ -31,10 +29,6 @@ public class ColumnScanner {
         this.eof = !switchTo(0);
     }
 
-    public ByteBuffer buffer() throws EOFException {
-        return buffer;
-    }
-
     public void rewind() {
         this.reset();
         this.eof = !switchTo(0);
@@ -43,7 +37,7 @@ public class ColumnScanner {
     public void mark() {
         blockStorage.ref(currentBlock);
         markBlock = currentBlock;
-        markPosition = buffer.position();
+        markPosition = view.offset;
     }
 
     public void reset() {
@@ -52,21 +46,16 @@ public class ColumnScanner {
                 currentBlock = markBlock;
                 eof = !switchTo(markBlock);
             }
-            buffer.position(markPosition);
+            view.offset = markPosition;
             blockStorage.deref(markBlock);
-            this.eof = buffer.position() >= buffer.limit()
-                    && markBlock >= blockStorage.numBlocks() - 1;
+            this.eof = view.offset >= view.size && markBlock >= blockStorage.numBlocks() - 1;
             markBlock = -1;
             markPosition = -1;
         }
     }
 
-    public boolean eof() {
-        return eof;
-    }
-
     private void checkEof() {
-        if (buffer.position() >= buffer.limit()) {
+        if (view.offset >= view.size) {
             if (currentBlock == blockStorage.numBlocks() - 1) {
                 eof = true;
             } else {
@@ -79,14 +68,15 @@ public class ColumnScanner {
         if (eof) {
             return -1;
         } else {
-            int result = buffer.get();
+            int result = view.array[view.offset];
+            view.offset +=1;
             checkEof();
             return result;
         }
     }
 
     public void skip() {
-        buffer.position(buffer.position() + dataType.sizeOf(buffer));
+        view.offset = view.offset + dataType.sizeOf(view);
         checkEof();
     }
 
@@ -96,12 +86,12 @@ public class ColumnScanner {
      * this method after we have AbstractScanner.asInputStream wrapping done
      */
 
-    public long skip(long skipBytes) {
-        if (skipBytes > buffer.remaining()) {
-            skipBytes = buffer.remaining();
+    public long skip(int skipBytes) {
+        if (skipBytes > view.size - view.offset) {
+            skipBytes = view.size - view.offset;
         }
         if (skipBytes > 0) {
-            buffer.position(buffer.position() + (int) skipBytes);
+            view.offset = view.offset + skipBytes;
         }
         checkEof();
         return skipBytes;
@@ -114,13 +104,13 @@ public class ColumnScanner {
                 blockStorage.close(currentBlock);
             currentBlock = block;
             if (validBlock) {
-                buffer = blockStorage.open(block);
+                view = blockStorage.view(block);
                 return true;
             } else {
                 return false;
             }
         } else if (validBlock) {
-            buffer.rewind();
+            view.rewind();
             return true;
         } else {
             return false;

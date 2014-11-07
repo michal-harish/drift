@@ -5,11 +5,11 @@ import java.util.LinkedHashMap
 import net.imagini.aim.types.AimType
 import scala.collection.JavaConverters._
 import scala.collection.immutable.ListMap
-import java.nio.ByteBuffer
 import net.imagini.aim.utils.ByteUtils
 import net.imagini.aim.tools.AbstractScanner
 import java.io.EOFException
 import net.imagini.aim.utils.ByteUtils
+import net.imagini.aim.utils.View
 
 class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 
@@ -20,12 +20,12 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
   override val keyType: AimType = left.keyType
   override val keyLen = keyType.getDataType.getLen
 
-  private var selectedKey: ByteBuffer = null
-  private val selectBuffer: Array[ByteBuffer] = new Array[ByteBuffer](schema.size)
+  private var selectedKey: View = null
+  private val selectBuffer: Array[View] = new Array[View](schema.size)
   private val leftColumnIndex = schema.names.map(f ⇒ if (left.schema.has(f)) left.schema.get(f) else -1)
   private val rightColumnIndex = schema.names.map(f ⇒ if (right.schema.has(f)) right.schema.get(f) else -1)
   private var currentLeft = true
-  private var currentKey: Option[ByteBuffer] = None
+  private var currentKey: Option[View] = None
   private var eof = false
   right.next
 
@@ -50,9 +50,9 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
     move
   }
 
-  override def selectKey: ByteBuffer = if (eof) throw new EOFException else selectedKey
+  override def selectKey: View = if (eof) throw new EOFException else selectedKey
 
-  override def selectRow: Array[ByteBuffer] = if (eof) throw new EOFException else selectBuffer
+  override def selectRow: Array[View] = if (eof) throw new EOFException else selectBuffer
 
   override def next: Boolean = {
     if (eof) return false
@@ -70,7 +70,7 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
           else if (cmp > 0) eof = !right.next
         } while (!eof && cmp != 0)
         if (!eof) {
-          currentKey = Some(left.selectKey.slice)
+          currentKey = Some(new View(left.selectKey))
           currentLeft = true
         }
       }

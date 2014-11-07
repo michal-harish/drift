@@ -5,7 +5,6 @@ import net.imagini.aim.tools.RowFilter
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.SortOrder
 import scala.collection.JavaConverters._
-import java.nio.ByteBuffer
 import net.imagini.aim.tools.AbstractScanner
 import scala.Array.canBuildFrom
 import net.imagini.aim.tools.ColumnScanner
@@ -13,6 +12,7 @@ import java.util.concurrent.Future
 import java.util.concurrent.Executors
 import java.util.concurrent.Callable
 import net.imagini.aim.utils.ByteUtils
+import net.imagini.aim.utils.View
 
 class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String], val rowFilter: RowFilter, val segments: Seq[AimSegment])
   extends AbstractScanner {
@@ -36,8 +36,8 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   private var eof = false
   private var currentScanner: Array[ColumnScanner] = null
   private var markCurrentSegment: Array[ColumnScanner] = null
-  private var currentKey: ByteBuffer = null
-  private val currentRecord: Array[ByteBuffer] = new Array[ByteBuffer](schema.size)
+  private var currentKey: View = null
+  private val currentRecord: Array[View] = new Array[View](schema.size)
 
   override def rewind = {
     scanners.foreach(_.foreach(_.rewind))
@@ -62,7 +62,7 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
   /**
    * Optimized next method
    */
-  var buffers: Array[ByteBuffer] = new Array[ByteBuffer](scanSchema.size)
+  var views: Array[View] = new Array[View](scanSchema.size)
   override def next: Boolean = {
     if (eof) {
       return false
@@ -88,32 +88,33 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
         while (i < scanner.length) {
           if (!filterMatch) scanner(i).skip
           segmentHasData = segmentHasData && !scanner(i).eof
-          buffers(i) = scanner(i).buffer
+          views(i) = scanner(i).view
           i += 1
         }
-        if (segmentHasData) filterMatch = rowFilter.matches(buffers)
+        //TODO ColumnScanner should be an extension of View
+        if (segmentHasData) filterMatch = rowFilter.matches(views)
       } while (segmentHasData && !filterMatch)
 
       //merge sort
       if (segmentHasData) {
-        if (null == currentScanner || ((sortOrder == SortOrder.ASC ^ ByteUtils.compare(scanner(scanKeyColumnIndex).buffer, currentScanner(scanKeyColumnIndex).buffer, keyLen) > 0))) {
+        if (null == currentScanner || ((sortOrder == SortOrder.ASC ^ ByteUtils.compare(scanner(scanKeyColumnIndex).view, currentScanner(scanKeyColumnIndex).view, keyLen) > 0))) {
           currentScanner = scanner
         }
       }
     }
-    eof = null == currentScanner 
+    eof = null == currentScanner
     move
     !eof
   }
 
-  override def selectKey: ByteBuffer = {
+  override def selectKey: View = {
     if (eof || (null == currentScanner && !next)) {
       throw new EOFException
     } else {
       currentKey
     }
   }
-  override def selectRow: Array[ByteBuffer] = {
+  override def selectRow: Array[View] = {
     if (eof || (null == currentScanner && !next)) {
       throw new EOFException
     } else {
@@ -126,10 +127,10 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
       currentKey = null
       for (i ← (0 to schema.size - 1)) currentRecord(i) = null
     } else {
-      currentKey = currentScanner(scanKeyColumnIndex).buffer
+      currentKey = currentScanner(scanKeyColumnIndex).view
       var i = 0
       while (i < currentRecord.length) {
-        currentRecord(i) = currentScanner(scanColumnIndex(i)).buffer
+        currentRecord(i) = currentScanner(scanColumnIndex(i)).view
         i += 1
       }
     }
@@ -152,11 +153,12 @@ class MergeScanner(val sourceSchema: AimSchema, val selectFields: Array[String],
           val scanner = scanners(s)
           var count = 0
           var scannerHasData = true
+          val buffers: Array[View] = new Array[View](scanSchema.size)
           do {
             var i = 0
             while (i < scanner.length) {
               scannerHasData = scannerHasData && !scanner(i).eof
-              buffers(i) = scanner(i).buffer
+              buffers(i) = scanner(i).view
               i += 1
             }
             if (rowFilter.matches(buffers)) count += 1

@@ -5,7 +5,9 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
+
 import scala.collection.JavaConverters._
+
 import grizzled.slf4j.Logger
 import net.imagini.aim.client.AimConsole
 import net.imagini.aim.partition.AimPartition
@@ -13,9 +15,8 @@ import net.imagini.aim.partition.QueryParser
 import net.imagini.aim.partition.StatScanner
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.utils.BlockStorageLZ4
-import net.imagini.aim.utils.BlockStorageMem
 import net.imagini.aim.utils.BlockStorage
+import net.imagini.aim.utils.BlockStorageLZ4
 
 object AimNode extends App {
   val log = Logger[this.type]
@@ -31,12 +32,9 @@ object AimNode extends App {
   }
 
   //SPAWNING CLUSTER
-//  val manager = new DriftManagerZk(zkConnect, 2)
-  val manager = new DriftManagerLocal(1)
-  new AimNode(1, "localhost:4000", manager)
-//  new AimNode(2, "localhost:4001", manager)
-//  new AimNode(3, "localhost:4002", manager)
-//  new AimNode(4, "localhost:4003", manager)
+  val numNodes = 1
+  val manager:DriftManager = if (numNodes == 1) new DriftManagerLocal(numNodes) else new DriftManagerZk(zkConnect, numNodes)
+  for(n <-(1 to numNodes))  new AimNode(n, "localhost:" + (4000+n-1).toString, manager)
 
   //CREATING TABLES
   val storageType = classOf[BlockStorageLZ4]

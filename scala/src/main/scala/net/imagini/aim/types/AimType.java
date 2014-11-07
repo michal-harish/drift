@@ -1,6 +1,6 @@
 package net.imagini.aim.types;
 
-import java.nio.ByteBuffer;
+import net.imagini.aim.utils.View;
 
 
 
@@ -16,9 +16,9 @@ public interface AimType {
 
     public AimDataType getDataType();
 
-    public String asString(ByteBuffer value);
+    public String asString(View value);
 
-    public int partition(ByteBuffer value, int numPartitions);
+    public int partition(View value, int numPartitions);
 
     public String convert(byte[] value);
 

@@ -1,10 +1,10 @@
 package net.imagini.aim.types;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.UUID;
 
 import net.imagini.aim.utils.ByteUtils;
+import net.imagini.aim.utils.View;
 
 public class AimTypeUUID extends AimTypeAbstract {
 
@@ -22,10 +22,10 @@ public class AimTypeUUID extends AimTypeAbstract {
     @Override public byte[] convert(String value) {
         try {
             UUID uuid = UUID.fromString(value);
-            ByteBuffer bb = ByteBuffer.allocate(16); 
-            bb.putLong(uuid.getMostSignificantBits());
-            bb.putLong(uuid.getLeastSignificantBits());
-            return bb.array();
+            byte[] b = new byte[16];
+            ByteUtils.putLongValue(uuid.getMostSignificantBits(), b, 0);
+            ByteUtils.putLongValue(uuid.getLeastSignificantBits(), b, 8);
+            return b;
         } catch (Exception e) {
             byte[] result = new byte[16];
             Arrays.fill(result, (byte)0);
@@ -38,14 +38,14 @@ public class AimTypeUUID extends AimTypeAbstract {
         return new UUID(ByteUtils.asLongValue(value,0) , ByteUtils.asLongValue(value,8)).toString();
     }
 
-    @Override public String asString(ByteBuffer value) {
-        return new UUID(ByteUtils.asLongValue(value) , ByteUtils.asLongValue(value,8)).toString();
+    @Override public String asString(View view) {
+        return new UUID(ByteUtils.asLongValue(view) , ByteUtils.asLongValue(view,8)).toString();
     }
     @Override public String escape(String value) {
         return "'"+value+"'";
     }
-    @Override public int partition(ByteBuffer value, int numPartitions) {
-        long hilo = ByteUtils.asLongValue(value) ^ ByteUtils.asLongValue(value,8);
+    @Override public int partition(View view, int numPartitions) {
+        long hilo = ByteUtils.asLongValue(view) ^ ByteUtils.asLongValue(view,8);
         int hash = ((int)(hilo >> 32)) ^ (int) hilo;
         return (hash == Integer.MIN_VALUE ? Integer.MAX_VALUE : Math.abs(hash)) % numPartitions;
     }

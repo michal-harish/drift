@@ -10,6 +10,7 @@ import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.TypeUtils;
 import net.imagini.aim.utils.BlockStorage;
+import net.imagini.aim.utils.View;
 
 /**
  * zero-copy open methods, i.e. multiple stream readers should be able to operate without 
@@ -24,6 +25,7 @@ abstract public class AimSegmentAbstract implements AimSegment {
     private AtomicLong count = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
     protected AtomicLong originalSize = new AtomicLong(0);
+    private ByteBuffer recordBuffer = ByteBuffer.allocate(65535);
 
     public AimSegmentAbstract(AimSchema schema, Class<? extends BlockStorage> storageType) throws InstantiationException, IllegalAccessException {
         this.schema = schema;
@@ -50,12 +52,10 @@ abstract public class AimSegmentAbstract implements AimSegment {
         }
     }
 
-    @Override final public AimSegment appendRecord(ByteBuffer[]  record) throws IOException {
+    @Override final public AimSegment appendRecord(View[]  record) throws IOException {
         recordBuffer.clear();
         for(int col = 0; col < schema.size() ; col++) {
-            int mark = record[col].position();
-            TypeUtils.copy(record[col], schema.get(col).getDataType(), recordBuffer);
-            record[col].position(mark);
+            TypeUtils.copy(record[col].array, record[col].offset, schema.get(col).getDataType(), recordBuffer);
         }
         recordBuffer.flip();
         return appendRecord(recordBuffer);
@@ -73,15 +73,14 @@ abstract public class AimSegmentAbstract implements AimSegment {
     }
 
     //FIXME this is a limitation of size of the record as well as single-threaded context
-    private ByteBuffer recordBuffer = ByteBuffer.allocate(65535);
-    final public AimSegment appendRecord(byte[][] record) throws IOException {
+    final private AimSegment appendRecord(byte[][] record) throws IOException {
         if (record.length != schema.size()) {
             throw new IllegalArgumentException("Number of record values doesn't match the number of fields in the schema");
         }
 
         recordBuffer.clear();
         for(int col = 0; col < schema.size() ; col++) {
-            TypeUtils.copy(record[col], schema.get(col).getDataType(), recordBuffer);
+            TypeUtils.copy(record[col], 0, schema.get(col).getDataType(), recordBuffer);
         }
         recordBuffer.flip();
         return appendRecord(recordBuffer);

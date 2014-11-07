@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import net.imagini.aim.utils.View;
+
 import org.apache.commons.lang3.StringUtils;
 
 public class AimSchema {
@@ -85,6 +87,33 @@ public class AimSchema {
             colIndex.put(columnDef.getKey(), def.size() - 1);
             nameIndex.put(def.size() - 1, columnDef.getKey());
         }
+    }
+
+    public String asString(View[] view) {
+        return asString(view, ", ");
+    }
+    public String asString(View[] view, String separator) {
+        String result ="";
+        for(int i=0; i <size(); i++) {
+            AimType t= def.get(i);
+            result +=t.asString(view[i]);
+            if (t != def.get(size()-1)) result += separator;
+        }
+        return result;
+    }
+    public String asString(View view) {
+        return asString(view, ", ");
+    }
+    public String asString(View view, String separator) {
+        int mark = view.offset;
+        String result ="";
+        for(AimType t: def) {
+            result +=t.asString(view);
+            view.offset += t.getDataType().sizeOf(view);
+            if (t != def.get(size()-1)) result += separator;
+        }
+        view.offset = mark;
+        return result;
     }
 
     public int get(String colName) {

@@ -1,12 +1,12 @@
 package net.imagini.aim.types;
 
-import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import net.imagini.aim.utils.ByteUtils;
+import net.imagini.aim.utils.View;
 
 public class AimTypeTIME extends AimTypeAbstract {
 
@@ -60,12 +60,12 @@ public class AimTypeTIME extends AimTypeAbstract {
         throw new IllegalArgumentException();
     }
 
-    @Override public String asString(ByteBuffer value) {
+    @Override public String asString(View view) {
         if (dataType.equals(Aim.STRING)) {
-            return dataType.asString(value);
+            return dataType.asString(view);
         } else if (dataType.equals(Aim.LONG)) {
             DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd H:mm:ss");
-            return formatter.format(ByteUtils.asLongValue(value));
+            return formatter.format(ByteUtils.asLongValue(view));
         }
         throw new IllegalArgumentException();
     }

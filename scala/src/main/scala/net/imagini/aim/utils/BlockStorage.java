@@ -1,7 +1,6 @@
 package net.imagini.aim.utils;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -51,21 +50,25 @@ abstract public class BlockStorage {
         }
     }
 
-
-    final public ByteBuffer open(int block) {
+    final public View view(int block) {
         ref(block);
-        ByteBuffer zoom = ByteBuffer.wrap(cache.get(block), 0, lengths.get(block));
-        /**
-         * Direct malloc() 
-         *
-        zoom = ByteBuffer.allocateDirect(raw.length);
-        zoom.put(decompress_buffer, 0, length);
-        zoom.flip();*/
-
-        zoom.order(ByteOrder.BIG_ENDIAN);
-        return zoom;
-
+        return new View(cache.get(block), 0, lengths.get(block));
     }
+
+//    final public ByteBuffer open(int block) {
+//        ref(block);
+//        ByteBuffer zoom = ByteBuffer.wrap(cache.get(block), 0, lengths.get(block));
+//        /**
+//         * Direct malloc() 
+//         *
+//        zoom = ByteBuffer.allocateDirect(raw.length);
+//        zoom.put(decompress_buffer, 0, length);
+//        zoom.flip();*/
+//
+//        zoom.order(ByteOrder.BIG_ENDIAN);
+//        return zoom;
+//
+//    }
 
     final public void close(int block) {
         deref(block);

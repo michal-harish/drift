@@ -15,7 +15,7 @@ class ColumnScannerTest extends FlatSpec with Matchers {
 
   def read(in: ColumnScanner) = {
     if (in.eof) throw new EOFException 
-    val result = in.dataType.asString(in.buffer)
+    val result = in.dataType.asString(in.view)
     in.skip
     result
   }

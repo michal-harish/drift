@@ -43,6 +43,17 @@ public class ByteUtils {
         result[offset + 3] = (byte) ((value >>> 0) & 0xFF);
     }
 
+    public static void putLongValue(long value, byte[] result, int offset) {
+        result[offset + 0] = (byte) ((value >>> 56) & 0xFF);
+        result[offset + 1] = (byte) ((value >>> 48) & 0xFF);
+        result[offset + 2] = (byte) ((value >>> 40) & 0xFF);
+        result[offset + 3] = (byte) ((value >>> 32) & 0xFF);
+        result[offset + 4] = (byte) ((value >>> 24) & 0xFF);
+        result[offset + 5] = (byte) ((value >>> 16) & 0xFF);
+        result[offset + 6] = (byte) ((value >>> 8) & 0xFF);
+        result[offset + 7] = (byte) ((value >>> 0) & 0xFF);
+    }
+
     /**
      * Compares the current buffer position if treated as given type with the
      * given value but does not advance
@@ -109,6 +120,40 @@ public class ByteUtils {
             }
             return false;
         }
+    }
+
+    /**
+     * View utils
+     */
+    static public int asIntValue(final View value) {
+        return asIntValue(value.array, value.offset);
+    }
+
+    static public long asLongValue(final View value) {
+        return asLongValue(value.array, value.offset);
+    }
+    static public long asLongValue(final View value, final int offset) {
+        return asLongValue(value.array, value.offset + offset);
+    }
+
+    final public static int compare(View left, View right, int len) {
+        return compare(
+            left.array, left.offset,
+            right.array, right.offset,
+            len
+        );
+    }
+
+    final public static boolean contains(View container, View value, int len) {
+        return contains(
+            container.array, container.offset,
+            value.array, value.offset,
+            len
+        );
+    }
+    final public static boolean equals(View left, View right,
+            int len) {
+        return compare(left, right, len) == 0;
     }
 
     /**

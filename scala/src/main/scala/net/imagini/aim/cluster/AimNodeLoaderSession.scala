@@ -11,10 +11,11 @@ import java.io.InputStreamReader
 import java.io.BufferedReader
 import net.imagini.aim.types.TypeUtils
 import net.imagini.aim.partition.AimPartition
-import java.nio.ByteBuffer
 import net.imagini.aim.client.Loader
 import net.imagini.aim.tools.StreamUtils
 import net.imagini.aim.types.AimQueryException
+import net.imagini.aim.utils.View
+import java.nio.ByteBuffer
 
 class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
 
@@ -29,7 +30,8 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
 
   val startTime = System.currentTimeMillis
   val COLUMN_BUFFER_SIZE = 2048
-  val record = ByteUtils.createBuffer(COLUMN_BUFFER_SIZE * schema.size)
+  val record = ByteBuffer.allocate(COLUMN_BUFFER_SIZE * schema.size)
+  val recordView = new View(record)
   var localSegment = partition.createNewSegment
   var count = 0
 
@@ -51,9 +53,9 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
   private def loadPartitionedStream = {
     val in = pipe.getInputStream
     while (true) {
-      record.clear
+      record.rewind
       for (t ← schema.fields) StreamUtils.read(in, t.getDataType, record)
-      record.flip
+      record.rewind
       localSegment = partition.appendRecord(localSegment, record)
       count += 1
     }
@@ -85,10 +87,10 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
         try {
           for ((t, value) ← (schema.fields zip values)) {
             val bytes = t.convert(value)
-            TypeUtils.copy(bytes, t.getDataType, record)
+            TypeUtils.copy(bytes , 0, t.getDataType, record)
           }
           record.flip
-          val targetNode = keyType.partition(record, node.expectedNumNodes) + 1
+          val targetNode = keyType.partition(recordView, node.expectedNumNodes) + 1
           if (targetNode == node.id) {
             localSegment = partition.appendRecord(localSegment, record)
             count += 1

@@ -1,7 +1,6 @@
 package net.imagini.aim.partition
 
 import java.io.EOFException
-import java.nio.ByteBuffer
 import java.util.LinkedHashMap
 import scala.Array.canBuildFrom
 import scala.collection.JavaConverters.mapAsJavaMapConverter
@@ -13,6 +12,7 @@ import net.imagini.aim.types.SortOrder
 import java.util.concurrent.Executors
 import java.util.concurrent.Callable
 import net.imagini.aim.utils.ByteUtils
+import net.imagini.aim.utils.View
 
 class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 
@@ -29,8 +29,8 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
   private var currentLeft = true
   private var leftHasData = true
   private var rightHasData = right.next
-  private var selectedKey: ByteBuffer = null
-  private val selectBuffer: Array[ByteBuffer] = new Array[ByteBuffer](schema.size)
+  private var selectedKey: View = null
+  private val selectBuffer: Array[View] = new Array[View](schema.size)
 
   override def rewind = {
     left.rewind
@@ -53,9 +53,9 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
     move
   }
 
-  override def selectKey: ByteBuffer = if (!rightHasData && !leftHasData) throw new EOFException else selectedKey
+  override def selectKey: View = if (!rightHasData && !leftHasData) throw new EOFException else selectedKey
 
-  override def selectRow: Array[ByteBuffer] = if (!rightHasData && !leftHasData) throw new EOFException else selectBuffer
+  override def selectRow: Array[View] = if (!rightHasData && !leftHasData) throw new EOFException else selectBuffer
 
   override def next: Boolean = {
 
