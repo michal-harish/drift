@@ -43,8 +43,8 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
 
     //Scan join transformation of AT pageviews into VDNA Pageviews 
     val joinScan = new EquiJoinScanner(
-      new MergeScanner(schemaATSyncs, "user_uid", "*", AS1.segments),
-      new MergeScanner(schemaATPageviews, "url, timestamp", "timestamp > '2014-10-10 16:00:00' ", AP1.segments))
+      new MergeScanner("user_uid", "*", AS1.segments),
+      new MergeScanner("url, timestamp", "timestamp > '2014-10-10 16:00:00' ", AP1.segments))
     val newVDNAPageviewsSegment = new AimSegmentQuickSort(schemaVDNAPageviews, classOf[BlockStorageLZ4])
 
     while (joinScan.next) {
@@ -54,7 +54,7 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
     joinScan.close
 
     //scan VDNA Pageviews which should contain previous pageviews with the ones imported from AT
-    val vdnaPageviewScan = new MergeScanner(schemaVDNAPageviews, "user_uid,url,timestamp", "*", partitionVDNAPageviews1.segments)
+    val vdnaPageviewScan = new MergeScanner("user_uid,url,timestamp", "*", partitionVDNAPageviews1.segments)
     vdnaPageviewScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com\t2014-10-10 16:00:01")
     vdnaPageviewScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.bank.com\t2014-10-10 18:00:01")
     vdnaPageviewScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.cafe.com\t2014-10-10 10:59:01")

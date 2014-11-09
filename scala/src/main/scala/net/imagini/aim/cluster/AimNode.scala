@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 
-import scala.collection.JavaConverters._
+import scala.collection.JavaConverters.mapAsScalaConcurrentMapConverter
 
 import grizzled.slf4j.Logger
 import net.imagini.aim.client.AimConsole
@@ -33,8 +33,8 @@ object AimNode extends App {
 
   //SPAWNING CLUSTER
   val numNodes = 1
-  val manager:DriftManager = if (numNodes == 1) new DriftManagerLocal(numNodes) else new DriftManagerZk(zkConnect, numNodes)
-  for(n <-(1 to numNodes))  new AimNode(n, "localhost:" + (4000+n-1).toString, manager)
+  val manager: DriftManager = if (numNodes == 1) new DriftManagerLocal(numNodes) else new DriftManagerZk(zkConnect, numNodes)
+  for (n ← (1 to numNodes)) new AimNode(n, "localhost:" + (4000 + n - 1).toString, manager)
 
   //CREATING TABLES
   val storageType = classOf[BlockStorageLZ4]
@@ -58,34 +58,34 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
 
   val log = Logger[this.type]
   val nodes: ConcurrentMap[Int, URI] = new ConcurrentHashMap[Int, URI]()
-  def peers:Map[Int,URI] = nodes.asScala.filter(n ⇒ n._1 != id).toMap
+  def peers: Map[Int, URI] = nodes.asScala.filter(n ⇒ n._1 != id).toMap
 
-  var expectedNumNodes:Int = -1
+  var expectedNumNodes: Int = -1
   private var suspended = new AtomicBoolean(true)
   private var keyspaceRefs = new ConcurrentHashMap[String, ConcurrentMap[String, AimPartition]]()
-  def regions: Map[String, AimPartition] = keyspaceRefs.asScala.flatMap( r => {
+  def regions: Map[String, AimPartition] = keyspaceRefs.asScala.flatMap(r ⇒ {
     val keyspace = r._1
-    r._2.asScala.map(partition => {
+    r._2.asScala.map(partition ⇒ {
       val table = partition._1
       val region = partition._2
-      keyspace+"."+table -> region
+      keyspace + "." + table -> region
     })
   }).toMap
   def stats(keyspaceName: String): AbstractScanner = {
     if (keyspaceName == null || keyspaceName.isEmpty) {
-      new StatScanner(id, keyspaceRefs.asScala.flatMap(k => k._2.asScala.map { case (t, partition) ⇒ k._1 + "." +t -> partition }).toMap)
+      new StatScanner(id, keyspaceRefs.asScala.flatMap(k ⇒ k._2.asScala.map { case (t, partition) ⇒ k._1 + "." + t -> partition }).toMap)
     } else {
       new StatScanner(id, keyspaceRefs.get(keyspaceName).asScala.map { case (t, partition) ⇒ t -> partition }.toMap)
     }
   }
-  def query(query: String) = new QueryParser(regions).parse(query)
+  def query(query: String): AbstractScanner = new QueryParser(regions).parse(query)
 
   def transform(srcQuery: String, destKeyspace: String, destTable: String) = {
     val t = System.currentTimeMillis
     val scanner = query(srcQuery)
     val dest = keyspaceRefs.get(destKeyspace).get(destTable)
     var segment = dest.createNewSegment
-    while(scanner.next) {
+    while (scanner.next) {
       segment = dest.appendRecord(segment, scanner.selectRow)
     }
     dest.add(segment)
@@ -109,7 +109,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   })
 
   manager.watch("/drift/nodes", (children: Map[String, String]) ⇒ {
-    val newNodes = children.map(p ⇒ p._1.toInt -> new URI("drift://"+ p._2)).toMap
+    val newNodes = children.map(p ⇒ p._1.toInt -> new URI("drift://" + p._2)).toMap
     nodes.asScala.keys.filter(!newNodes.contains(_)).map(nodes.remove(_))
     newNodes.map(n ⇒ nodes.put(n._1, n._2))
     rebalance
@@ -129,7 +129,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
           val schema = AimSchema.fromString(tableDescriptor(0))
           val segmentSize = java.lang.Integer.valueOf(tableDescriptor(1))
           val storageType = Class.forName(tableDescriptor(2)).asInstanceOf[Class[BlockStorage]]
-          keyspaceRefs.get(k).put(t._1, new AimPartition(schema, segmentSize, storageType)) 
+          keyspaceRefs.get(k).put(t._1, new AimPartition(schema, segmentSize, storageType))
           log.debug(id + ": " + k + "." + t._1 + " " + keyspaceRefs.get(k).get(t._1).toString)
         })
       })

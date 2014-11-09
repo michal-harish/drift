@@ -26,14 +26,14 @@ class GroupScannerTest extends FlatSpec with Matchers {
     partition.add(s1)
     partition.add(s2)
 
-    val groupScan = new GroupScanner(partition.schema, "value, user_uid", "column='pageview'", "column='addthis_id'", partition.segments)
+    val groupScan = new GroupScanner("value, user_uid", "column='pageview'", "column='addthis_id'", partition.segments)
     groupScan.nextLine should be("{www.ebay.com}\t37b22cfb-a29e-42c3-a3d9-12d32850e103")
     groupScan.nextLine should be("{www.auto.com}\t37b22cfb-a29e-42c3-a3d9-12d32850e103")
     groupScan.nextLine should be("{www.travel.com}\ta7b22cfb-a29e-42c3-a3d9-12d32850e103")
     an[EOFException] must be thrownBy groupScan.nextLine
     an[EOFException] must be thrownBy groupScan.nextLine
 
-    val gropuScan2 = new GroupScanner(partition.schema, "*", "column='pageview'", "column='addthis_id' and value='AT9876'", partition.segments)
+    val gropuScan2 = new GroupScanner("*", "column='pageview'", "column='addthis_id' and value='AT9876'", partition.segments)
     gropuScan2.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103\tpageview\t{www.travel.com}")
     an[EOFException] must be thrownBy gropuScan2.nextLine
     an[EOFException] must be thrownBy groupScan.nextLine

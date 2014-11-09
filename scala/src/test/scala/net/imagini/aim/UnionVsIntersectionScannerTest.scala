@@ -39,8 +39,8 @@ class UnionVsIntersectionScannerTest extends FlatSpec with Matchers {
       partitionB1.add(sB1)
 
       val unionJoin = new UnionJoinScanner(
-          new MergeScanner(partitionA1.schema, "user_uid, url, timestamp", "*", partitionA1.segments), 
-          new MergeScanner(partitionB1.schema, "user_uid, url, timestamp, conversion", "*", partitionB1.segments)
+          new MergeScanner("user_uid, url, timestamp", "*", partitionA1.segments), 
+          new MergeScanner("user_uid, url, timestamp, conversion", "*", partitionB1.segments)
       )
       unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.auto.com/mycar\t2014-10-10 11:59:01\t" + Aim.EMPTY)
       unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 12:01:02\t" + Aim.EMPTY)
@@ -54,8 +54,8 @@ class UnionVsIntersectionScannerTest extends FlatSpec with Matchers {
       an[EOFException] must be thrownBy unionJoin.nextLine
 
       val intersectionJoin = new IntersectionJoinScanner(
-          new MergeScanner(partitionA1.schema, "user_uid, url, timestamp", "*", partitionA1.segments), 
-          new MergeScanner(partitionB1.schema, "user_uid, url, timestamp, conversion", "*", partitionB1.segments)
+          new MergeScanner("user_uid, url, timestamp", "*", partitionA1.segments), 
+          new MergeScanner("user_uid, url, timestamp, conversion", "*", partitionB1.segments)
       )
       intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.auto.com/mycar\t2014-10-10 11:59:01\t" + Aim.EMPTY)
       intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 12:01:02\t" + Aim.EMPTY)

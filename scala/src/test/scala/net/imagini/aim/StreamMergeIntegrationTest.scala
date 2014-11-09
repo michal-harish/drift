@@ -38,9 +38,9 @@ class StreamMergeIntegrationTest extends FlatSpec with Matchers {
 
     val subschema = schema.subset(Array("user_uid", "value"))
 
-    val stream1 = new ScannerInputStream(new MergeScanner(p1.schema, "user_uid,value", "column='pageview'", p1.segments))
+    val stream1 = new ScannerInputStream(new MergeScanner("user_uid,value", "column='pageview'", p1.segments))
 
-    val stream2 = new ScannerInputStream(new MergeScanner(p2.schema, "user_uid,value", "column='pageview'", p2.segments))
+    val stream2 = new ScannerInputStream(new MergeScanner("user_uid,value", "column='pageview'", p2.segments))
 
     val mergeSort = new StreamMerger(subschema, 1, Array(stream1, stream2))
 

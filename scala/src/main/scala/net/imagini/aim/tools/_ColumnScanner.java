@@ -11,18 +11,17 @@ import net.imagini.aim.utils.View;
  * 
  * @author mharis
  */
-public class ColumnScanner /*extends View*/ {
+public class _ColumnScanner extends View {
 
     final public AimType aimType;
     final public AimDataType dataType;
     final private BlockStorage blockStorage;
     public boolean eof = false;
     private int currentBlock = -1;
-    public View view = null;
     private int markBlock = -1;
     private int markPosition = -1;
 
-    public ColumnScanner(BlockStorage blockStorage, AimType aimType) {
+    public _ColumnScanner(BlockStorage blockStorage, AimType aimType) {
         this.blockStorage = blockStorage;
         this.aimType = aimType;
         this.dataType = aimType.getDataType();
@@ -30,6 +29,7 @@ public class ColumnScanner /*extends View*/ {
     }
 
     public void rewind() {
+        super.rewind();
         this.reset();
         this.eof = !switchTo(0);
     }
@@ -37,7 +37,7 @@ public class ColumnScanner /*extends View*/ {
     public void mark() {
         blockStorage.ref(currentBlock);
         markBlock = currentBlock;
-        markPosition = view.offset;
+        markPosition = offset;
     }
 
     public void reset() {
@@ -46,16 +46,16 @@ public class ColumnScanner /*extends View*/ {
                 currentBlock = markBlock;
                 eof = !switchTo(markBlock);
             }
-            view.offset = markPosition;
+            offset = markPosition;
             blockStorage.deref(markBlock);
-            this.eof = view.offset >= view.size && markBlock >= blockStorage.numBlocks() - 1;
+            this.eof = offset >= size && markBlock >= blockStorage.numBlocks() - 1;
             markBlock = -1;
             markPosition = -1;
         }
     }
 
     private void checkEof() {
-        if (view.offset >= view.size) {
+        if (offset >= size) {
             if (currentBlock == blockStorage.numBlocks() - 1) {
                 eof = true;
             } else {
@@ -68,15 +68,15 @@ public class ColumnScanner /*extends View*/ {
         if (eof) {
             return -1;
         } else {
-            int result = view.array[view.offset];
-            view.offset +=1;
+            int result = array[offset];
+            offset +=1;
             checkEof();
             return result;
         }
     }
 
     public void skip() {
-        view.offset = view.offset + dataType.sizeOf(view);
+        offset = offset + dataType.sizeOf(this);
         checkEof();
     }
 
@@ -87,11 +87,11 @@ public class ColumnScanner /*extends View*/ {
      */
 
     public long skip(int skipBytes) {
-        if (skipBytes > view.size - view.offset) {
-            skipBytes = view.size - view.offset;
+        if (skipBytes > size - offset) {
+            skipBytes = size - offset;
         }
         if (skipBytes > 0) {
-            view.offset = view.offset + skipBytes;
+            offset = offset + skipBytes;
         }
         checkEof();
         return skipBytes;
@@ -104,13 +104,13 @@ public class ColumnScanner /*extends View*/ {
                 blockStorage.close(currentBlock);
             currentBlock = block;
             if (validBlock) {
-                view = blockStorage.view(block);
+                set(blockStorage.view(block));
                 return true;
             } else {
                 return false;
             }
         } else if (validBlock) {
-            view.rewind();
+            rewind();
             return true;
         } else {
             return false;

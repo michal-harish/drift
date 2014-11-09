@@ -46,10 +46,12 @@ class QueryParser(val regions: Map[String, AimPartition]) extends App {
         val schema = region.schema
         val filter = RowFilter.fromString(schema, select.filter)
         val fields = compile(select.fields)
-        if (asCounter) {
-          new MergeScanner(schema, fields, filter, region.segments) with CountScanner
+        if (region.segments.size.equals(0)) {
+          throw new AimQueryException("Table has no data: " + select.table.name)
+        } else if (asCounter) {
+          new MergeScanner(fields, filter, region.segments) with CountScanner
         } else {
-          new MergeScanner(schema, fields, filter, region.segments)
+          new MergeScanner(fields, filter, region.segments)
         }
       }
       case select: PSubquery ⇒ {

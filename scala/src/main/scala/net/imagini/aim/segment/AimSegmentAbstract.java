@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.imagini.aim.tools.ColumnScanner;
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.TypeUtils;
@@ -18,7 +17,7 @@ import net.imagini.aim.utils.View;
  */
 abstract public class AimSegmentAbstract implements AimSegment {
 
-    final protected AimSchema schema;
+    final public AimSchema schema;
     protected LinkedHashMap<Integer,BlockStorage> columnar = new LinkedHashMap<>();
     private boolean writable;
     private LinkedHashMap<Integer,ByteBuffer> writers = null;
@@ -38,6 +37,13 @@ abstract public class AimSegmentAbstract implements AimSegment {
         }
     }
 
+    @Override final public BlockStorage getBlockStorage(int column) {
+        return columnar.get(column);
+    }
+
+    @Override final public AimSchema getSchema() {
+        return schema;
+    }
     @Override final public long getCompressedSize() {
         return size.get();
     }
@@ -132,14 +138,6 @@ abstract public class AimSegmentAbstract implements AimSegment {
 
     @Override final public long count() {
         return count.get();
-    }
-
-    @Override public ColumnScanner[] wrapScanners(AimSchema subSchema) {
-        final ColumnScanner[] scanners = new ColumnScanner[subSchema.size()];
-        int i = 0; for(String colName: subSchema.names()) {
-            scanners[i++] = new ColumnScanner(columnar.get(schema.get(colName)), schema.field(colName));
-        }
-        return scanners;
     }
  
 }

@@ -4,15 +4,16 @@ import java.nio.ByteBuffer;
 
 public class View {
 
-    public int offset;
-    final public int size;
-    final public byte[] array;
+    public int offset =-1;
+    public int size =-1;
+    public byte[] array = null;
 
+    public View() {}
+    public View(View copy) {
+        set(copy);
+    }
     public View(ByteBuffer buffer) {
         this(buffer.array(), buffer.position(), buffer.capacity() - buffer.position() );
-    }
-    public View(View copyOf) {
-        this(copyOf.array, copyOf.offset, copyOf.size );
     }
 
     public View(byte[] array) {
@@ -24,7 +25,15 @@ public class View {
         this.array = array;
         this.size = size;
     }
+    public void set(View view) {
+        this.array = view.array;
+        this.size = view.size;
+        this.offset = view.offset;
+    }
 
+    public boolean eof() {
+        return offset >= size;
+    }
     public void rewind() {
         offset = 0;
     }

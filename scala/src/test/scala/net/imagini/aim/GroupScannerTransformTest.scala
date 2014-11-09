@@ -25,7 +25,7 @@ class GroupScannerTransformTest extends FlatSpec with Matchers {
     partition.add(s1)
     partition.add(s2)
 
-    val scan = new GroupScanner(partition.schema, "at_id(group value where column='addthis_id'),value,user_uid", "column='pageview'", "*", partition.segments)
+    val scan = new GroupScanner("at_id(group value where column='addthis_id'),value,user_uid", "column='pageview'", "*", partition.segments)
     scan.nextLine should be("AT1234\t{www.ebay.com}\t37b22cfb-a29e-42c3-a3d9-12d32850e103")
     scan.nextLine should be("AT1234\t{www.auto.com}\t37b22cfb-a29e-42c3-a3d9-12d32850e103")
     scan.nextLine should be("AT9876\t{www.travel.com}\ta7b22cfb-a29e-42c3-a3d9-12d32850e103")

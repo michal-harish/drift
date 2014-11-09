@@ -16,13 +16,13 @@ import net.imagini.aim.utils.View
 
 //TODO either optimize with selectBuffer or simply extend MergeScanner
 class GroupScanner(
-  val sourceSchema: AimSchema,
   val groupSelectStatement: String,
   val rowFilterStatement: String,
   val groupFilterStatement: String,
   val segments: Seq[AimSegment])
   extends AbstractScanner {
 
+  private val sourceSchema: AimSchema = segments(0).getSchema
   val selectDef = if (groupSelectStatement.contains("*")) sourceSchema.names else groupSelectStatement.split(",").map(_.trim)
   val selectRef = selectDef.filter(sourceSchema.has(_))
 
@@ -36,20 +36,20 @@ class GroupScanner(
   private val groupFilter = RowFilter.fromString(sourceSchema, groupFilterStatement)
   private val groupFunctions: Seq[AimTypeGROUP] = schema.fields.filter(_.isInstanceOf[AimTypeGROUP]).map(_.asInstanceOf[AimTypeGROUP])
   private val keyField = sourceSchema.name(0)
-  private val scanColumns:Array[String] = 
-    selectRef ++ 
-    rowFilter.getColumns ++ 
-    groupFilter.getColumns ++ 
-    groupFunctions.flatMap(_.filter.getColumns) ++ 
-    groupFunctions.map(_.field) :+ keyField
-  private val merge = new MergeScanner(sourceSchema, scanColumns, RowFilter.fromString(sourceSchema, "*"), segments)
+  private val scanColumns: Array[String] =
+    selectRef ++
+      rowFilter.getColumns ++
+      groupFilter.getColumns ++
+      groupFunctions.flatMap(_.filter.getColumns) ++
+      groupFunctions.map(_.field) :+ keyField
+  private val merge = new MergeScanner(scanColumns, RowFilter.fromString(sourceSchema, "*"), segments)
   override val keyType = sourceSchema.get(0)
   override val keyLen = keyType.getDataType.getLen
   rowFilter.updateFormula(merge.schema.names)
   groupFilter.updateFormula(merge.schema.names)
   groupFunctions.map(_.filter.updateFormula(merge.schema.names))
   private val mergeColumnIndex: Array[Int] = schema.names.map(n ⇒ if (merge.schema.has(n)) merge.schema.get(n) else -1)
-  private var groupKey: Option[View] = None
+  private var groupKey: View = null
   private var eof = false
 
   override def rewind = {
@@ -74,12 +74,12 @@ class GroupScanner(
     } catch {
       case e: EOFException ⇒ {
         eof = true
-        false 
+        false
       }
     }
   }
 
-  override def selectKey: View = if (eof) throw new EOFException else groupKey.get
+  override def selectKey: View = if (eof) throw new EOFException else groupKey
 
   override def selectRow: Array[View] = if (eof) throw new EOFException else {
     val mergeRow = merge.selectRow
@@ -90,55 +90,57 @@ class GroupScanner(
   }
 
   def selectNextGroupRow: Boolean = {
-    if (groupKey == None) {
+    if (groupKey == null) {
       skipToNextGroup
     } else {
       merge.next
+      groupKey = new View(merge.selectKey)
     }
-    while (ByteUtils.equals(merge.selectKey, groupKey.get, keyLen)) {
+    while (ByteUtils.equals(merge.selectKey, groupKey, keyLen)) {
       if (rowFilter.matches(merge.selectRow)) {
         return true
-      } else {
-        merge.next
+      } else if (!merge.next) {
+        return false
       }
     }
     false
   }
 
   private def skipToNextGroup = {
-    if (groupKey != None) {
-      while (ByteUtils.equals(merge.selectKey, groupKey.get, keyLen)) {
+    if (groupKey != null) {
+      while (ByteUtils.equals(merge.selectKey, groupKey, keyLen)) {
         merge.next
       }
+    } else {
+      merge.next
     }
+    groupKey = new View(merge.selectKey)
     skipToNextFilteredGroup
   }
 
   def skipToNextFilteredGroup = {
     var satisfiesFilter = groupFilter.isEmptyFilter
     groupFunctions.map(_.reset)
-    if (groupKey == null) {
-      merge.next
-    }
-    do {
-      groupKey = Some(new View(merge.selectKey))
-      merge.mark
-      try {
-        while ((!satisfiesFilter || !groupFunctions.forall(_.satisfied)) && ByteUtils.equals(merge.selectKey, groupKey.get, keyLen)) {
-          if (!satisfiesFilter && groupFilter.matches(merge.selectRow)) {
-            satisfiesFilter = true
-          }
-          groupFunctions.filter(f ⇒ !f.satisfied && f.filter.matches(merge.selectRow)).foreach(f ⇒ {
-            f.satisfy(merge.selectRow(merge.schema.get(f.field)))
-          })
-          if (!satisfiesFilter || !groupFunctions.forall(_.satisfied)) {
-            merge.next
-          }
-        }
-      } catch {
-        case e: EOFException ⇒ {}
+    var satisfiesGroupFunctions = groupFunctions.forall(_.satisfied)
+    merge.mark
+    while (!eof && (!satisfiesFilter || !satisfiesGroupFunctions)) {
+      if (!satisfiesFilter && groupFilter.matches(merge.selectRow)) {
+        satisfiesFilter = true
       }
-    } while (!satisfiesFilter || !groupFunctions.forall(_.satisfied))
+      satisfiesGroupFunctions = groupFunctions.filter(f ⇒ !f.satisfied).forall(f ⇒ if (f.filter.matches(merge.selectRow)) {
+        f.satisfy(merge.selectRow(merge.schema.get(f.field)))
+        true
+      } else {
+        false
+      })
+      if (!satisfiesFilter || !satisfiesGroupFunctions) {
+        eof = !merge.next
+        if (!eof && !ByteUtils.equals(merge.selectKey, groupKey, keyLen)) {
+          groupKey = new View(merge.selectKey)
+          merge.mark
+        }
+      }
+    }
     merge.reset
   }
   override def count: Long = {

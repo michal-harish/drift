@@ -5,6 +5,8 @@ import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
 import net.imagini.aim.utils.View
 
+trait CountScanner extends AbstractScanner {}
+
 trait AbstractScanner {
 
   val schema: AimSchema
@@ -12,6 +14,8 @@ trait AbstractScanner {
   def keyType: AimType
 
   def keyLen: Int
+
+  def count: Long
 
   def rewind
 
@@ -28,8 +32,6 @@ trait AbstractScanner {
   def close = {
     //TODO implement close for all scanners
   }
-
-  def count: Long
 
   final protected[aim] def nextLine: String = nextLine("\t")
 
