@@ -31,9 +31,10 @@ object AimNode extends App {
   }
 
   //SPAWNING CLUSTER
-  val manager = new DriftManagerZk(zkConnect, 2)
+//  val manager = new DriftManagerZk(zkConnect, 2)
+  val manager = new DriftManagerLocal(1)
   new AimNode(1, "localhost:4000", manager)
-  new AimNode(2, "localhost:4001", manager)
+//  new AimNode(2, "localhost:4001", manager)
 //  new AimNode(3, "localhost:4002", manager)
 //  new AimNode(4, "localhost:4003", manager)
 
