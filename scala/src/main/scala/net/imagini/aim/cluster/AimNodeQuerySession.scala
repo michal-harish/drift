@@ -73,8 +73,12 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
           case QUERY_INTERNAL ⇒ new ScannerInputStream(localScanner)
           case QUERY_USER ⇒ {
             if (peerClients.forall(peer ⇒ !peer.getSchema.isEmpty && peer.getSchema.get.toString.equals(localScanner.schema.toString))) {
-              val streams = peerClients.map(peer ⇒ peer.getInputStream).toArray ++ Array(new ScannerInputStream(localScanner))
-              new StreamMerger(localScanner.schema, 1, streams)
+              if (peerClients.size == 0) {
+                new ScannerInputStream(localScanner)
+              } else {
+                  val streams = peerClients.map(peer ⇒ peer.getInputStream).toArray ++ Array(new ScannerInputStream(localScanner))
+                  new StreamMerger(localScanner.schema, 1, streams)
+              }
             } else {
               throw new AimQueryException("Unexpected response from peers")
             }
