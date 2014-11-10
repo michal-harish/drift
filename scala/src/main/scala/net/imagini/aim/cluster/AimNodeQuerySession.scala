@@ -33,7 +33,7 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
           pipe.flush
         }
         case command: String if (command.toUpperCase.startsWith("CLOSE")) ⇒ close
-        case command: String if (command.toUpperCase.startsWith("USE"))   ⇒ throw new NotImplementedError
+        case command: String if (command.toUpperCase.startsWith("USE")) ⇒ throw new NotImplementedError
         case query: String if (query.toUpperCase.startsWith("STAT")) ⇒ handleSelectStream(node.stats(request.substring(5).trim))
         case query: String ⇒ handleSelectStream(node.query(query))
       }
@@ -76,8 +76,8 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
               if (peerClients.size == 0) {
                 new ScannerInputStream(localScanner)
               } else {
-                  val streams = peerClients.map(peer ⇒ peer.getInputStream).toArray ++ Array(new ScannerInputStream(localScanner))
-                  new StreamMerger(localScanner.schema, 1, streams)
+                val streams = peerClients.map(peer ⇒ peer.getInputStream).toArray ++ Array(new ScannerInputStream(localScanner))
+                new StreamMerger(localScanner.schema, 1, streams)
               }
             } else {
               throw new AimQueryException("Unexpected response from peers")

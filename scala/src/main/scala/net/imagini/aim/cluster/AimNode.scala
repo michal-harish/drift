@@ -38,7 +38,7 @@ object AimNode extends App {
 
   //CREATING TABLES
   val storageType = classOf[BlockStorageLZ4]
-  manager.createTable("addthis", "views", "at_id(STRING), url(STRING), timestamp(LONG)", 500000000, storageType)
+  manager.createTable("addthis", "views", "at_id(STRING), url(STRING), timestamp(LONG)", 50000000, storageType)
   manager.createTable("addthis", "syncs", "at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(LONG)", 200000000, storageType)
   manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), type(STRING), url(STRING)", 100000000, storageType)
   manager.createTable("vdna", "pageviews", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), url(STRING)", 100000000, storageType)

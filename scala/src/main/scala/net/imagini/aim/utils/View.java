@@ -37,6 +37,10 @@ public class View {
     public void rewind() {
         offset = 0;
     }
+    public int skip() {
+        offset +=1;
+        return 1;
+    }
     @Override public String toString() {
         return offset + ":" + size;
     }

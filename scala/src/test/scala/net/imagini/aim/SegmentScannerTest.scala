@@ -4,7 +4,6 @@ import java.io.EOFException
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import net.imagini.aim.segment.AimSegment
-import net.imagini.aim.tools._ColumnScanner
 import net.imagini.aim.types.Aim
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorageLZ4
@@ -16,12 +15,6 @@ import net.imagini.aim.utils.View
 
 class SegmentScannerTest extends FlatSpec with Matchers {
 
-  def read(in: _ColumnScanner) = {
-    if (in.eof) throw new EOFException
-    val result = ""//in.dataType.asString(in.view)
-    in.skip
-    result
-  }
 
   "Marking scanner" should "restore the correct block" in {
     val schema = AimSchema.fromString("a(STRING),b(INT)")

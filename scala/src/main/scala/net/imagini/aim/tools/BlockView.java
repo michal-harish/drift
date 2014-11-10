@@ -1,7 +1,6 @@
 package net.imagini.aim.tools;
 
 import net.imagini.aim.types.AimDataType;
-import net.imagini.aim.types.AimType;
 import net.imagini.aim.utils.BlockStorage;
 import net.imagini.aim.utils.View;
 
@@ -11,24 +10,27 @@ import net.imagini.aim.utils.View;
  * 
  * @author mharis
  */
-public class _ColumnScanner extends View {
+public class BlockView extends View {
 
-    final public AimType aimType;
     final public AimDataType dataType;
     final private BlockStorage blockStorage;
-    public boolean eof = false;
+    private boolean eof = false;
     private int currentBlock = -1;
     private int markBlock = -1;
     private int markPosition = -1;
+    public int count;
 
-    public _ColumnScanner(BlockStorage blockStorage, AimType aimType) {
+    public BlockView(BlockStorage blockStorage, AimDataType aimDataType) {
         this.blockStorage = blockStorage;
-        this.aimType = aimType;
-        this.dataType = aimType.getDataType();
+        this.dataType = aimDataType;
         this.eof = !switchTo(0);
     }
 
-    public void rewind() {
+    @Override public boolean eof() {
+        return eof;
+    }
+
+    @Override public void rewind() {
         super.rewind();
         this.reset();
         this.eof = !switchTo(0);
@@ -75,9 +77,12 @@ public class _ColumnScanner extends View {
         }
     }
 
-    public void skip() {
-        offset = offset + dataType.sizeOf(this);
+    @Override public int skip() {
+        int skipLen = dataType.sizeOf(this);
+        offset = offset + skipLen;
+        count+=1;
         checkEof();
+        return skipLen;
     }
 
     /**
@@ -110,7 +115,7 @@ public class _ColumnScanner extends View {
                 return false;
             }
         } else if (validBlock) {
-            rewind();
+            offset = 0;
             return true;
         } else {
             return false;
