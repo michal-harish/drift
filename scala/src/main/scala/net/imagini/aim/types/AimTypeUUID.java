@@ -39,13 +39,13 @@ public class AimTypeUUID extends AimTypeAbstract {
     }
 
     @Override public String asString(View view) {
-        return new UUID(ByteUtils.asLongValue(view) , ByteUtils.asLongValue(view,8)).toString();
+        return new UUID(ByteUtils.asLongValue(view.array, view.offset) , ByteUtils.asLongValue(view.array, view.offset+8)).toString();
     }
     @Override public String escape(String value) {
         return "'"+value+"'";
     }
     @Override public int partition(View view, int numPartitions) {
-        long hilo = ByteUtils.asLongValue(view) ^ ByteUtils.asLongValue(view,8);
+        long hilo = ByteUtils.asLongValue(view.array, view.offset) ^ ByteUtils.asLongValue(view.array, view.offset+8);
         int hash = ((int)(hilo >> 32)) ^ (int) hilo;
         return (hash == Integer.MIN_VALUE ? Integer.MAX_VALUE : Math.abs(hash)) % numPartitions;
     }

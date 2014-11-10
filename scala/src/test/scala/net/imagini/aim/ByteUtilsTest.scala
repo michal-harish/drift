@@ -12,8 +12,8 @@ class ByteUtilsTest extends FlatSpec with Matchers {
 
   "ByteKeys with same value and different classifiers" should "be different" in {
         val tree = new TreeMap[ByteKey,String]()
-        val key2 = new ByteKey("12345678".getBytes(),2) 
-        val key1 = new ByteKey("12345678".getBytes(),1)
+        val key2 = new ByteKey("12345678".getBytes(), 0 ,2) 
+        val key1 = new ByteKey("12345678".getBytes(), 0 ,1)
         tree.put(key2, "two")
         tree.put(key1, "one")
         tree.size should equal(2)
@@ -55,9 +55,8 @@ class ByteUtilsTest extends FlatSpec with Matchers {
       val container = new View("123456789".getBytes)
       val subcontainer = new View(container)
       subcontainer.offset += 4
-      ByteUtils.equals(container, new View("123456789".getBytes), 9) should be (true)
-      ByteUtils.equals(subcontainer, new View("56789".getBytes), 5) should be (true)
-      ByteUtils.equals(subcontainer, new View("56789".getBytes), 5) should be (true)
-      ByteUtils.contains(container, subcontainer, 5) should be (true)
+      ByteUtils.equals(container.array, container.offset, container.size , "123456789".getBytes, 0, 9) should be (true)
+      ByteUtils.equals(subcontainer.array, subcontainer.offset, 5, "56789".getBytes, 0, 5) should be (true)
+      ByteUtils.contains(container.array, container.offset , 9, subcontainer.array, subcontainer.offset, 5) should be (true)
     }
 }

@@ -4,17 +4,19 @@ import java.util.Arrays;
 
 public class ByteKey implements Comparable<ByteKey> {
     final public byte[] bytes;
+    final public int limit;
     final public int classifier;
 
     public ByteKey(byte[] data) {
-        this(data,0);
+        this(data, data.length, 0);
     }
-    public ByteKey(byte[] data, int classifier) {
+    public ByteKey(byte[] data, int limit, int classifier) {
         if (data == null) {
             throw new NullPointerException();
         }
         this.classifier = classifier;
         this.bytes = data;
+        this.limit = limit;
     }
 
     @Override public boolean equals(Object other) {
@@ -22,7 +24,7 @@ public class ByteKey implements Comparable<ByteKey> {
             return false;
         }
         ByteKey otherKey = ((ByteKey)other);
-        return otherKey.classifier == classifier  && Arrays.equals(bytes, otherKey.bytes);
+        return otherKey.classifier == classifier  && compareTo(otherKey) == 0;
     }
 
     @Override public int hashCode() {
@@ -32,10 +34,10 @@ public class ByteKey implements Comparable<ByteKey> {
     @Override
     public int compareTo(ByteKey val) {
         int i = 0;
-        while (i<bytes.length) {
-            if (bytes.length < val.bytes.length) {
+        while (i<limit) {
+            if (limit < val.limit) {
                 return -1;
-            } else if (bytes.length > val.bytes.length) {
+            } else if (limit > val.limit) {
                 return 1;
             } else if ((bytes[i] & 0xFF) < (val.bytes[i] & 0xFF)) {
                 return -1;

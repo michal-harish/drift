@@ -32,6 +32,6 @@ class BlockStorageTest extends FlatSpec with Matchers {
   instance.compressedSize should equal(168)
   instance.originalSize should equal(value1.length + value2.length)
 
-  ByteUtils.compare(instance.view(0), new View(value1.getBytes), value1.getBytes.length) should be(0)
-  ByteUtils.compare(instance.view(1), new View(value2.getBytes), value2.getBytes.length) should be(0)
+  ByteUtils.compare(instance.view(0).array, instance.view(0).offset, instance.view(0).size, value1.getBytes, 0, value1.getBytes.length) should be(0)
+  ByteUtils.compare(instance.view(1).array, instance.view(1).offset, instance.view(1).size, value2.getBytes, 0, value2.getBytes.length) should be(0)
 }

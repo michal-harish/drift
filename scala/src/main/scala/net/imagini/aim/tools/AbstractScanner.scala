@@ -13,8 +13,6 @@ trait AbstractScanner {
 
   def keyType: AimType
 
-  def keyLen: Int
-
   def count: Long
 
   def rewind

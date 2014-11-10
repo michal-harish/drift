@@ -13,6 +13,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Callable
 import net.imagini.aim.utils.ByteUtils
 import net.imagini.aim.utils.View
+import net.imagini.aim.types.TypeUtils
+
 
 class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) extends AbstractScanner {
 
@@ -21,7 +23,7 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
   override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](
     ListMap((leftSelect ++ rightSelect): _*).asJava))
   override val keyType: AimType = left.keyType
-  override val keyLen = keyType.getDataType.getLen
+  val keyDataType = keyType.getDataType
   private val leftColumnIndex = schema.names.map(f ⇒ if (left.schema.has(f)) left.schema.get(f) else -1)
   private val rightColumnIndex = schema.names.map(f ⇒ if (right.schema.has(f)) right.schema.get(f) else -1)
   private val sortOrder = SortOrder.ASC
@@ -68,7 +70,7 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
     }
 
     if (rightHasData && leftHasData) {
-      currentLeft = ByteUtils.compare(left.selectKey, right.selectKey, keyLen) > 0 ^ sortOrder.equals(SortOrder.ASC)
+      currentLeft = TypeUtils.compare(left.selectKey, right.selectKey, keyDataType) > 0 ^ sortOrder.equals(SortOrder.ASC)
     } else if (rightHasData ^ leftHasData) {
       currentLeft = leftHasData
     } else {

@@ -24,11 +24,13 @@ import net.imagini.aim.utils.View
 class AimPartition(
   val schema: AimSchema,
   val segmentSizeBytes: Int,
-  val storageType: Class[_ <: BlockStorage] = classOf[BlockStorageLZ4]) {
+  val storageType: Class[_ <: BlockStorage] = classOf[BlockStorageLZ4],
+  val sortType: Class[_ <: AimSegment] = classOf[AimSegmentQuickSort]
+  ) {
 
   val segments: ListBuffer[AimSegment] = ListBuffer()
 
-  val numSegments = new AtomicInteger(0)
+  private val numSegments = new AtomicInteger(0)
 
   def getNumSegments = numSegments.get
 
@@ -38,8 +40,9 @@ class AimPartition(
 
   def getUncompressedSize: Long = segments.foldLeft(0L)(_ + _.getOriginalSize)
 
-  //TODO parametrize segment sort type 
-  def createNewSegment: AimSegment = new AimSegmentQuickSort(schema, storageType)
+  private val segmentConstructor = sortType.getConstructor(classOf[AimSchema], classOf[Class[_ <:BlockStorage]])
+
+  def createNewSegment: AimSegment = segmentConstructor.newInstance(schema, storageType)
 
   def add(segment: AimSegment) = {
     segment.close

@@ -80,7 +80,7 @@ public enum Aim implements AimDataType {
     @Override
     public int sizeOf(View value) {
         if (this.size == -1) {
-            return ByteUtils.asIntValue(value) + 4;
+            return ByteUtils.asIntValue(value.array, value.offset) + 4;
         } else {
             return size;
         }
@@ -91,9 +91,9 @@ public enum Aim implements AimDataType {
         switch (this) {
             case BOOL: 
             case BYTE: return value.array[value.offset] % numPartitions;
-            case INT: return ByteUtils.asIntValue(value) % numPartitions;
-            case LONG: return (int)ByteUtils.asLongValue(value) % numPartitions;
-            case STRING: return Math.abs(ByteUtils.crc32(value.array, value.offset + 4, ByteUtils.asIntValue(value))) % numPartitions; 
+            case INT: return ByteUtils.asIntValue(value.array, value.offset) % numPartitions;
+            case LONG: return (int)ByteUtils.asLongValue(value.array, value.offset) % numPartitions;
+            case STRING: return Math.abs(ByteUtils.crc32(value.array, value.offset + 4, ByteUtils.asIntValue(value.array, value.offset))) % numPartitions; 
             default: throw new IllegalArgumentException();
         }
     }
@@ -130,11 +130,11 @@ public enum Aim implements AimDataType {
             case BYTE:
                 return String.valueOf(view.offset);
             case INT:
-                return String.valueOf(ByteUtils.asIntValue(view));
+                return String.valueOf(ByteUtils.asIntValue(view.array, view.offset));
             case LONG:
-                return String.valueOf(ByteUtils.asLongValue(view));
+                return String.valueOf(ByteUtils.asLongValue(view.array, view.offset));
             case STRING:
-                return new String(view.array, view.offset + 4, ByteUtils.asIntValue(view));
+                return new String(view.array, view.offset + 4, ByteUtils.asIntValue(view.array, view.offset));
             default:
                 return "";
             }

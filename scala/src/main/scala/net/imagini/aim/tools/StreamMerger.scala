@@ -4,18 +4,16 @@ import java.io.EOFException
 import java.io.InputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-
 import scala.collection.JavaConverters._
-
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ConcurrentSkipListMap
-
 import net.imagini.aim.utils.ByteKey
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.types.SortOrder._
 import scala.Array.canBuildFrom
+import net.imagini.aim.types.TypeUtils
 
 
 class InputStreamQueue(limit: Int) extends LinkedBlockingQueue[Option[Array[Array[Byte]]]](limit)
@@ -69,7 +67,7 @@ class StreamMerger(val schema: AimSchema, val queueSize: Int, val inputStreams: 
       fetcher.take match {
         case None ⇒ {}
         case Some(record) ⇒ {
-          val byteKey = new ByteKey(record(0), counter.incrementAndGet)
+          val byteKey = new ByteKey(record(0), TypeUtils.sizeOf(schema.dataType(0), record(0)), counter.incrementAndGet)
           /**
            * assuming that the first field of schema is always the key - e.g. whatever provides
            * the underlying input stream must provide or transform the first field as the key

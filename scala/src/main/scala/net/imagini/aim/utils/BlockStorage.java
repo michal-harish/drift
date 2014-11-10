@@ -6,7 +6,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 abstract public class BlockStorage {
+
+    private static final Logger log = LoggerFactory.getLogger(BlockStorage.class);
 
     final public int hotSpotBlock = -1;
     final public ByteBuffer hotSpot = null;
@@ -36,7 +41,7 @@ abstract public class BlockStorage {
     final public void ref(int block) {
         synchronized(blocks) {
             if ( blocks.get(block).getAndIncrement() == 0) {
-                //log.debug("adding cache " + block + " refCount= " + blocks.get(block).get());
+                log.debug("adding cache " + block + " refCount= " + blocks.get(block).get());
                 cache.put(block, decompress(block));
             }
         }
@@ -44,7 +49,7 @@ abstract public class BlockStorage {
     final public void deref(int block) {
         synchronized(blocks) {
             if (blocks.get(block).decrementAndGet() == 0) {
-                //log.debug("removing cache " + block + " refCount= " + blocks.get(block).get());
+                log.debug("removing cache " + block + " refCount= " + blocks.get(block).get());
                 cache.remove(block);
             }
         }
@@ -54,21 +59,6 @@ abstract public class BlockStorage {
         ref(block);
         return new View(cache.get(block), 0, lengths.get(block));
     }
-
-//    final public ByteBuffer open(int block) {
-//        ref(block);
-//        ByteBuffer zoom = ByteBuffer.wrap(cache.get(block), 0, lengths.get(block));
-//        /**
-//         * Direct malloc() 
-//         *
-//        zoom = ByteBuffer.allocateDirect(raw.length);
-//        zoom.put(decompress_buffer, 0, length);
-//        zoom.flip();*/
-//
-//        zoom.order(ByteOrder.BIG_ENDIAN);
-//        return zoom;
-//
-//    }
 
     final public void close(int block) {
         deref(block);

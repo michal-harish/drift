@@ -9,6 +9,11 @@ import java.io.EOFException
 
 class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, val segment: AimSegment) extends AbstractScanner {
 
+  def this(selectStatement: String, filterStatement: String, segment: AimSegment) = 
+    this(if (selectStatement.contains("*")) segment.getSchema.names else selectStatement.split(",").map(_.trim).toArray, 
+        RowFilter.fromString(segment.getSchema, filterStatement), 
+        segment)
+
   private val keyField: String = segment.getSchema.name(0)
   override val schema: AimSchema = segment.getSchema.subset(selectFields)
   private val numBlocks = segment.getBlockStorage(0).numBlocks
@@ -17,7 +22,6 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
   private val scanKeyColumnIndex: Int = scanSchema.get(keyField)
   override val keyType: AimType = scanSchema.get(scanKeyColumnIndex)
   private val keyDataType = scanSchema.dataType(scanKeyColumnIndex)
-  override val keyLen: Int = keyType.getDataType.getLen
   rowFilter.updateFormula(scanSchema.names)
   private val selectIndex = schema.names.map(n ⇒ scanSchema.get(n))
 

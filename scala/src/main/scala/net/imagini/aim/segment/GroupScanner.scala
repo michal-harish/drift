@@ -13,6 +13,7 @@ import net.imagini.aim.types.AimType
 import net.imagini.aim.types.AimTypeAbstract
 import net.imagini.aim.utils.ByteUtils
 import net.imagini.aim.utils.View
+import net.imagini.aim.types.TypeUtils
 
 //TODO either optimize with selectBuffer or simply extend MergeScanner
 class GroupScanner(
@@ -44,7 +45,7 @@ class GroupScanner(
       groupFunctions.map(_.field) :+ keyField
   private val merge = new MergeScanner(scanColumns, RowFilter.fromString(sourceSchema, "*"), segments)
   override val keyType = sourceSchema.get(0)
-  override val keyLen = keyType.getDataType.getLen
+  val keyDataType = keyType.getDataType
   rowFilter.updateFormula(merge.schema.names)
   groupFilter.updateFormula(merge.schema.names)
   groupFunctions.map(_.filter.updateFormula(merge.schema.names))
@@ -94,9 +95,8 @@ class GroupScanner(
       skipToNextGroup
     } else {
       merge.next
-      groupKey = new View(merge.selectKey)
     }
-    while (ByteUtils.equals(merge.selectKey, groupKey, keyLen)) {
+    while (TypeUtils.equals(merge.selectKey, groupKey, keyDataType)) {
       if (rowFilter.matches(merge.selectRow)) {
         return true
       } else if (!merge.next) {
@@ -108,17 +108,17 @@ class GroupScanner(
 
   private def skipToNextGroup = {
     if (groupKey != null) {
-      while (ByteUtils.equals(merge.selectKey, groupKey, keyLen)) {
+      while (TypeUtils.equals(merge.selectKey, groupKey, keyDataType)) {
         merge.next
       }
     } else {
       merge.next
     }
     groupKey = new View(merge.selectKey)
-    skipToNextFilteredGroup
+    selectFilteredGroup
   }
 
-  def skipToNextFilteredGroup = {
+  def selectFilteredGroup = {
     var satisfiesFilter = groupFilter.isEmptyFilter
     groupFunctions.map(_.reset)
     var satisfiesGroupFunctions = groupFunctions.forall(_.satisfied)
@@ -128,14 +128,15 @@ class GroupScanner(
         satisfiesFilter = true
       }
       satisfiesGroupFunctions = groupFunctions.filter(f ⇒ !f.satisfied).forall(f ⇒ if (f.filter.matches(merge.selectRow)) {
-        f.satisfy(merge.selectRow(merge.schema.get(f.field)))
+        val groupFieldPos = merge.schema.get(f.field)
+        f.satisfy(merge.selectRow(groupFieldPos))
         true
       } else {
         false
       })
       if (!satisfiesFilter || !satisfiesGroupFunctions) {
         eof = !merge.next
-        if (!eof && !ByteUtils.equals(merge.selectKey, groupKey, keyLen)) {
+        if (!eof && !TypeUtils.equals(merge.selectKey, groupKey, keyDataType)) {
           groupKey = new View(merge.selectKey)
           merge.mark
         }
@@ -161,7 +162,7 @@ class AimTypeGROUP(val schema: AimSchema, val definition: String) extends AimTyp
   private var pointer: View = null
   def reset = pointer = null
   def satisfied = pointer != null
-  def satisfy(value: View) = pointer = new View(value);
+  def satisfy(value: View) = pointer = new View(value)
   def toView = pointer
   override def getDataType = dataType
   override def toString = "GROUP[" + field + " WHERE" + filter + "]"

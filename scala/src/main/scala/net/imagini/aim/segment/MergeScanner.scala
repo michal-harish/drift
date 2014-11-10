@@ -10,7 +10,7 @@ import scala.Array.canBuildFrom
 import java.util.concurrent.Future
 import java.util.concurrent.Executors
 import java.util.concurrent.Callable
-import net.imagini.aim.utils.ByteUtils
+import net.imagini.aim.types.TypeUtils
 import net.imagini.aim.utils.View
 
 //TODO sourceSchema can be retrieved from any of the segments provided
@@ -30,7 +30,7 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
   private val scanColumnIndex: Array[Int] = schema.names.map(n ⇒ scanSchema.get(n))
   private val scanKeyColumnIndex: Int = scanSchema.get(keyField)
   override val keyType = scanSchema.get(scanKeyColumnIndex)
-  override val keyLen = keyType.getDataType.getLen
+  val keyDataType = keyType.getDataType
   rowFilter.updateFormula(scanSchema.names)
 
   private var eof = false
@@ -74,7 +74,7 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
     while (s < scanners.length) {
       val scanner = scanners(s)
       if (!scanner.eof) {
-        if (null == currentScanner || ((sortOrder == SortOrder.ASC ^ ByteUtils.compare(scanner.selectKey, currentScanner.selectKey, keyLen) > 0))) {
+        if (null == currentScanner || ((sortOrder == SortOrder.ASC ^ TypeUtils.compare(scanner.selectKey, currentScanner.selectKey, keyDataType) > 0))) {
           currentScanner = scanner
         }
       }

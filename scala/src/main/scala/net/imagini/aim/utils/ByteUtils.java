@@ -58,102 +58,45 @@ public class ByteUtils {
      * Compares the current buffer position if treated as given type with the
      * given value but does not advance
      */
-    final public static int compare(byte[] lArray, int leftOffset, byte[] rArray, int rightOffset, int len) {
-        int ni;
-        int i = leftOffset;
-        int nj;
-        int j = rightOffset;
-        int n;
-        int k = 0;
-        if (len == -1) {
-            ni = ByteUtils.asIntValue(lArray, i) + 4;
-            i += 4;
-            nj = ByteUtils.asIntValue(rArray, j) + 4;
-            j += 4;
-            n = Math.min(ni, nj);
-            k += 4;
-        } else {
-            n = ni = nj = len;
+    final public static boolean equals(byte[] lArray, int leftOffset, int lSize, byte[] rArray, int rightOffset, int rSize) {
+        return compare(lArray, leftOffset, lSize, rArray, rightOffset, rSize) == 0;
+    }
+    final public static int compare(byte[] lArray, int leftOffset, int lSize, byte[] rArray, int rightOffset, int rSize) {
+        if (lSize != rSize) {
+            return lSize - rSize;
         }
-        if (ni == nj) {
-            for (; k < n; k++, i++, j++) {
-                int cmp = (lArray[i] & 0xFF) - (rArray[j] & 0xFF);
-                if (cmp != 0) {
-                    return cmp;
-                }
+        int i = leftOffset;
+        int j = rightOffset;
+        int n = lSize -1;
+        for (int k = 0; k < n; k++, i++, j++) {
+            int cmp = (lArray[i] & 0xFF) - (rArray[j] & 0xFF);
+            if (cmp != 0) {
+                return cmp;
             }
         }
-        return ni - nj;
+        return 0;
     }
 
     /**
      * Checks if the current buffer position if treated as given type would
      * contain the given value but does not advance
      */
-    final public static boolean contains(byte[] cArray, int cOffset, byte[] vArray, int vOffset, int len) {
-        int vLimit;
-        int ni;
-        int i = cOffset;
-        int nj;
-        int j = vOffset;
-        if (len == -1) {
-            vLimit = vArray.length;
-            ni = ByteUtils.asIntValue(cArray, i) + 4;
-            i += 4;
-            nj = ByteUtils.asIntValue(vArray, 0) + 4;
-            j += 4;
-        } else {
-            vLimit = vOffset + len;
-            ni = nj = len;
-        }
-        if (nj > ni) {
+    final public static boolean contains(byte[] cArray, int cOffset, int cSize, byte[] vArray, int vOffset, int vSize) {
+        if (cSize == 0 || vSize == 0 || vSize > cSize) {
             return false;
-        } else {
-            ni += cOffset;
-            int v = j;
-            for (; i < ni; i++) {
-                if (vArray[v] != cArray[i]) {
-                    v = j;
-                } else if (++v == vLimit) {
-                    return true;
-                }
+        }
+        int cLimit = cOffset + cSize -1;
+        int vLimit = vOffset + vSize -1;
+        int v = vOffset;
+        for (int c = cOffset; c <= cLimit; c++) {
+            //System.err.println(c + ":" + v + " ? " + (char)(cArray[c]) + "==" + (char)(vArray[v]));
+            if (vArray[v] != cArray[c]) {
+                v = vOffset;
+            } else if (++v >= vLimit) {
+                return true;
             }
-            return false;
         }
-    }
-
-    /**
-     * View utils
-     */
-    static public int asIntValue(final View value) {
-        return asIntValue(value.array, value.offset);
-    }
-
-    static public long asLongValue(final View value) {
-        return asLongValue(value.array, value.offset);
-    }
-    static public long asLongValue(final View value, final int offset) {
-        return asLongValue(value.array, value.offset + offset);
-    }
-
-    final public static int compare(View left, View right, int len) {
-        return compare(
-            left.array, left.offset,
-            right.array, right.offset,
-            len
-        );
-    }
-
-    final public static boolean contains(View container, View value, int len) {
-        return contains(
-            container.array, container.offset,
-            value.array, value.offset,
-            len
-        );
-    }
-    final public static boolean equals(View left, View right,
-            int len) {
-        return compare(left, right, len) == 0;
+        return false;
     }
 
     /**
@@ -206,30 +149,30 @@ public class ByteUtils {
         return asLongValue(value.array(), value.position() + ofs);
     }
 
-    final public static boolean equals(ByteBuffer left, ByteBuffer right,
-            int len) {
-        return compare(left, right, len) == 0;
-    }
+//    final public static boolean equals(ByteBuffer left, ByteBuffer right,
+//            int len) {
+//        return compare(left, right, len) == 0;
+//    }
 
-    /**
-     * Compares the current buffer position if treated as given type with the
-     * given value but does not advance
-     */
-    final public static int compare(ByteBuffer left, ByteBuffer right, int len) {
-        return compare(
-            left.array(), left.position(),
-            right.array(), right.position(),
-            len
-        );
-    }
+//    /**
+//     * Compares the current buffer position if treated as given type with the
+//     * given value but does not advance
+//     */
+//    final public static int compare(ByteBuffer left, ByteBuffer right, int len) {
+//        return compare(
+//            left.array(), left.position(),
+//            right.array(), right.position(),
+//            len
+//        );
+//    }
 
-    final public static boolean contains(ByteBuffer container, ByteBuffer value, int len) {
-        return contains(
-            container.array(), container.position(),
-            value.array(), value.position(),
-            len
-        );
-    }
+//    final public static boolean contains(ByteBuffer container, ByteBuffer value, int len) {
+//        return contains(
+//            container.array(), container.position(),
+//            value.array(), value.position(),
+//            len
+//        );
+//    }
 
     public static int crc32(byte[] array, int offset, int size) {
         int crc = 0xFFFF;

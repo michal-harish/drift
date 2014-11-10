@@ -17,8 +17,6 @@ class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val s
   override val schema: AimSchema = scanner.schema.subset(select)
 
   override val keyType: AimType = scanner.keyType
-  
-  override val keyLen = keyType.getDataType.getLen
 
   private val selectIndex = schema.names.map(t ⇒ scanner.schema.get(t))
 

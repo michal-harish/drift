@@ -65,7 +65,7 @@ public class AimTypeTIME extends AimTypeAbstract {
             return dataType.asString(view);
         } else if (dataType.equals(Aim.LONG)) {
             DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd H:mm:ss");
-            return formatter.format(ByteUtils.asLongValue(view));
+            return formatter.format(ByteUtils.asLongValue(view.array, view.offset));
         }
         throw new IllegalArgumentException();
     }

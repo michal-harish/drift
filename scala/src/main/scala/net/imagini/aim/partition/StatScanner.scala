@@ -16,13 +16,11 @@ class StatScanner(val partition: Int, val regions: Map[String,AimPartition]) ext
 
   override val keyType:AimType = Aim.STRING
 
-  override val keyLen = keyType.getDataType.getLen
-
   private val data: SortedMap[String,Array[View]] = SortedMap(regions.map(r => {
         r._1 -> Array( 
             new View(schema.get(0).convert(r._1)),
             new View(schema.get(1).convert(partition.toString)),
-            new View(schema.get(2).convert(r._2.numSegments.toString)),
+            new View(schema.get(2).convert(r._2.getNumSegments.toString)),
             new View(schema.get(3).convert(r._2.getCount.toString)),
             //TODO count(!) count distinct should be different from count(*)
             new View(schema.get(4).convert(r._2.getCount.toString)),

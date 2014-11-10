@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -26,35 +27,31 @@ import net.imagini.aim.utils.ByteKey;
 public class AimSegmentQuickSort extends AimSegmentAbstract {
 
     final private int sortColumn;
-    private Map<ByteKey, List<ByteBuffer>> sortMap = new HashMap<>();
+    private Map<ByteKey, List<byte[]>> sortMap = new HashMap<>();
     private SortOrder sortOrder;
+    private AimDataType sortDataType;
 
     public AimSegmentQuickSort(AimSchema schema,  Class<? extends BlockStorage> storageType)
     throws InstantiationException, IllegalAccessException {
         super(schema, storageType);
         this.sortColumn = 0;
         this.sortOrder = SortOrder.ASC;
+        this.sortDataType = schema.dataType(sortColumn);
     }
 
     @Override
     public AimSegment appendRecord(ByteBuffer record) throws IOException {
         try {
             checkWritable(true);
-            AimDataType sortType = schema.dataType(sortColumn);
-            ByteKey sortValue = new ByteKey(
-                Arrays.copyOfRange(record.array(), 
-                record.position(), 
-                record.position() + TypeUtils.sizeOf(sortType, record)) 
-            );
-
+            byte[] newRecord = Arrays.copyOfRange(record.array(), 0, record.limit());
+            ByteKey sortValue = new ByteKey(newRecord, TypeUtils.sizeOf(sortDataType, record), 0);
             // close record
             if (sortValue != null) {
                 if (!sortMap.containsKey(sortValue)) {
-                    sortMap.put(sortValue, new ArrayList<ByteBuffer>());
+                    sortMap.put(sortValue, new LinkedList<byte[]>());
                 }
-                List<ByteBuffer> keyspace = sortMap.get(sortValue);
-                keyspace.add(ByteBuffer.wrap(Arrays.copyOfRange(record.array(),
-                        0, record.limit())));
+                List<byte[]> keyspace = sortMap.get(sortValue);
+                keyspace.add(newRecord);
                 originalSize.addAndGet(record.limit());
             }
             return this;
@@ -73,10 +70,10 @@ public class AimSegmentQuickSort extends AimSegmentAbstract {
         }
         originalSize.set(0);
         for (ByteKey key : keys) {
-            List<ByteBuffer> bucket = sortMap.get(key);
-            for (ByteBuffer record : bucket) {
+            List<byte[]> bucket = sortMap.get(key);
+            for (byte[] record : bucket) {
                 try {
-                    super.appendRecord(record);
+                    super.appendRecord(ByteBuffer.wrap(record));
                 } catch (EOFException e) {
                     break;
                 }
