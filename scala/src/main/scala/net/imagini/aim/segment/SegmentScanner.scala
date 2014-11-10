@@ -31,9 +31,6 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
   var eof = false
   private var initialised = false
   private val selectViews: Array[View] = new Array[View](schema.size)
-  //  private var markBlock = -1
-  //  private var markKey: View = null
-  //  private var markViews: Array[View] = null
 
   override def selectKey: View = if (eof) throw new EOFException else scanViews(scanKeyColumnIndex)
 
@@ -51,7 +48,7 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
   override def rewind = {
     scanViews.map(s ⇒ s.rewind)
     eof = scanViews.forall(_.eof)
-    select
+    initialised = false
   }
 
   override def mark = {
@@ -61,7 +58,7 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
   override def reset = {
     scanViews.map(s ⇒ s.asInstanceOf[BlockView].reset)
     eof = scanViews.forall(_.eof)
-    select
+    initialised = false
   }
 
   override def next: Boolean = if (eof) false else {

@@ -35,8 +35,8 @@ class SegmentScannerTest extends FlatSpec with Matchers {
     scanner.next should be(true); scanner.selectLine("\t") should be("Hello\t101")
     scanner.rewind
     scanner.next should be(true); scanner.selectLine("\t") should be("Hello\t101")
-    scanner.mark
     scanner.next should be(true); scanner.selectLine("\t") should be("World\t99")
+    scanner.mark
     scanner.reset
     scanner.next should be(true); scanner.selectLine("\t") should be("World\t99")
     scanner.next should be(false); an[EOFException] must be thrownBy (scanner.selectLine("\t"))

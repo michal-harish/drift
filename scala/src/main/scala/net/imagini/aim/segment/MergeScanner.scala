@@ -52,7 +52,7 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
 
   override def reset = {
     scanners.foreach(_.reset)
-    currentScanner = markCurrentSegment
+    currentScanner = null
     markCurrentSegment = null
     eof = false
   }

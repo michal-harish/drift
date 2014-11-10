@@ -10,19 +10,24 @@ import net.imagini.aim.segment.MergeScanner
 
 class BigLoadTest extends FlatSpec with Matchers {
 
-  val manager = new DriftManagerLocal(1)
-  val storageType = classOf[BlockStorageLZ4]
-  val node = new AimNode(1, "localhost:9998", manager)
-  manager.createTable("addthis", "views", "at_id(STRING), url(STRING), timestamp(LONG)", 5000000, storageType)
-  new Loader("localhost", 9998, Protocol.LOADER_USER, "addthis", "views", "\t", this.getClass.getResourceAsStream("views_big.csv"), false).streamInput should be(5730)
-  val partition = node.regions("addthis.views")
-  partition.getCount should be(5730)
-  partition.segments.size should be(1)
-  val segment = partition.segments(0)
+  private def getNode: AimNode = {
+    val manager = new DriftManagerLocal(1)
+    val storageType = classOf[BlockStorageLZ4]
+    val node = new AimNode(1, "localhost:9998", manager)
+    manager.createTable("addthis", "views", "at_id(STRING), url(STRING), timestamp(LONG)", 5000000, storageType)
+    new Loader("localhost", 9998, Protocol.LOADER_USER, "addthis", "views", "\t", this.getClass.getResourceAsStream("views_big.csv"), false).streamInput should be(5730)
+    val partition = node.regions("addthis.views")
+    partition.getCount should be(5730)
+    partition.segments.size should be(1)
+    node
+  }
 
   "SegmentScanner" should "yield same for all" in {
     var total = 0
     var filtered = 0
+    val node = getNode
+    val partition = node.regions("addthis.views")
+    val segment = partition.segments(0)
     val segmentScanner = new SegmentScanner("*", "*", segment)
     while (segmentScanner.next) {
       total += 1
@@ -33,11 +38,15 @@ class BigLoadTest extends FlatSpec with Matchers {
     total should be(5730)
     filtered should be(158)
     an[EOFException] must be thrownBy (segmentScanner.nextLine)
+    node.shutdown
   }
 
   "SegmentScanner for all" should "yield same as grep" in {
     var total = 0
     var filtered = 0
+    val node = getNode
+    val partition = node.regions("addthis.views")
+    val segment = partition.segments(0)
     val mergeScanner = new MergeScanner("*", "*", partition.segments)
     while (mergeScanner.next) {
       total += 1
@@ -48,15 +57,18 @@ class BigLoadTest extends FlatSpec with Matchers {
     total should be(5730)
     filtered should be(158)
     an[EOFException] must be thrownBy (mergeScanner.nextLine)
+    node.shutdown
   }
-
 
   "SegmentScanner with filter" should "yield same as grep" in {
     var filtered = 0
+    val node = getNode
+    val partition = node.regions("addthis.views")
+    val segment = partition.segments(0)
     val segmentScanner = new SegmentScanner("*", "url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'", segment)
     while (segmentScanner.next) {
       filtered += 1
-      val line=segmentScanner.selectLine(" ") 
+      val line = segmentScanner.selectLine(" ")
       if (!line.contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
         System.err.println(line)
       }
@@ -64,21 +76,24 @@ class BigLoadTest extends FlatSpec with Matchers {
     }
     filtered should be(158)
     an[EOFException] must be thrownBy (segmentScanner.nextLine)
+    node.shutdown
   }
 
   "MergeScanner for filtered" should "yield same as grep" in {
-        val allScanner = node.query("select * from addthis.views")
-        var total = 0
-        var filtered = 0
-        while (allScanner.next) {
-          total += 1
-          if (allScanner.selectLine(" ").contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
-            filtered += 1
-          }
-        }
-        total should be(5730)
-        filtered should be(158)
-        an[EOFException] must be thrownBy (allScanner.nextLine)
+    var total = 0
+    var filtered = 0
+    val node = getNode
+    val allScanner = node.query("select * from addthis.views")
+    while (allScanner.next) {
+      total += 1
+      if (allScanner.selectLine(" ").contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
+        filtered += 1
+      }
+    }
+    total should be(5730)
+    filtered should be(158)
+    an[EOFException] must be thrownBy (allScanner.nextLine)
+    node.shutdown
   }
 
   "Partition for all" should "yield all loaded records" in {

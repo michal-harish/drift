@@ -26,6 +26,7 @@ class GroupScannerTest extends FlatSpec with Matchers {
     partition.add(s1)
     partition.add(s2)
 
+    //column='pageview'
     val groupScan = new GroupScanner("value, user_uid", "column='pageview'", "column='addthis_id'", partition.segments)
     groupScan.nextLine should be("{www.ebay.com}\t37b22cfb-a29e-42c3-a3d9-12d32850e103")
     groupScan.nextLine should be("{www.auto.com}\t37b22cfb-a29e-42c3-a3d9-12d32850e103")

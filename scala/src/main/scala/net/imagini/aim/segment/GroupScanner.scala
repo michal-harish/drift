@@ -67,16 +67,19 @@ class GroupScanner(
   override def next: Boolean = {
     if (eof) {
       false
-    } else try {
-      while (!selectNextGroupRow) {
-        skipToNextGroup
+    } else {
+      eof = !merge.next
+      while (!eof) {
+        if (groupKey == null || !TypeUtils.equals(merge.selectKey, groupKey, keyDataType)) {
+          selectGroup
+        }
+        if (!eof && rowFilter.matches(merge.selectRow)) {
+          return true
+        } else {
+          eof = !merge.next
+        }
       }
-      true
-    } catch {
-      case e: EOFException ⇒ {
-        eof = true
-        false
-      }
+      false
     }
   }
 
@@ -90,38 +93,11 @@ class GroupScanner(
     })
   }
 
-  def selectNextGroupRow: Boolean = {
-    if (groupKey == null) {
-      skipToNextGroup
-    } else {
-      merge.next
-    }
-    while (TypeUtils.equals(merge.selectKey, groupKey, keyDataType)) {
-      if (rowFilter.matches(merge.selectRow)) {
-        return true
-      } else if (!merge.next) {
-        return false
-      }
-    }
-    false
-  }
-
-  private def skipToNextGroup = {
-    if (groupKey != null) {
-      while (TypeUtils.equals(merge.selectKey, groupKey, keyDataType)) {
-        merge.next
-      }
-    } else {
-      merge.next
-    }
-    groupKey = new View(merge.selectKey)
-    selectFilteredGroup
-  }
-
-  def selectFilteredGroup = {
+  def selectGroup = {
     var satisfiesFilter = groupFilter.isEmptyFilter
     groupFunctions.map(_.reset)
     var satisfiesGroupFunctions = groupFunctions.forall(_.satisfied)
+    groupKey = new View(merge.selectKey)
     merge.mark
     while (!eof && (!satisfiesFilter || !satisfiesGroupFunctions)) {
       if (!satisfiesFilter && groupFilter.matches(merge.selectRow)) {
@@ -143,6 +119,7 @@ class GroupScanner(
       }
     }
     merge.reset
+    eof = !merge.next
   }
   override def count: Long = {
     rewind
