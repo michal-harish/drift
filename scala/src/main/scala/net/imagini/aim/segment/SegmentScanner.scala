@@ -32,16 +32,16 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
   private def select = selectViews = if (scanViews == null) null else selectIndex.map(c ⇒ scanViews(c))
 
   override def count: Long = {
-    if (rowFilter.isEmptyFilter()) {
-      segment.count
-    } else {
+//    if (rowFilter.isEmptyFilter()) {
+//      segment.count
+//    } else {
         rewind
         var count = 0
         while (!eof) if (next) {
           count += 1
         }
         count
-    }
+//    }
   }
 
   override def rewind = {

@@ -12,8 +12,9 @@ import net.imagini.aim.utils.ByteUtils
 import net.imagini.aim.segment.AimSegmentUnsorted
 import net.imagini.aim.segment.SegmentScanner
 import net.imagini.aim.tools.RowFilter
+import net.imagini.aim.utils.View
 
-class SegmentScannerLZ4Test extends FlatSpec with Matchers {
+class SegmentScannerTest extends FlatSpec with Matchers {
 
   def read(in: _ColumnScanner) = {
     if (in.eof) throw new EOFException
@@ -48,38 +49,4 @@ class SegmentScannerLZ4Test extends FlatSpec with Matchers {
     scanner.next should be(false); an[EOFException] must be thrownBy (scanner.selectLine("\t"))
     scanner.count should be (2L)
   }
-
-  val value1: String =
-    "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-      "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-      "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-      "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-      "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-      "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-      "1234567890abcdefghijklmnopqrstuvwxyz0987654321ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-      "\n"
-  val value2: String =
-    "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-      "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-      "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-      "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-      "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-      "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-      "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
-      "\n"
-
-  val instance = new BlockStorageLZ4()
-  instance.addBlock(ByteUtils.wrap((value1).getBytes))
-  instance.addBlock(ByteUtils.wrap((value2).getBytes))
-  instance.compressedSize should equal(168)
-  instance.originalSize should equal(value1.length + value2.length)
-
-  val scanner = new _ColumnScanner(instance, Aim.STRING)
-  var ch: Char = 0
-  var actualValue = "";
-  while (!scanner.eof) {
-    ch = scanner.read.toChar
-    actualValue += ch
-  }
-  value1 + value2 should equal(actualValue)
 }

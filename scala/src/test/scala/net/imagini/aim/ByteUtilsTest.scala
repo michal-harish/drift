@@ -6,8 +6,9 @@ import java.nio.ByteBuffer
 import net.imagini.aim.utils.ByteUtils
 import java.util.TreeMap
 import net.imagini.aim.utils.ByteKey
+import net.imagini.aim.utils.View
 
-class ByteBufferTest extends FlatSpec with Matchers {
+class ByteUtilsTest extends FlatSpec with Matchers {
 
   "ByteKeys with same value and different classifiers" should "be different" in {
         val tree = new TreeMap[ByteKey,String]()
@@ -48,5 +49,15 @@ class ByteBufferTest extends FlatSpec with Matchers {
         bb.flip
         ByteUtils.asLongValue(bb) should equal(l)
         println(ByteUtils.asLongValue(bb))
+    }
+
+    "Contains and compare" should " always work around the edges" in {
+      val container = new View("123456789".getBytes)
+      val subcontainer = new View(container)
+      subcontainer.offset += 4
+      ByteUtils.equals(container, new View("123456789".getBytes), 9) should be (true)
+      ByteUtils.equals(subcontainer, new View("56789".getBytes), 5) should be (true)
+      ByteUtils.equals(subcontainer, new View("56789".getBytes), 5) should be (true)
+      ByteUtils.contains(container, subcontainer, 5) should be (true)
     }
 }

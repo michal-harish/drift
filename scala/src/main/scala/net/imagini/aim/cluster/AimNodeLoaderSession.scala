@@ -44,7 +44,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
       }
     } finally {
       partition.add(localSegment)
-      log.info("load(EOF) records: " + count + " time(ms): " + (System.currentTimeMillis - startTime))
+      log.info("load(EOF) records: " + count + " time(ms): " + (System.currentTimeMillis - startTime) + ", total:" + partition.getCount)
       pipe.writeInt(count)
       pipe.flush
     }
