@@ -5,6 +5,7 @@ import net.imagini.aim.segment.AimSegment
 import net.imagini.aim.tools.StreamUtils
 import net.imagini.aim.utils.View
 import grizzled.slf4j.Logger
+import net.imagini.aim.types.TypeUtils
 
 class AimNodeLoader(val keyspace: String, val table: String, val node: AimNode) {
   val log = Logger[this.type]
@@ -20,9 +21,23 @@ class AimNodeLoader(val keyspace: String, val table: String, val node: AimNode) 
   private var count: Long = 0
 
   def insert(record: String*) {
-    insert((schema.fields, record).zipped.map((f, r) ⇒ new View(f.convert(r))))
+    insert((schema.fields, record).zipped.map((f, r) ⇒ f.convert(r)))
   }
 
+  def insert(record: Array[Array[Byte]]) {
+    val targetNode = keyType.partition(new View(record(0)), totalNodes) + 1
+    if (targetNode == node.id) {
+      localSegment = partition.appendRecord(localSegment, record)
+      count += 1
+    } else {
+      var r = 0; while (r < record.length) {
+        val dataType = schema.dataType(r)
+        val value = record(r)
+        peerLoaders(targetNode).pipe.getOutputStream.write(value, 0, TypeUtils.sizeOf(dataType, value))
+        r+=1
+      }
+    }
+  }
   def insert(record: Array[View]) {
     val targetNode = keyType.partition(record(0), totalNodes) + 1
     if (targetNode == node.id) {

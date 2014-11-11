@@ -29,8 +29,6 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
 
   log.info("LOADING INTO " + keyspace + "." + table + " " + schema.toString)
   private val startTime = System.currentTimeMillis
-  private val COLUMN_BUFFER_SIZE = 2048
-  private val record = new Array[View](schema.size)
   private var localSegment = partition.createNewSegment
   private var count: Long = 0
 
@@ -52,8 +50,9 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
   private def loadPartitionedStream = {
     val in = pipe.getInputStream
     while (!node.isSuspended) {
+      val record = new Array[Array[Byte]](schema.size)
       var c = 0; while (c < schema.size) {
-        record(c) = new View(StreamUtils.read(in, schema.dataType(c)))
+        record(c) = StreamUtils.read(in, schema.dataType(c))
         c += 1
       }
       localSegment = partition.appendRecord(localSegment, record)

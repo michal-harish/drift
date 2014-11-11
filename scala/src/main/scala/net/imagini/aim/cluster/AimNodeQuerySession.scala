@@ -35,7 +35,8 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
               val transformedCount: Long = pipe.protocol match {
                 case QUERY_INTERNAL ⇒ node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
                 case QUERY_USER ⇒ {
-                  peerClients.map(peer ⇒ peer.getCount).foldLeft(0L)(_ + _) + node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
+                  val localCount = node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
+                  peerClients.map(peer ⇒ peer.getCount).foldLeft(0L)(_ + _) + localCount
                 }
                 case _ ⇒ throw new AimQueryException("Invalid query protocol")
               }

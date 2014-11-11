@@ -54,6 +54,18 @@ class AimPartition(
     }
   }
 
+  def appendRecord(segment: AimSegment, record: Array[Array[Byte]]): AimSegment = {
+    var i = 0
+    var size = 0
+    while (i < record.length) {
+      size += record(i).length
+      i += 1
+    }
+    val theSegment = checkSegment(segment, size)
+    theSegment.appendRecord(record)
+    theSegment
+  }
+
   def appendRecord(segment: AimSegment, record: Array[View]): AimSegment = {
     var i = 0
     var size = 0
@@ -65,11 +77,7 @@ class AimPartition(
     theSegment.appendRecord(record)
     theSegment
   }
-//  def appendRecord(segment: AimSegment, record: ByteBuffer): AimSegment = {
-//    val theSegment = checkSegment(segment, record.limit - record.position )
-//    theSegment.appendRecord(record)
-//    theSegment
-//  }
+
   private def checkSegment(segment: AimSegment, size: Int): AimSegment = {
     if (segment.getOriginalSize + size> segmentSizeBytes) try {
       add(segment)

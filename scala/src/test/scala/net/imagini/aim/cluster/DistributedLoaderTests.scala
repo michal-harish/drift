@@ -6,7 +6,7 @@ import org.scalatest.FlatSpec
 import net.imagini.aim.client.DriftClient
 import java.io.EOFException
 
-class DistributedLoaderTests  extends FlatSpec with Matchers {
+class DistributedLoaderTests extends FlatSpec with Matchers {
   val manager = new DriftManagerLocal(4)
 
   manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
@@ -21,23 +21,25 @@ class DistributedLoaderTests  extends FlatSpec with Matchers {
   node2.regions("vdna.events").getCount should be(19)
   node3.regions("vdna.events").getCount should be(38)
   node4.regions("vdna.events").getCount should be(43)
-  (39 + 19 + 38 +43) should be(139)
+  (39 + 19 + 38 + 43) should be(139)
 
   val client = new DriftClient("localhost", 9997)
-  client.query("STATS vdna") 
+  client.query("STATS vdna")
   client.hasNext should be(true); client.fetchRecordLine should be("events,1,1,39,39,1918,2322")
   client.hasNext should be(true); client.fetchRecordLine should be("events,3,1,38,38,1586,2173")
   client.hasNext should be(true); client.fetchRecordLine should be("events,4,1,43,43,2081,2604")
   client.hasNext should be(true); client.fetchRecordLine should be("events,2,1,19,19,905,1050")
-  client.hasNext should be(false); 
-  an[EOFException] must be thrownBy(client.fetchRecordLine)
+  client.hasNext should be(false);
+  an[EOFException] must be thrownBy (client.fetchRecordLine)
 
-  
   new DriftLoader("localhost", 9998, Protocol.LOADER_USER, "addthis", "syncs", "    ", this.getClass.getResourceAsStream("datasync_string.csv"), false).streamInput should be(10)
-  client.query("STATS addthis") 
-  while(client.hasNext) {
-    println(client.fetchRecordLine)
-  }
+  client.query("STATS addthis")
+  client.hasNext should be(true); client.fetchRecordLine should be("syncs,1,1,2,2,93,88")
+  client.hasNext should be(true); client.fetchRecordLine should be("syncs,3,1,4,4,165,176")
+  client.hasNext should be(true); client.fetchRecordLine should be("syncs,4,1,3,3,123,132")
+  client.hasNext should be(true); client.fetchRecordLine should be("syncs,2,1,1,1,49,44")
+  client.hasNext should be(false);
+  an[EOFException] must be thrownBy (client.fetchRecordLine)
 
   node1.manager.down
   manager.close

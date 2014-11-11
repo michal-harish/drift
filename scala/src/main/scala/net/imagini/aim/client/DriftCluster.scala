@@ -21,7 +21,7 @@ object DriftCluster extends App {
       case "--zookeeper" ⇒ zkConnect = argsIterator.next
       case "--root"      ⇒ root = argsIterator.next
       case "--num-nodes" ⇒ localNumNodes = argsIterator.next.toInt
-      case "--storage-type" ⇒ storageType = Class.forName(argsIterator.next).asInstanceOf[Class[BlockStorage]]
+      case "--storage-type" ⇒ storageType = Class.forName("net.imagini.aim.utils.BlockStorage" + argsIterator.next).asInstanceOf[Class[BlockStorage]]
       case "--port"      ⇒ port = argsIterator.next.toInt
       case arg: String   ⇒ println("Unknown argument " + arg)
     }
