@@ -69,7 +69,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
       client.hasNext should be(false)
       an[EOFException] must be thrownBy (client.fetchRecordStrings)
     }
-    node.shutdown
+    node.manager.down
   }
 
   "Partition with 1 segment" should "should return all records after selecting loaded test data" in {
@@ -87,7 +87,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
       client.fetchRecordStrings should be(Array("d1d284b7-b04e-442a-b52a-ea74bc6466c5", "1413143748080", "ydx_vdna_id", "e9dd0b85-e3e8-f0c4-c42a-fdb0bf6cd28c"))
       client.hasNext should be(false)
       an[EOFException] must be thrownBy (client.fetchRecordStrings)
-      node.shutdown
+      node.manager.down
 
     }
   }
@@ -138,7 +138,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     }
 
     client.close
-    node.shutdown
+    node.manager.down
   }
 
   "Partition " should "understand simple query" in {

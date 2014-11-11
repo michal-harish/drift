@@ -13,23 +13,24 @@ import scala.collection.JavaConverters._
 import grizzled.slf4j.Logger
 import net.imagini.aim.types.AimSchema
 
-class DriftManagerZk(val zkConnect: String, val totalNodes: Int) extends DriftManager {
+class DriftManagerZk(val zkConnect: String, override val root:String = "/drift") extends DriftManager {
   val zkClient = new ZkClient(zkConnect)
-  init(totalNodes)
+  init
   override protected def pathExists(path: String) = zkClient.exists(path)
   override protected def pathCreatePersistent(path: String, data:Any) = zkClient.create(path, data, CreateMode.PERSISTENT)
+  override protected def pathUpdate(path: String, data:Any) = zkClient.writeData(path, data)
   override protected def pathCreateEphemeral(path: String, data:Any) = zkClient.create(path, data, CreateMode.EPHEMERAL)
   override def close = zkClient.close
   override protected def pathDelete(path: String) = zkClient.delete(path)
 
-  override def watchData[T](zkPath: String, listener: (Option[T] ⇒ Unit)) {
+  override protected def watchPathData[T](zkPath: String, listener: (Option[T] ⇒ Unit)) {
     zkClient.subscribeDataChanges(zkPath, new IZkDataListener {
       override def handleDataChange(zkPath: String, data: Object) = listener(Some(data.asInstanceOf[T]))
       override def handleDataDeleted(zkPath: String) = listener(None)
     });
     listener(Some(zkClient.readData(zkPath)))
   }
-  override def watch[T](zkPath: String, listener: (Map[String, T]) ⇒ Unit) {
+  override protected def watchPathChildren[T](zkPath: String, listener: (Map[String, T]) ⇒ Unit) {
     zkClient.subscribeChildChanges(zkPath, new IZkChildListener {
       override def handleChildChange(parentPath: String, currentChilds: java.util.List[String]) = update(zkPath, currentChilds, listener);
     })

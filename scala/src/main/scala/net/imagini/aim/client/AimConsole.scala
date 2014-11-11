@@ -61,6 +61,7 @@ class AimConsole(val host: String = "localhost", val port: Int = 4000) extends T
       case (Some(schema)) ⇒ client.printResult
       case None           ⇒ println("OK")
     }
+    client.getInfo.map(println(_))
     if (client.getCount > 0) {
       println("Count: " + client.getCount)
     }

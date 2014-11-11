@@ -38,7 +38,7 @@ class BigLoadTest extends FlatSpec with Matchers {
     total should be(5730)
     filtered should be(158)
     an[EOFException] must be thrownBy (segmentScanner.nextLine)
-    node.shutdown
+    node.manager.down
   }
 
   "SegmentScanner for all" should "yield same as grep" in {
@@ -57,7 +57,7 @@ class BigLoadTest extends FlatSpec with Matchers {
     total should be(5730)
     filtered should be(158)
     an[EOFException] must be thrownBy (mergeScanner.nextLine)
-    node.shutdown
+    node.manager.down
   }
 
   "SegmentScanner with filter" should "yield same as grep" in {
@@ -76,7 +76,7 @@ class BigLoadTest extends FlatSpec with Matchers {
     }
     filtered should be(158)
     an[EOFException] must be thrownBy (segmentScanner.nextLine)
-    node.shutdown
+    node.manager.down
   }
 
   "MergeScanner for filtered" should "yield same as grep" in {
@@ -93,7 +93,7 @@ class BigLoadTest extends FlatSpec with Matchers {
     total should be(5730)
     filtered should be(158)
     an[EOFException] must be thrownBy (allScanner.nextLine)
-    node.shutdown
+    node.manager.down
   }
 
   "Partition for all" should "yield all loaded records" in {

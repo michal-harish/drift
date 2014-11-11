@@ -21,7 +21,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
 
   val keyspace = pipe.readHeader
   val table = pipe.readHeader
-  val partition = node.regions(keyspace+"." + table)
+  val partition = node.regions(keyspace + "." + table)
   val separator = pipe.readHeader
   val schema = partition.schema
   val keyType = schema.get(0)
@@ -52,7 +52,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
 
   private def loadPartitionedStream = {
     val in = pipe.getInputStream
-    while (true) {
+    while (!node.isSuspended) {
       record.clear
       for (t ← schema.fields) StreamUtils.read(in, t.getDataType, record)
       record.flip
@@ -70,7 +70,8 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
       val lines = source.getLines
       val values: Array[String] = new Array[String](schema.size)
       var line: String = ""
-      while (true) {
+      val totalNodes = node.manager.expectedNumNodes
+      while (!node.isSuspended) {
         record.clear
         var fields: Int = 0
         while (fields < schema.size) {
@@ -87,11 +88,11 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
         try {
           var i = 0
           while (i < schema.fields.size) {
-            TypeUtils.copy(schema.get(i).convert(values(i)) , 0, schema.get(i).getDataType, record)
+            TypeUtils.copy(schema.get(i).convert(values(i)), 0, schema.get(i).getDataType, record)
             i += 1
           }
           record.flip
-          val targetNode = keyType.partition(recordView, node.expectedNumNodes) + 1
+          val targetNode = keyType.partition(recordView, totalNodes) + 1
           if (targetNode == node.id) {
             localSegment = partition.appendRecord(localSegment, record)
             count += 1

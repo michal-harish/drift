@@ -21,20 +21,27 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
 
   override def accept = {
     try {
-      val request = pipe.read.trim
-      if (pipe.protocol == QUERY_USER) {
-        peerClients.foreach(peer ⇒ peer.query(request))
-      }
-      request match {
-        case command: String if (command.toUpperCase.startsWith("TRANSFORM")) ⇒ {
-          pipe.write("OK")
-          pipe.flush
-          node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
-        }
-        case command: String if (command.toUpperCase.startsWith("CLOSE")) ⇒ close
-        case command: String if (command.toUpperCase.startsWith("USE")) ⇒ throw new NotImplementedError
-        case query: String if (query.toUpperCase.startsWith("STAT")) ⇒ handleSelectStream(node.stats(request.substring(5).trim))
-        case query: String ⇒ handleSelectStream(node.query(query))
+      pipe.read.trim match {
+        case adminQuery: String if (adminQuery.toUpperCase.startsWith("CLUSTER")) ⇒ clusterProps(adminQuery)
+        case helpQuery: String if (helpQuery.toUpperCase.startsWith("HELP"))      ⇒ helpInfo()
+        case dataQuery: String ⇒
+          if (pipe.protocol == QUERY_USER) {
+            peerClients.foreach(peer ⇒ peer.query(dataQuery))
+          }
+          dataQuery match {
+            case command: String if (command.toUpperCase.startsWith("TRANSFORM")) ⇒ {
+              pipe.write("OK")
+              pipe.flush
+              val t = System.currentTimeMillis
+              val transformed = node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
+              pipeWriteInfo(
+                "Transfomration result count: " + transformed.toString,
+                "Transfomration time (ms): " + (System.currentTimeMillis - t))
+            }
+            case command: String if (command.toUpperCase.startsWith("CLOSE")) ⇒ close
+            case query: String if (query.toUpperCase.startsWith("STAT")) ⇒ handleSelectStream(node.stats(dataQuery.substring(5).trim))
+            case query: String ⇒ handleSelectStream(node.query(query))
+          }
       }
     } catch {
       case e: SocketException ⇒ throw new EOFException
@@ -45,8 +52,41 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
         pipe.flush
       }
     }
+
   }
 
+  private def helpInfo() = {
+    pipe.write("OK")
+    pipeWriteInfo(
+      "Available commands:\n"
+      ,"SELECT <fields> FROM {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>] [JOIN SELECT ..] [UNION SELECT ..] [INTERSECTION SELECT ..]"
+      ,"COUNT {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>]"
+      ,"SELECT ... INTO <keyspace>.<table>"
+      ,"STAT"
+      ,"STAT <keyspace>"
+      ,"CLUSTER DOWN"
+      ,"CLUSTER"
+      ,"CLOSE"
+    )
+  }
+  private def clusterProps(command: String) = {
+    val cmd = Tokenizer.tokenize(command, true)
+    cmd.poll
+    while (!cmd.isEmpty) cmd.poll.toUpperCase match {
+      case "DOWN"     ⇒ node.manager.down
+      case "NUMNODES" ⇒ node.manager.setNumNodes(cmd.poll.toInt)
+    }
+    pipe.write("OK")
+    pipeWriteInfo(
+      "cluster numNodes=" + node.manager.expectedNumNodes,
+      "cluster defined keyspaces: " + node.keyspaces.mkString(", "))
+  }
+
+  private def pipeWriteInfo(info: String*) = {
+    pipe.writeInt(info.length)
+    info.map(i ⇒ pipe.write(i))
+    pipe.flush
+  }
   private def handleSelectStream(localScanner: AbstractScanner) = {
 
     localScanner match {

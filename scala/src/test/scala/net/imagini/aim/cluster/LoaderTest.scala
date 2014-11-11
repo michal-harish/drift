@@ -16,6 +16,6 @@ class LoaderTest extends FlatSpec with Matchers {
     new Loader("localhost", 9998, Protocol.LOADER_USER, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv.gz"), true).streamInput should be(3)
     node.regions("vdna.events").getCount should be(6L)
 
-    node.shutdown
+    manager.down
   }
 }

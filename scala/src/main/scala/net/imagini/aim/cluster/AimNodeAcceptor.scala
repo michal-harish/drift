@@ -16,7 +16,7 @@ class AimNodeAcceptor(val node: AimNode, listenPort: Int) extends Thread {
 
   override def run = {
     try {
-      while (!isInterrupted && !node.isShutdown) {
+      while (!isInterrupted && !node.isSuspended) {
         val socket = controllerListener.accept
         try {
           val pipe = new Pipe(socket)

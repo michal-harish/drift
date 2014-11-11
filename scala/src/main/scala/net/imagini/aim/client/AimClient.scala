@@ -51,23 +51,33 @@ class AimClient(val host: String, val port: Int, val protocol: Protocol) {
   def this(host: String, port: Int) = this(host, port, Protocol.QUERY_USER)
   private var socket: Socket = null
   private var pipe: Pipe = null
-  private var error: Option[String] = None
   private var schema: Option[AimSchema] = None
   private var next: Option[Array[Array[Byte]]] = None
-  private var numRecords: Option[Long] = None
+  private var info: Option[Seq[String]] = null
+  private var numRecords: Option[Long] = null
+
+  def getSchema: Option[AimSchema] = schema
+
+  def getInfo: Seq[String] = info match {
+    case null      ⇒ Seq()
+    case Some(seq) ⇒ seq
+    case None ⇒ {
+      val numLines = pipe.readInt()
+      info = Some((1 to numLines).map(_ ⇒ pipe.read))
+      info.get
+    }
+  }
   def getCount: Long = numRecords match {
-    case None ⇒ 0
-    case Some(count) if (count == 0) ⇒ schema match {
+    case null        ⇒ 0
+    case Some(count) ⇒ count
+    case None ⇒ schema match {
       case None ⇒ {
         numRecords = Some(pipe.readInt)
         numRecords.get
       }
       case Some(schema) ⇒ throw new IllegalStateException
     }
-    case Some(count) ⇒ count
   }
-  def getSchema: Option[AimSchema] = schema
-  private var responseProcessed: Option[Boolean] = None
 
   def query(query: String): Option[AimSchema] = {
     if (socket == null || hasNext) {
@@ -177,30 +187,22 @@ class AimClient(val host: String, val port: Int, val protocol: Protocol) {
   }
 
   private def prepareResponse(pipe: Pipe) = {
+    schema = None
+    numRecords = null
+    info = null
     pipe.read match {
-      case "OK" ⇒ {
-        numRecords = None
-        schema = None
-      }
-      case "COUNT" ⇒ {
-        numRecords = Some(0)
-        schema = None
-      }
+      case "OK"    ⇒ info = None
+      case "COUNT" ⇒ numRecords = None
       case "RESULT" ⇒ {
         numRecords = Some(0)
         schema = Some(AimSchema.fromString(pipe.read))
       }
       case "ERROR" ⇒ {
-        schema = None
-        numRecords = None
-        val error = pipe.read
-        throw new AimQueryException(error)
+        throw new AimQueryException(pipe.read)
       }
-      case _ ⇒ {
-        schema = None
-        numRecords = None
+      case any:String ⇒ {
         reconnect
-        throw new IOException("Stream is curroupt, closing..")
+        throw new IOException("Session stream is curroupt, closing.. `" + any + "`" )
       }
     }
   }
