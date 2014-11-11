@@ -15,7 +15,6 @@ import net.imagini.aim.tools.StreamMerger
 
 class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
 
-  //  private var keyspace: Option[String] = None
   private val peerClients: Seq[AimClient] = if (pipe.protocol.equals(QUERY_INTERNAL)) Seq() else node.peers.map(peer ⇒ {
     new AimClient(peer._2.getHost, peer._2.getPort, QUERY_INTERNAL)
   }).toSeq
@@ -28,9 +27,9 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
       }
       request match {
         case command: String if (command.toUpperCase.startsWith("TRANSFORM")) ⇒ {
-          node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
           pipe.write("OK")
           pipe.flush
+          node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
         }
         case command: String if (command.toUpperCase.startsWith("CLOSE")) ⇒ close
         case command: String if (command.toUpperCase.startsWith("USE")) ⇒ throw new NotImplementedError

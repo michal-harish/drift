@@ -56,14 +56,15 @@ class AimClient(val host: String, val port: Int, val protocol: Protocol) {
   private var next: Option[Array[Array[Byte]]] = None
   private var numRecords: Option[Long] = None
   def getCount: Long = numRecords match {
-    case Some(count) ⇒ count
-    case None ⇒ schema match {
+    case None ⇒ 0
+    case Some(count) if (count == 0) ⇒ schema match {
       case None ⇒ {
         numRecords = Some(pipe.readInt)
         numRecords.get
       }
       case Some(schema) ⇒ throw new IllegalStateException
     }
+    case Some(count) ⇒ count
   }
   def getSchema: Option[AimSchema] = schema
   private var responseProcessed: Option[Boolean] = None
@@ -177,12 +178,12 @@ class AimClient(val host: String, val port: Int, val protocol: Protocol) {
 
   private def prepareResponse(pipe: Pipe) = {
     pipe.read match {
-      case "OK"     ⇒ {
+      case "OK" ⇒ {
         numRecords = None
         schema = None
       }
-      case "COUNT"  ⇒ {
-        numRecords = None
+      case "COUNT" ⇒ {
+        numRecords = Some(0)
         schema = None
       }
       case "RESULT" ⇒ {
@@ -191,11 +192,13 @@ class AimClient(val host: String, val port: Int, val protocol: Protocol) {
       }
       case "ERROR" ⇒ {
         schema = None
+        numRecords = None
         val error = pipe.read
         throw new AimQueryException(error)
       }
       case _ ⇒ {
         schema = None
+        numRecords = None
         reconnect
         throw new IOException("Stream is curroupt, closing..")
       }
