@@ -59,12 +59,13 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
     pipe.write("OK")
     pipeWriteInfo(
       "Available commands:\n"
+      ,"STAT"
+      ,"STAT <keyspace>"
       ,"SELECT <fields> FROM {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>] [JOIN SELECT ..] [UNION SELECT ..] [INTERSECTION SELECT ..]"
       ,"COUNT {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>]"
       ,"SELECT ... INTO <keyspace>.<table>"
-      ,"STAT"
-      ,"STAT <keyspace>"
       ,"CLUSTER DOWN"
+      ,"CLUSTER numNodes <int_total_nodes>"
       ,"CLUSTER"
       ,"CLOSE"
     )
