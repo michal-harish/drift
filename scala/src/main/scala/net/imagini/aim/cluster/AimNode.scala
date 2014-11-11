@@ -32,7 +32,7 @@ object AimNode extends App {
   }
 
   //SPAWNING CLUSTER
-  val numNodes = 1
+  val numNodes = 4
   val manager: DriftManager = if (numNodes == 1) new DriftManagerLocal(numNodes) else new DriftManagerZk(zkConnect, numNodes)
   for (n ← (1 to numNodes)) new AimNode(n, "localhost:" + (4000 + n - 1).toString, manager)
 

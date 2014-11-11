@@ -177,7 +177,10 @@ class AimClient(val host: String, val port: Int, val protocol: Protocol) {
 
   private def prepareResponse(pipe: Pipe) = {
     pipe.read match {
-      case "OK"     ⇒ schema = None
+      case "OK"     ⇒ {
+        numRecords = None
+        schema = None
+      }
       case "COUNT"  ⇒ {
         numRecords = None
         schema = None

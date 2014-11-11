@@ -55,7 +55,12 @@ class AimPartition(
   }
 
   def appendRecord(segment: AimSegment, record: Array[View]): AimSegment = {
-    val size = record.map(b => b.size).foldLeft(0)(_ + _)
+    var i = 0
+    var size = 0
+    while (i < record.length) {
+      size += record(i).size
+      i += 1
+    }
     val theSegment = checkSegment(segment, size)
     theSegment.appendRecord(record)
     theSegment

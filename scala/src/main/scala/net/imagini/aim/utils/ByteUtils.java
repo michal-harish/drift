@@ -89,9 +89,11 @@ public class ByteUtils {
         int vLimit = vOffset + vSize -1;
         int v = vOffset;
         for (int c = cOffset; c <= cLimit; c++) {
-            //System.err.println(c + ":" + v + " ? " + (char)(cArray[c]) + "==" + (char)(vArray[v]));
             if (vArray[v] != cArray[c]) {
                 v = vOffset;
+                if (c + vSize > cLimit) {
+                    return false;
+                }
             } else if (++v >= vLimit) {
                 return true;
             }
@@ -176,7 +178,7 @@ public class ByteUtils {
 
     public static int crc32(byte[] array, int offset, int size) {
         int crc = 0xFFFF;
-        for (int pos = offset; pos <= offset + size; pos++) {
+        for (int pos = offset; pos < offset + size; pos++) {
             crc ^= (int) array[pos];
             for (int i = 8; i != 0; i--) {
                 if ((crc & 0x0001) != 0) {

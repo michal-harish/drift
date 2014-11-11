@@ -18,16 +18,15 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
   val rightSelect = right.schema.names.filter(!left.schema.has(_))
 
   private val selectMap = ListMap((
-   left.schema.names.map(f => (f -> left.schema.field(f))) ++ 
-   right.schema.names.filter(!left.schema.has(_)).map(f => (f -> right.schema.field(f)))
-  ): _*)
+    left.schema.names.map(f ⇒ (f -> left.schema.field(f))) ++
+    right.schema.names.filter(!left.schema.has(_)).map(f ⇒ (f -> right.schema.field(f)))): _*)
 
   override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](selectMap.asJava))
   override val keyType: AimType = left.keyType
   val keyDataType = keyType.getDataType
-
-  private val leftSelectIndex:Array[Int] = selectMap.keys.filter(left.schema.has(_)).map(left.schema.get(_)).toArray
-  private val rightSelectIndex:Array[Int] = selectMap.keys.filter(f =>(!left.schema.has(f) && right.schema.has(f))).map(right.schema.get(_)).toArray
+  private val numFields = schema.size
+  private val leftSelectIndex: Array[Int] = selectMap.keys.filter(left.schema.has(_)).map(left.schema.get(_)).toArray
+  private val rightSelectIndex: Array[Int] = selectMap.keys.filter(f ⇒ (!left.schema.has(f) && right.schema.has(f))).map(right.schema.get(_)).toArray
   private var selectedKey: View = null
   private val selectBuffer: Array[View] = new Array[View](schema.size)
   private var eof = false
@@ -74,14 +73,23 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
   private def move = eof match {
     case true ⇒ {
       selectedKey = null
-      for (i ← (0 to schema.size - 1)) selectBuffer(i) = null
+      var i = 0; while (i < numFields) {
+        selectBuffer(i) = null
+        i += 1
+      }
     }
     case false ⇒ {
       selectedKey = left.selectKey
       val leftRow = left.selectRow
       val rightRow = right.selectRow
-      for(i <- (0 to leftSelectIndex.size - 1)) selectBuffer(i) = leftRow(leftSelectIndex(i))
-      for(i <- (0 to rightSelectIndex.size - 1)) selectBuffer(i + leftSelectIndex.size) = rightRow(rightSelectIndex(i))
+      var i = 0; while (i < leftSelectIndex.length) {
+        selectBuffer(i) = leftRow(leftSelectIndex(i))
+        i += 1
+      }
+      var j = 0; while (j < rightSelectIndex.length) {
+          selectBuffer(j + leftSelectIndex.length) = rightRow(rightSelectIndex(j))
+          j += 1
+      }
     }
   }
 
@@ -89,14 +97,14 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
     rewind
     var count = 0
     //TODO optimize - do not call next when counting
-    while(!eof && right.next) {
+    while (!eof && right.next) {
       var cmp: Int = -1
       do {
         cmp = TypeUtils.compare(left.selectKey, right.selectKey, keyDataType)
         if (cmp < 0) eof = !left.next
         else if (cmp > 0) eof = !right.next
       } while (!eof && cmp != 0)
-        count += 1
+      count += 1
     }
     eof = true
     count
