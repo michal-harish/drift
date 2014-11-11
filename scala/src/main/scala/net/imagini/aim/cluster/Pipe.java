@@ -99,18 +99,24 @@ public class Pipe {
         int pipe_protocol = StreamUtils.readInt(socket.getInputStream());
         this.protocol = Protocol.get(pipe_protocol);
     }
-
-    final public void close() throws IOException {
-        if (inputPipe != null) inputPipe.close();
-        inputPipe = null;
+    final public void finishOutput() throws IOException {
         if (outputPipe != null) {
             if (outputPipe instanceof LZ4BlockOutputStream) {
                 ((LZ4BlockOutputStream)outputPipe).finish();
+                outputPipe = null;
+            } else if (outputPipe instanceof GZIPOutputStream) {
+                ((GZIPOutputStream)outputPipe).finish();
+                outputPipe = null;
             }
-            outputPipe.close();
-        }
-        outputPipe = null;
+          }
     }
+
+    final public void close() throws IOException {
+        finishOutput();
+        socket.close();
+        inputPipe = null;
+    }
+
     final public void writeHeader(String value) throws IOException {
         if (outputPipe != null) throw new IllegalStateException();
         StreamUtils.write(Aim.STRING, Aim.STRING.convert(value), socket.getOutputStream());

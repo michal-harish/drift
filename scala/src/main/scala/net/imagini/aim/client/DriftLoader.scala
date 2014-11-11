@@ -41,19 +41,17 @@ object DriftLoader extends App {
   loader.streamInput
 }
 
-class DriftLoader(host: String, port: Int, protocol: Protocol, 
-    val keyspace: String, 
-    val table: String, 
-    val separator: String, 
-    val fileinput: InputStream, 
-    val gzip: Boolean
-) {
+class DriftLoader(host: String, port: Int, protocol: Protocol,
+  val keyspace: String,
+  val table: String,
+  val separator: String,
+  val fileinput: InputStream,
+  val gzip: Boolean) {
 
   val log = Logger[this.type]
   val in: InputStream = if (fileinput == null) System.in else fileinput
   val socket = new Socket(InetAddress.getByName(host), port)
-  //TODO if not gzip-ed stream than use lz4(1)
-  val pipe = new Pipe(socket, protocol, if (gzip) 3 else 2)
+  val pipe = new Pipe(socket, protocol, if (gzip) 3 else 1) // 1-LZ4 2-GZIP 3-WRAPPED-GZIP
 
   //handshake
   pipe.writeHeader(keyspace)
@@ -70,7 +68,7 @@ class DriftLoader(host: String, port: Int, protocol: Protocol,
   def ackLoadedCount: Int = {
     pipe.flush
     if (!gzip) {
-      pipe.getOutputStream.asInstanceOf[GZIPOutputStream].finish
+      pipe.finishOutput
     }
     val loadedCount: Int = pipe.readInt
     pipe.close
