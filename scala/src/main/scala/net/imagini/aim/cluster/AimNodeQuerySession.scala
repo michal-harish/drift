@@ -30,13 +30,18 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
           }
           dataQuery match {
             case command: String if (command.toUpperCase.startsWith("TRANSFORM")) ⇒ {
-              pipe.write("OK")
+              pipe.write("COUNT")
               pipe.flush
-              val t = System.currentTimeMillis
-              val transformed = node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
-              pipeWriteInfo(
-                "Transfomration result count: " + transformed.toString,
-                "Transfomration time (ms): " + (System.currentTimeMillis - t))
+              val transformedCount: Long = pipe.protocol match {
+                case QUERY_INTERNAL ⇒ node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
+                case QUERY_USER ⇒ {
+                  peerClients.map(peer ⇒ peer.getCount).foldLeft(0L)(_ + _) + node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
+                }
+                case _ ⇒ throw new AimQueryException("Invalid query protocol")
+              }
+              pipe.writeInt(transformedCount.toInt)
+              pipe.flush
+
             }
             case command: String if (command.toUpperCase.startsWith("CLOSE")) ⇒ close
             case query: String if (query.toUpperCase.startsWith("STAT")) ⇒ handleSelectStream(node.stats(dataQuery.substring(5).trim))
@@ -58,18 +63,7 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
   private def helpInfo() = {
     pipe.write("OK")
     pipeWriteInfo(
-      "Available commands:\n"
-      ,"STAT"
-      ,"STAT <keyspace>"
-      ,"SELECT <fields> FROM {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>] [JOIN SELECT ..] [UNION SELECT ..] [INTERSECTION SELECT ..]"
-      ,"COUNT {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>]"
-      ,"~SELECT ... INTO <keyspace>.<table>"
-      ,"~CREATE TABLE <keyspace>.<table_name> <schema> WITH STORAGE=[MEM|MEMLZ4|FSLZ4], SEGMENT_SIZE=<int_inflated_bytes>"
-      ,"CLUSTER DOWN"
-      ,"CLUSTER numNodes <int_total_nodes>"
-      ,"CLUSTER"
-      ,"CLOSE"
-    )
+      "Available commands:\n", "STAT", "STAT <keyspace>", "SELECT <fields> FROM {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>] [JOIN SELECT ..] [UNION SELECT ..] [INTERSECTION SELECT ..]", "COUNT {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>]", "~SELECT ... INTO <keyspace>.<table>", "~CREATE TABLE <keyspace>.<table_name> <schema> WITH STORAGE=[MEM|MEMLZ4|FSLZ4], SEGMENT_SIZE=<int_inflated_bytes>", "CLUSTER DOWN", "CLUSTER numNodes <int_total_nodes>", "CLUSTER", "CLOSE")
   }
   private def clusterProps(command: String) = {
     val cmd = Tokenizer.tokenize(command, true)
@@ -81,6 +75,7 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
     pipe.write("OK")
     pipeWriteInfo(
       "cluster numNodes=" + node.manager.expectedNumNodes,
+      "cluster avialble nodes=" + (node.peers.size + 1),
       "cluster defined keyspaces: " + node.keyspaces.mkString(", "))
   }
 

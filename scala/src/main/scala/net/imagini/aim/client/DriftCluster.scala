@@ -12,7 +12,7 @@ object DriftCluster extends App {
   val log = Logger[this.type]
   var port: Int = 4000
   var zkConnect: String = "localhost:2181"
-  var root = "/drift/default"
+  var root = "/drift-default"
   var localNumNodes = 1
   val argsIterator = args.iterator
   var storageType: Class[_ <: BlockStorage] = classOf[BlockStorageMEMLZ4]

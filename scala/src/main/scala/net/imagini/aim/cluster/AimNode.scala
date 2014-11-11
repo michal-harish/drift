@@ -76,17 +76,13 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   def transform(srcQuery: String, destKeyspace: String, destTable: String): Long = {
     val t = System.currentTimeMillis
     val scanner = query(srcQuery)
-    val dest = keyspaceRefs.get(destKeyspace).get(destTable)
-    var segment = dest.createNewSegment
-    var count = 0
+    val loader = new AimNodeLoader(destKeyspace, destTable, this)
     while (scanner.next) {
-      //TODO must go through partitioner
-      segment = dest.appendRecord(segment, scanner.selectRow)
-      count += 1
+      loader.insert(scanner.selectRow)
     }
-    dest.add(segment)
+    val transformationCount = loader.finish
     log.info("TRANSFORM INTO " + destKeyspace + "." + destTable + " in " + (System.currentTimeMillis - t))
-    count
+    transformationCount
   }
 
   var sessions = scala.collection.mutable.ListBuffer[AimNodeSession]()

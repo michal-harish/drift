@@ -26,14 +26,14 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
   val schema = partition.schema
   val keyType = schema.get(0)
   pipe.writeHeader(schema.toString)
-  log.info("LOADING INTO " + keyspace + "." + table + " " + schema.toString)
 
-  val startTime = System.currentTimeMillis
-  val COLUMN_BUFFER_SIZE = 2048
-  val record = ByteBuffer.allocate(COLUMN_BUFFER_SIZE * schema.size)
-  val recordView = new View(record)
-  var localSegment = partition.createNewSegment
-  var count = 0
+  log.info("LOADING INTO " + keyspace + "." + table + " " + schema.toString)
+  private val startTime = System.currentTimeMillis
+  private val COLUMN_BUFFER_SIZE = 2048
+  private val record = ByteBuffer.allocate(COLUMN_BUFFER_SIZE * schema.size)
+  private val recordView = new View(record)
+  private var localSegment = partition.createNewSegment
+  private var count: Long = 0
 
   override def accept = {
     try {
@@ -44,8 +44,8 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
       }
     } finally {
       partition.add(localSegment)
-      log.info("load(EOF) records: " + count + " time(ms): " + (System.currentTimeMillis - startTime) + ", total:" + partition.getCount)
-      pipe.writeInt(count)
+      log.info(Protocol.LOADER_USER + "/EOF records: " + count + " time(ms): " + (System.currentTimeMillis - startTime))
+      pipe.writeInt(count.toInt)
       pipe.flush
     }
   }
@@ -62,9 +62,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
   }
 
   private def loadUnparsedStream = {
-    val peerLoaders: Map[Int, DriftLoader] = node.peers.map(peer ⇒ {
-      peer._1 -> new DriftLoader(peer._2.getHost, peer._2.getPort, Protocol.LOADER_INTERNAL, keyspace, table, "", null, false)
-    })
+    val loader = new AimNodeLoader(keyspace, table, node)
     try {
       val source = scala.io.Source.fromInputStream(pipe.getInputStream)
       val lines = source.getLines
@@ -86,32 +84,17 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
           }
         }
         try {
-          var i = 0
-          while (i < schema.fields.size) {
-            TypeUtils.copy(schema.get(i).convert(values(i)), 0, schema.get(i).getDataType, record)
-            i += 1
-          }
-          record.flip
-          val targetNode = keyType.partition(recordView, totalNodes) + 1
-          if (targetNode == node.id) {
-            localSegment = partition.appendRecord(localSegment, record)
-            count += 1
-          } else {
-            StreamUtils.write(record, peerLoaders(targetNode).pipe.getOutputStream)
-          }
+          loader.insert(values: _*)
         } catch {
-          case e: IOException ⇒ {
-            log.error(count + ":" + values, e);
-            throw e
-          }
           case e: Exception ⇒ {
-            log.error(count + ":" + values, e);
+            log.error(count + ":" + values.mkString(","), e);
+            throw e
           }
         }
       }
     } catch {
       case e: EOFException ⇒ {
-        peerLoaders.values.map(peer ⇒ count += peer.ackLoadedCount)
+        count += loader.finish
         throw e;
       }
     }

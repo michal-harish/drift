@@ -99,6 +99,8 @@ Usecase 3. Benchmark - id-linking from newly discovered information (?)
 
 Design thoughts dump
 ================================================================================================= 
+* need to get rid of 'empty table' exception and return vlaid 0-length record stream
+* all counts should be refactored from Int to Long
 * co-partitioning to solve brut-forcie
 * by having partitions as defined above, the future map-reduce protocol is possible in principle, but until then at least something like parallel off-load to hdfs should be possible 
 * because the whole thing is sequential, storage could be a choice from memory, memory-mapped files, to hard files
@@ -155,7 +157,7 @@ Example 1)  building a cluster from scratch
 -------------------------------------------
 cd scala
 mvn package
-java -jar target/drift-cluster.jar --root test1 --num-nodes 4
+java -jar target/drift-cluster.jar --root drift-test1 --num-nodes 4
 java -jar target/drift-client.jar 'CLUSTER NUM NODES 4'
 #TODO create statment
 java -jar target/drift-client.jar 'CREATE TABLE addthis.views at_id(STRING), url(STRING), timestamp(LONG) WITH STORAGE=LZ4, SEGMENT_SIZE=50000000'
