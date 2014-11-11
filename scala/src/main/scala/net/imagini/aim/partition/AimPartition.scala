@@ -65,11 +65,11 @@ class AimPartition(
     theSegment.appendRecord(record)
     theSegment
   }
-  def appendRecord(segment: AimSegment, record: ByteBuffer): AimSegment = {
-    val theSegment = checkSegment(segment, record.limit - record.position )
-    theSegment.appendRecord(record)
-    theSegment
-  }
+//  def appendRecord(segment: AimSegment, record: ByteBuffer): AimSegment = {
+//    val theSegment = checkSegment(segment, record.limit - record.position )
+//    theSegment.appendRecord(record)
+//    theSegment
+//  }
   private def checkSegment(segment: AimSegment, size: Int): AimSegment = {
     if (segment.getOriginalSize + size> segmentSizeBytes) try {
       add(segment)

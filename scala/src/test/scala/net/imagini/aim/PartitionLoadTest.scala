@@ -56,26 +56,21 @@ class PartitionLoadTest extends FlatSpec with Matchers {
     val partition = new AimPartition(schema, segmentSize, storageType, classOf[AimSegmentUnsorted])
 
     var segment = partition.createNewSegment
-    val recordWriter = ByteUtils.createBuffer(recordSize)
+    val recordView = new Array[View](schema.size)
     for (r ← (1 to numRecords)) {
-      recordWriter.clear
 
-      val view0 = new View(recordWriter)
-      TypeUtils.copy(ids(r % ids.size), schema.get(0), recordWriter);
-      schema.get(0).asString(view0) should equal(ids(r % ids.size))
+      recordView(0) = new View(schema.get(0).convert(ids(r % ids.size)))
+      schema.get(0).asString(recordView(0)) should equal(ids(r % ids.size))
 
-      val view1 = new View(recordWriter)
-      TypeUtils.copy(r.toString, schema.dataType(1), recordWriter);
-      schema.get(1).asString(view1) should equal(r.toString)
-      ByteUtils.asIntValue(view1.array, view1.offset) should equal(r)
+      recordView(1) = new View(schema.get(1).convert(r.toString))
+      schema.get(1).asString(recordView(1)) should equal(r.toString)
+      ByteUtils.asIntValue(recordView(1).array, recordView(1).offset) should equal(r)
 
-      val view2 = new View(recordWriter)
       val s = r.toString.padTo(10, '0')
-      TypeUtils.copy(s, schema.dataType(2), recordWriter);
-      schema.get(2).asString(view2) should equal(s)
+      recordView(2) = new View(schema.get(2).convert(s))
+      schema.get(2).asString(recordView(2)) should equal(s)
 
-      recordWriter.flip
-      segment = partition.appendRecord(segment, recordWriter)
+      segment = partition.appendRecord(segment, recordView)
     }
     partition.add(segment)
     partition.getCount should equal(numRecords)
@@ -84,16 +79,16 @@ class PartitionLoadTest extends FlatSpec with Matchers {
       (partition.getCompressedSize.toDouble / partition.getUncompressedSize < 0.3) should equal(true)
     }
 
-    for(s <- (0 to partition.segments.length-1)) {
-        val scanner = new SegmentScanner("*", "*", partition.segments(s))
-        for (r ← (s*recordsPerSegment+1 to (s+1) *recordsPerSegment)) {
-          scanner.next should equal(true)
-          val row = scanner.selectRow
-          schema.get(0).asString(row(0)) should equal(ids(r % ids.size))
-          ByteUtils.asIntValue(row(1).array, row(1).offset) should equal(r)
-          schema.get(1).asString(row(1)) should equal(r.toString)
-          schema.get(2).asString(row(2)) should equal(r.toString.padTo(10, '0'))
-        }
+    for (s ← (0 to partition.segments.length - 1)) {
+      val scanner = new SegmentScanner("*", "*", partition.segments(s))
+      for (r ← (s * recordsPerSegment + 1 to (s + 1) * recordsPerSegment)) {
+        scanner.next should equal(true)
+        val row = scanner.selectRow
+        schema.get(0).asString(row(0)) should equal(ids(r % ids.size))
+        ByteUtils.asIntValue(row(1).array, row(1).offset) should equal(r)
+        schema.get(1).asString(row(1)) should equal(r.toString)
+        schema.get(2).asString(row(2)) should equal(r.toString.padTo(10, '0'))
+      }
     }
   }
 
@@ -108,26 +103,20 @@ class PartitionLoadTest extends FlatSpec with Matchers {
     val partition = new AimPartition(schema, segmentSize, storageType, classOf[AimSegmentQuickSort])
 
     var segment = partition.createNewSegment
-    val recordWriter = ByteUtils.createBuffer(recordSize)
+    val recordView = new Array[View](schema.size)
     for (r ← (1 to numRecords)) {
-      recordWriter.clear
+      recordView(0) = new View(schema.get(0).convert(ids(r % ids.size)))
+      schema.get(0).asString(recordView(0)) should equal(ids(r % ids.size))
 
-      val view0 = new View(recordWriter)
-      TypeUtils.copy(ids(r % ids.size), schema.get(0), recordWriter);
-      schema.get(0).asString(view0) should equal(ids(r % ids.size))
+      recordView(1) = new View(schema.get(1).convert(r.toString))
+      schema.get(1).asString(recordView(1)) should equal(r.toString)
+      ByteUtils.asIntValue(recordView(1).array, recordView(1).offset) should equal(r)
 
-      val view1 = new View(recordWriter)
-      TypeUtils.copy(r.toString, schema.dataType(1), recordWriter);
-      schema.get(1).asString(view1) should equal(r.toString)
-      ByteUtils.asIntValue(view1.array, view1.offset) should equal(r)
-
-      val view2 = new View(recordWriter)
       val s = r.toString.padTo(10, '0')
-      TypeUtils.copy(s, schema.dataType(2), recordWriter);
-      schema.get(2).asString(view2) should equal(s)
+      recordView(2) = new View(schema.get(2).convert(s))
+      schema.get(2).asString(recordView(2)) should equal(s)
 
-      recordWriter.flip
-      segment = partition.appendRecord(segment, recordWriter)
+      segment = partition.appendRecord(segment, recordView)
     }
     partition.add(segment)
     partition.getCount should equal(numRecords)
@@ -136,19 +125,19 @@ class PartitionLoadTest extends FlatSpec with Matchers {
       (partition.getCompressedSize.toDouble / partition.getUncompressedSize < 0.3) should equal(true)
     }
 
-    for(s <- (0 to partition.segments.length-1)) {
-        val scanner = new SegmentScanner("*", "*", partition.segments(s))
-        for (r ← (1 to recordsPerSegment)) {
-          val expectedId = ids(if (r <= recordsPerSegment /2) 0 else 1)
-          //System.err.println(s + ": " + r + " expecting " + expectedId)
-          scanner.next should equal(true)
-          val row = scanner.selectRow
-          schema.get(0).asString(row(0)) should equal(expectedId)
-          val i = ByteUtils.asIntValue(row(1).array, row(1).offset) 
-          (i > s *recordsPerSegment && i <= s*recordsPerSegment + recordsPerSegment) should equal(true)
-//          schema.get(1).asString(row(1)) should equal(r.toString)
-//          schema.get(2).asString(row(2)) should equal(r.toString.padTo(10, '0'))
-        }
+    for (s ← (0 to partition.segments.length - 1)) {
+      val scanner = new SegmentScanner("*", "*", partition.segments(s))
+      for (r ← (1 to recordsPerSegment)) {
+        val expectedId = ids(if (r <= recordsPerSegment / 2) 0 else 1)
+        //System.err.println(s + ": " + r + " expecting " + expectedId)
+        scanner.next should equal(true)
+        val row = scanner.selectRow
+        schema.get(0).asString(row(0)) should equal(expectedId)
+        val i = ByteUtils.asIntValue(row(1).array, row(1).offset)
+        (i > s * recordsPerSegment && i <= s * recordsPerSegment + recordsPerSegment) should equal(true)
+        //          schema.get(1).asString(row(1)) should equal(r.toString)
+        //          schema.get(2).asString(row(2)) should equal(r.toString.padTo(10, '0'))
+      }
     }
   }
 }
