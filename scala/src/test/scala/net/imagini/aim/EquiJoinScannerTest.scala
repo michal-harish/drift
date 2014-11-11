@@ -7,7 +7,7 @@ import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.tools.RowFilter
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.utils.BlockStorageLZ4
+import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.partition.EquiJoinScanner
 import java.io.EOFException
 
@@ -16,7 +16,7 @@ class EquiJoinScannerTest extends FlatSpec with Matchers {
     //Keyspace:at, table: vdna_syncs
     val AS = AimSchema.fromString("at_id(STRING), user_uid(UUID:BYTEARRAY[16])")
     val AS1 = new AimPartition(AS, 1000)
-    AS1.add(new AimSegmentQuickSort(AS, classOf[BlockStorageLZ4])
+    AS1.add(new AimSegmentQuickSort(AS, classOf[BlockStorageMEMLZ4])
       .appendRecord("AT1234", "37b22cfb-a29e-42c3-a3d9-12d32850e103")
       .appendRecord("AT5656", "a7b22cfb-a29e-42c3-a3d9-12d32850e234")
       .appendRecord("AT7888", "89777987-a29e-42c3-a3d9-12d32850e234")
@@ -25,7 +25,7 @@ class EquiJoinScannerTest extends FlatSpec with Matchers {
     //Keyspace:at, table: pageviews
     val AP = AimSchema.fromString("at_id(STRING), url(STRING), timestamp(TIME:LONG)")
     val AP1 = new AimPartition(AP, 1000)
-    AP1.add(new AimSegmentQuickSort(AP, classOf[BlockStorageLZ4])
+    AP1.add(new AimSegmentQuickSort(AP, classOf[BlockStorageMEMLZ4])
       .appendRecord("AT1234", "www.tv.com", "2014-10-10 13:59:01")
       .appendRecord("AT5656", "www.auto.com", "2014-10-10 14:00:01")
       .appendRecord("AT1234", "www.auto.com/offers", "2014-10-10 15:00:01")

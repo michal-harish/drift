@@ -18,13 +18,13 @@ import net.imagini.aim.tools.CountScanner
 import net.imagini.aim.utils.BlockStorage
 import net.imagini.aim.segment.AimSegmentQuickSort
 import java.nio.ByteBuffer
-import net.imagini.aim.utils.BlockStorageLZ4
+import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.utils.View
 
 class AimPartition(
   val schema: AimSchema,
   val segmentSizeBytes: Int,
-  val storageType: Class[_ <: BlockStorage] = classOf[BlockStorageLZ4],
+  val storageType: Class[_ <: BlockStorage] = classOf[BlockStorageMEMLZ4],
   val sortType: Class[_ <: AimSegment] = classOf[AimSegmentQuickSort]
   ) {
 

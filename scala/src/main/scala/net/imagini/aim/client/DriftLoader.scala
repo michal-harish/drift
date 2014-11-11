@@ -13,7 +13,7 @@ import java.nio.ByteBuffer
 import net.imagini.aim.tools.StreamUtils
 import net.jpountz.lz4.LZ4BlockOutputStream
 
-object Loader extends App {
+object DriftLoader extends App {
   var host: String = "localhost"
   var port: Int = 4000
   var keyspace: String = null
@@ -35,13 +35,13 @@ object Loader extends App {
     }
   }
   val loader = file match {
-    case None           ⇒ new Loader(host, port, Protocol.LOADER_USER, keyspace, table, separator, null, gzip)
-    case Some(filename) ⇒ new Loader(host, port, Protocol.LOADER_USER, keyspace, table, separator, new FileInputStream(filename), gzip)
+    case None           ⇒ new DriftLoader(host, port, Protocol.LOADER_USER, keyspace, table, separator, null, gzip)
+    case Some(filename) ⇒ new DriftLoader(host, port, Protocol.LOADER_USER, keyspace, table, separator, new FileInputStream(filename), gzip)
   }
   loader.streamInput
 }
 
-class Loader(host: String, port: Int, protocol: Protocol, 
+class DriftLoader(host: String, port: Int, protocol: Protocol, 
     val keyspace: String, 
     val table: String, 
     val separator: String, 

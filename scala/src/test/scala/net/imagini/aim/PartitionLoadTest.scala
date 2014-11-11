@@ -4,13 +4,13 @@ import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.utils.BlockStorageLZ4
+import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.types.TypeUtils
 import net.imagini.aim.utils.ByteUtils
 import java.util.UUID
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.utils.View
-import net.imagini.aim.utils.BlockStorageMem
+import net.imagini.aim.utils.BlockStorageMEM
 import net.imagini.aim.segment.AimSegmentUnsorted
 import net.imagini.aim.segment.AimSegment
 import net.imagini.aim.utils.BlockStorage
@@ -20,29 +20,29 @@ import net.imagini.aim.segment.SegmentScanner
 class PartitionLoadTest extends FlatSpec with Matchers {
   //unsorted
   "Single-segment partition with unsorted raw storage" should "keep consistent state" in {
-    runLoadTestUnsorted(1, classOf[BlockStorageMem])
+    runLoadTestUnsorted(1, classOf[BlockStorageMEM])
   }
   "Single-segment partition  with unsorted lz4 storage" should "keep consistent state" in {
-    runLoadTestUnsorted(1, classOf[BlockStorageLZ4])
+    runLoadTestUnsorted(1, classOf[BlockStorageMEMLZ4])
   }
   "5-segment partition  with unsorted raw storage" should "keep consistent state" in {
-    runLoadTestUnsorted(5, classOf[BlockStorageMem])
+    runLoadTestUnsorted(5, classOf[BlockStorageMEM])
   }
   "5-segment partition with unsorted lz4 storage" should "keep consistent state" in {
-    runLoadTestUnsorted(5, classOf[BlockStorageLZ4])
+    runLoadTestUnsorted(5, classOf[BlockStorageMEMLZ4])
   }
   //quick-sorted
   "Single block segment with quick-sorted raw storage" should "keep consistent state" in {
-    runLoadTestQuickSorted(1, classOf[BlockStorageMem])
+    runLoadTestQuickSorted(1, classOf[BlockStorageMEM])
   }
   "5-segment partition with with quick-sorted raw storage" should "keep consistent state" in {
-    runLoadTestQuickSorted(5, classOf[BlockStorageMem])
+    runLoadTestQuickSorted(5, classOf[BlockStorageMEM])
   }
   "Single block segment with quick-sorted LZ4 storage" should "keep consistent state" in {
-    runLoadTestQuickSorted(1, classOf[BlockStorageLZ4])
+    runLoadTestQuickSorted(1, classOf[BlockStorageMEMLZ4])
   }
   "5-segment partition with with quick-sorted LZ4 storage" should "keep consistent state" in {
-    runLoadTestQuickSorted(5, classOf[BlockStorageLZ4])
+    runLoadTestQuickSorted(5, classOf[BlockStorageMEMLZ4])
   }
 
   private def runLoadTestUnsorted(numSegments: Int, storageType: Class[_ <: BlockStorage]) {
@@ -80,7 +80,7 @@ class PartitionLoadTest extends FlatSpec with Matchers {
     partition.add(segment)
     partition.getCount should equal(numRecords)
     partition.getNumSegments should equal(numRecords * (16 + 4 + 14) / segmentSize)
-    if (storageType.equals(classOf[BlockStorageLZ4])) {
+    if (storageType.equals(classOf[BlockStorageMEMLZ4])) {
       (partition.getCompressedSize.toDouble / partition.getUncompressedSize < 0.3) should equal(true)
     }
 
@@ -132,7 +132,7 @@ class PartitionLoadTest extends FlatSpec with Matchers {
     partition.add(segment)
     partition.getCount should equal(numRecords)
     partition.getNumSegments should equal(numRecords * (16 + 4 + 14) / segmentSize)
-    if (storageType.equals(classOf[BlockStorageLZ4])) {
+    if (storageType.equals(classOf[BlockStorageMEMLZ4])) {
       (partition.getCompressedSize.toDouble / partition.getUncompressedSize < 0.3) should equal(true)
     }
 

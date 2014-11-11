@@ -5,13 +5,13 @@ import net.imagini.aim.segment.AimSegment
 import java.io.EOFException
 import net.imagini.aim.segment.AimSegmentQuickSort
 import java.io.IOException
-import net.imagini.aim.utils.BlockStorageLZ4
+import net.imagini.aim.utils.BlockStorageMEMLZ4
 import grizzled.slf4j.Logger
 import java.io.InputStreamReader
 import java.io.BufferedReader
 import net.imagini.aim.types.TypeUtils
 import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.client.Loader
+import net.imagini.aim.client.DriftLoader
 import net.imagini.aim.tools.StreamUtils
 import net.imagini.aim.types.AimQueryException
 import net.imagini.aim.utils.View
@@ -62,8 +62,8 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
   }
 
   private def loadUnparsedStream = {
-    val peerLoaders: Map[Int, Loader] = node.peers.map(peer ⇒ {
-      peer._1 -> new Loader(peer._2.getHost, peer._2.getPort, Protocol.LOADER_INTERNAL, keyspace, table, "", null, false)
+    val peerLoaders: Map[Int, DriftLoader] = node.peers.map(peer ⇒ {
+      peer._1 -> new DriftLoader(peer._2.getHost, peer._2.getPort, Protocol.LOADER_INTERNAL, keyspace, table, "", null, false)
     })
     try {
       val source = scala.io.Source.fromInputStream(pipe.getInputStream)

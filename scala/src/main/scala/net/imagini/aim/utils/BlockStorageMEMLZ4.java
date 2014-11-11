@@ -18,7 +18,7 @@ import net.jpountz.lz4.LZ4Factory;
  * 
  * @author mharis
  */
-public class BlockStorageLZ4 extends BlockStorage {
+public class BlockStorageMEMLZ4 extends BlockStorage {
 
     final public static Integer LZ4_BLOCK_SIZE = 524280;
     private int originalSize = 0;

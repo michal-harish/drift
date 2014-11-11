@@ -4,7 +4,7 @@ import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.segment.AimSegmentQuickSort
-import net.imagini.aim.utils.BlockStorageLZ4
+import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.partition.AimPartition
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.segment.GroupScanner
@@ -21,12 +21,12 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
 
     //PAGEVIEWS //TODO ttl = 10
     val schemaPageviews = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
-    val sA1 = new AimSegmentQuickSort(schemaPageviews, classOf[BlockStorageLZ4])
+    val sA1 = new AimSegmentQuickSort(schemaPageviews, classOf[BlockStorageMEMLZ4])
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01")
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02")
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03")
     sA1.appendRecord("12322cfb-a29e-42c3-a3d9-12d32850e103", "www.xyz.com", "2014-10-10 12:01:02")
-    val sA2 = new AimSegmentQuickSort(schemaPageviews, classOf[BlockStorageLZ4])
+    val sA2 = new AimSegmentQuickSort(schemaPageviews, classOf[BlockStorageMEMLZ4])
     sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
     sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
     val partitionPageviews1 = new AimPartition(schemaPageviews, 1000)
@@ -35,7 +35,7 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
 
     //CONVERSIONS //TODO ttl = 10
     val schemaConversions = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)")
-    val sB1 = new AimSegmentQuickSort(schemaConversions, classOf[BlockStorageLZ4])
+    val sB1 = new AimSegmentQuickSort(schemaConversions, classOf[BlockStorageMEMLZ4])
     sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
     sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
     val partitionConversions1 = new AimPartition(schemaConversions, 1000)
@@ -43,10 +43,10 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
 
     //USERFLAGS //TODO ttl = -1
     val schemaUserFlags = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),flag(STRING),value(BOOL)")
-    val sC1 = new AimSegmentQuickSort(schemaUserFlags, classOf[BlockStorageLZ4])
+    val sC1 = new AimSegmentQuickSort(schemaUserFlags, classOf[BlockStorageMEMLZ4])
     sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "true")
     sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
-    val sC2 = new AimSegmentQuickSort(schemaUserFlags, classOf[BlockStorageLZ4])
+    val sC2 = new AimSegmentQuickSort(schemaUserFlags, classOf[BlockStorageMEMLZ4])
     sC2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "opt_out_targetting", "true")
     sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
     sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "false")

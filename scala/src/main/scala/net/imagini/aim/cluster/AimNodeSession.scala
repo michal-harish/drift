@@ -21,7 +21,7 @@ trait AimNodeSession extends Thread {
 
   final override def run = {
     try {
-      while (!node.isSuspended && !isInterrupted) {
+      while (!isInterrupted) {
         try {
           accept
         } catch {

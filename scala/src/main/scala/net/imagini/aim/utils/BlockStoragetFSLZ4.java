@@ -1,6 +1,6 @@
 package net.imagini.aim.utils;
 
-public class BlockStoragetLZ4fs extends BlockStorage {
+public class BlockStoragetFSLZ4 extends BlockStorage {
 
     //var/lib/drift/..
 

@@ -2,8 +2,8 @@ package net.imagini.aim.cluster
 
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
-import net.imagini.aim.utils.BlockStorageLZ4
-import net.imagini.aim.client.Loader
+import net.imagini.aim.utils.BlockStorageMEMLZ4
+import net.imagini.aim.client.DriftLoader
 import java.io.EOFException
 import net.imagini.aim.segment.SegmentScanner
 import net.imagini.aim.segment.MergeScanner
@@ -12,10 +12,10 @@ class BigLoadTest extends FlatSpec with Matchers {
 
   private def getNode: AimNode = {
     val manager = new DriftManagerLocal(1)
-    val storageType = classOf[BlockStorageLZ4]
+    val storageType = classOf[BlockStorageMEMLZ4]
     val node = new AimNode(1, "localhost:9998", manager)
     manager.createTable("addthis", "views", "at_id(STRING), url(STRING), timestamp(LONG)", 5000000, storageType)
-    new Loader("localhost", 9998, Protocol.LOADER_USER, "addthis", "views", "\t", this.getClass.getResourceAsStream("views_big.csv"), false).streamInput should be(5730)
+    new DriftLoader("localhost", 9998, Protocol.LOADER_USER, "addthis", "views", "\t", this.getClass.getResourceAsStream("views_big.csv"), false).streamInput should be(5730)
     val partition = node.regions("addthis.views")
     partition.getCount should be(5730)
     partition.segments.size should be(1)

@@ -9,14 +9,14 @@ import net.imagini.aim.tools.StreamUtils
 import net.imagini.aim.types.Aim
 import net.imagini.aim.utils.Tokenizer
 import net.imagini.aim.types.AimQueryException
-import net.imagini.aim.client.AimClient
+import net.imagini.aim.client.DriftClient
 import net.imagini.aim.cluster.Protocol._
 import net.imagini.aim.tools.StreamMerger
 
 class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
 
-  private val peerClients: Seq[AimClient] = if (pipe.protocol.equals(QUERY_INTERNAL)) Seq() else node.peers.map(peer ⇒ {
-    new AimClient(peer._2.getHost, peer._2.getPort, QUERY_INTERNAL)
+  private val peerClients: Seq[DriftClient] = if (pipe.protocol.equals(QUERY_INTERNAL)) Seq() else node.peers.map(peer ⇒ {
+    new DriftClient(peer._2.getHost, peer._2.getPort, QUERY_INTERNAL)
   }).toSeq
 
   override def accept = {
@@ -63,7 +63,8 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
       ,"STAT <keyspace>"
       ,"SELECT <fields> FROM {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>] [JOIN SELECT ..] [UNION SELECT ..] [INTERSECTION SELECT ..]"
       ,"COUNT {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>]"
-      ,"SELECT ... INTO <keyspace>.<table>"
+      ,"~SELECT ... INTO <keyspace>.<table>"
+      ,"~CREATE TABLE <keyspace>.<table_name> <schema> WITH STORAGE=[MEM|MEMLZ4|FSLZ4], SEGMENT_SIZE=<int_inflated_bytes>"
       ,"CLUSTER DOWN"
       ,"CLUSTER numNodes <int_total_nodes>"
       ,"CLUSTER"

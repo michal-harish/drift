@@ -2,7 +2,7 @@
 //
 //import java.nio.ByteBuffer;
 //
-//import net.imagini.aim.utils.BlockStorageLZ4;
+//import net.imagini.aim.utils.BlockStorageMEMLZ4;
 //
 //public class MemoryTest {
 //
@@ -10,14 +10,14 @@
 //        new MemoryTest();
 //    }
 //
-//    private BlockStorageLZ4[] buf = new BlockStorageLZ4[1000];
+//    private BlockStorageMEMLZ4[] buf = new BlockStorageMEMLZ4[1000];
 //
 //    public MemoryTest() throws InterruptedException {
 //        synchronized(this) {
 //            wait(10000);
 //        }
 //        for (int i=0; i< 100; i ++) {
-//            BlockStorageLZ4 l = new BlockStorageLZ4();
+//            BlockStorageMEMLZ4 l = new BlockStorageMEMLZ4();
 //            l.addBlock(ByteBuffer.allocate(1000000));
 //            buf[i] = l;
 //        }

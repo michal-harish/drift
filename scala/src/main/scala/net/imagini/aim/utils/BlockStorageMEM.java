@@ -3,7 +3,7 @@ package net.imagini.aim.utils;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-public class BlockStorageMem  extends BlockStorage {
+public class BlockStorageMEM  extends BlockStorage {
 
     final public static Integer MEM_BLOCK_SIZE = 65535;
     private LinkedList<byte[]> blocks = new LinkedList<byte[]>();

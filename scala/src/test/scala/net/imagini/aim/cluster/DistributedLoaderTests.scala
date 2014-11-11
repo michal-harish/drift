@@ -1,9 +1,9 @@
 package net.imagini.aim.cluster
 
-import net.imagini.aim.client.Loader
+import net.imagini.aim.client.DriftLoader
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
-import net.imagini.aim.client.AimClient
+import net.imagini.aim.client.DriftClient
 import java.io.EOFException
 
 class DistributedLoaderTests  extends FlatSpec with Matchers {
@@ -16,14 +16,14 @@ class DistributedLoaderTests  extends FlatSpec with Matchers {
   val node3 = new AimNode(3, "localhost:9996", manager)
   val node4 = new AimNode(4, "localhost:9995", manager)
 
-  new Loader("localhost", 9998, Protocol.LOADER_USER, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync_big.csv.gz"), true).streamInput should be(139)
+  new DriftLoader("localhost", 9998, Protocol.LOADER_USER, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync_big.csv.gz"), true).streamInput should be(139)
   node1.regions("vdna.events").getCount should be(39)
   node2.regions("vdna.events").getCount should be(19)
   node3.regions("vdna.events").getCount should be(38)
   node4.regions("vdna.events").getCount should be(43)
   (39 + 19 + 38 +43) should be(139)
 
-  val client = new AimClient("localhost", 9997)
+  val client = new DriftClient("localhost", 9997)
   client.query("STATS vdna") 
   client.hasNext should be(true); client.fetchRecordLine should be("events,1,1,39,39,1916,2322")
   client.hasNext should be(true); client.fetchRecordLine should be("events,3,1,38,38,1585,2173")
@@ -33,7 +33,7 @@ class DistributedLoaderTests  extends FlatSpec with Matchers {
   an[EOFException] must be thrownBy(client.fetchRecordLine)
 
   
-  new Loader("localhost", 9998, Protocol.LOADER_USER, "addthis", "syncs", "    ", this.getClass.getResourceAsStream("datasync_string.csv"), false).streamInput should be(10)
+  new DriftLoader("localhost", 9998, Protocol.LOADER_USER, "addthis", "syncs", "    ", this.getClass.getResourceAsStream("datasync_string.csv"), false).streamInput should be(10)
   client.query("STATS addthis") 
   while(client.hasNext) {
     println(client.fetchRecordLine)

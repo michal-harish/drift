@@ -3,7 +3,7 @@ package net.imagini.aim.cluster
 import net.imagini.aim.types.AimSchema
 import grizzled.slf4j.Logger
 import net.imagini.aim.utils.BlockStorage
-import net.imagini.aim.utils.BlockStorageLZ4
+import net.imagini.aim.utils.BlockStorageMEMLZ4
 
 trait DriftManager {
   val log = Logger[this.type]
@@ -30,6 +30,10 @@ trait DriftManager {
       pathCreatePersistent(root + "/nodes", "1")
       pathCreatePersistent(root + "/keyspaces", "")
     }
+    watchData("/nodes", (num: Option[String]) ⇒ num match {
+      case Some(n) ⇒ expectedNumNodes = Integer.valueOf(n)
+      case None    ⇒ expectedNumNodes = -1
+    })
   }
 
   final def down = {
@@ -41,7 +45,7 @@ trait DriftManager {
   }
 
   final def createTable(keyspace: String, name: String, schemaDeclaration: String) {
-    createTable(keyspace, name, schemaDeclaration, 100000000, classOf[BlockStorageLZ4])
+    createTable(keyspace, name, schemaDeclaration, 100000000, classOf[BlockStorageMEMLZ4])
   }
 
   final def createTable(keyspace: String, name: String, schemaDeclaration: String, segmentSize: Int, storage: Class[_ <: BlockStorage]) {

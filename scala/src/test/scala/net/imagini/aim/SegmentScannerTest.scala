@@ -6,7 +6,7 @@ import org.scalatest.Matchers
 import net.imagini.aim.segment.AimSegment
 import net.imagini.aim.types.Aim
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.utils.BlockStorageLZ4
+import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.utils.ByteUtils
 import net.imagini.aim.segment.AimSegmentUnsorted
 import net.imagini.aim.segment.SegmentScanner
@@ -18,10 +18,10 @@ class SegmentScannerTest extends FlatSpec with Matchers {
 
   "Marking scanner" should "restore the correct block" in {
     val schema = AimSchema.fromString("a(STRING),b(INT)")
-    val column1 = new BlockStorageLZ4()
+    val column1 = new BlockStorageMEMLZ4()
     column1.addBlock(ByteUtils.createStringBuffer("Hello"))
     column1.addBlock(ByteUtils.createStringBuffer("World"))
-    val segment = new AimSegmentUnsorted(schema, classOf[BlockStorageLZ4])
+    val segment = new AimSegmentUnsorted(schema, classOf[BlockStorageMEMLZ4])
 
     segment.appendRecord("Hello", "101")
     segment.appendRecord("World", "99")

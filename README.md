@@ -149,7 +149,45 @@ result = 347 out of 1000000
 
 Quick-Start
 ===========
-cd java
-mvn clean package
-...TODO add quickstart for loading test json data
+
+
+Example 1)  building a cluster from scratch
+-------------------------------------------
+cd scala
+mvn package
+java -jar target/drift-cluster.jar --root test1 --num-nodes 4
+java -jar target/drift-client.jar 'CLUSTER NUM NODES 4'
+#TODO create statment
+java -jar target/drift-client.jar 'CREATE TABLE addthis.views at_id(STRING), url(STRING), timestamp(LONG) WITH STORAGE=LZ4, SEGMENT_SIZE=50000000'
+java -jar target/drift-client.jar 'CREATE TABLE addthis.syncs at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(LONG) WITH STORAGE=LZ4, SEGMENT_SIZE=200000000'
+java -jar target/drift-client.jar 'CREATE TABLE vdna.pageviews user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), url(STRING) WITH STORAGE=LZ4, SEGMENT_SIZE=100000000'
+time cat ~/addthis_syncs_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table syncs
+time cat ~/addthis_views_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table views
+
+
+Example 2) continuous-loading of keyspace from vdna events 
+----------------------------------------------------------
+
+echo '~/kafka/bin/kafka-console-consumer.sh --zookeeper zookeeper-04.prod.visualdna.com $@' > ./kafka8 && chmod a+x ./kafka8
+
+#test datasync 
+cat src/test/resources/datasync.json \
+| jq -r 'select(.partnerUserId!=null and .userUid!=null) | .userUid,.timestamp,.idSpace,.partnerUserId' \
+| java -jar target/drift-loader.jar --keyspace vdna --table syncs
+
+#stream of syncs
+~/kafka8 --topic datasync \
+| jq -r 'select(.partnerUserId!=null and .userUid!=null) | .userUid,.timestamp,.idSpace,.partnerUserId' \
+| java -jar target/drift-loader.jar --keyspace vdna --table syncs
+
+#test pageviews
+cat src/test/resources/pageviews.json \
+| jq -r 'select(.userUid!=null) | .userUid,.timestamp,.type,.url' \
+| java -jar target/drift-loader.jar --keyspace vdna --table events
+
+#stream of pageviews
+~/kafka8 --topic pageviews \
+| jq -r 'select(.userUid!=null and .type!=null) | .userUid,.timestamp,.type,.url' \
+| java -jar target/drift-loader.jar --keyspace vdna --table events
+
 

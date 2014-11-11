@@ -16,13 +16,13 @@ class AimNodeAcceptor(val node: AimNode, listenPort: Int) extends Thread {
 
   override def run = {
     try {
-      while (!isInterrupted && !node.isSuspended) {
+      while (!isInterrupted) {
         val socket = controllerListener.accept
         try {
           val pipe = new Pipe(socket)
           log.debug("Node " + pipe.protocol + " connection from " + socket.getRemoteSocketAddress.toString)
           pipe.protocol match {
-            case Protocol.LOADER_USER | Protocol.LOADER_INTERNAL ⇒ node.session(new AimNodeLoaderSession(node, pipe))
+            case Protocol.LOADER_USER | Protocol.LOADER_INTERNAL ⇒ if (node.isSuspended) interrupt else node.session(new AimNodeLoaderSession(node, pipe))
             case Protocol.QUERY_USER | Protocol.QUERY_INTERNAL ⇒ node.session(new AimNodeQuerySession(node, pipe))
             case _ ⇒ log.debug("Unsupported protocol request " + pipe.protocol)
           }

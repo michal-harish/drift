@@ -1,6 +1,6 @@
 package net.imagini.aim
 
-import net.imagini.aim.utils.BlockStorageLZ4
+import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.utils.ByteUtils
 import net.imagini.aim.utils.View
 import org.scalatest.Matchers
@@ -26,7 +26,7 @@ class BlockStorageTest extends FlatSpec with Matchers {
       "*&^%$REFGHJIO()*&TYGHJKOsdilhp*(^o87tI&^ri7k6rftu,giUTku7yFKI7krtkuYrfkU" +
       "\n"
 
-  val instance = new BlockStorageLZ4()
+  val instance = new BlockStorageMEMLZ4()
   instance.addBlock(ByteUtils.wrap((value1).getBytes))
   instance.addBlock(ByteUtils.wrap((value2).getBytes))
   instance.compressedSize should equal(168)

@@ -15,7 +15,7 @@ import net.imagini.aim.utils.ByteUtils
 import java.nio.ByteBuffer
 import net.imagini.aim.cluster.AimNode
 
-object AimClient extends App {
+object DriftClient extends App {
 
   var host: String = "localhost"
   var port: Int = 4000
@@ -34,7 +34,7 @@ object AimClient extends App {
   query match {
     case None ⇒ println("Usage: java jar drift-client.jar [--host <localhost> --port <4000> --separator<\\t>] '<query>'")
     case Some(query) ⇒ {
-      val client = new AimClient(host, port)
+      val client = new DriftClient(host, port)
       client.query(query) match {
         case None ⇒ println("Invalid DRFIT Query")
         case Some(schema) ⇒ {
@@ -47,7 +47,7 @@ object AimClient extends App {
   }
 }
 
-class AimClient(val host: String, val port: Int, val protocol: Protocol) {
+class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
   def this(host: String, port: Int) = this(host, port, Protocol.QUERY_USER)
   private var socket: Socket = null
   private var pipe: Pipe = null

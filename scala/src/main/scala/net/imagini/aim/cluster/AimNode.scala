@@ -9,54 +9,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.JavaConverters._
 
 import grizzled.slf4j.Logger
-import net.imagini.aim.client.AimConsole
 import net.imagini.aim.partition.AimPartition
 import net.imagini.aim.partition.QueryParser
 import net.imagini.aim.partition.StatScanner
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorage
-import net.imagini.aim.utils.BlockStorageLZ4
-
-object AimNode extends App {
-  val log = Logger[this.type]
-  var port: Int = 4000
-  var zkConnect: String = "localhost:2181"
-  val argsIterator = args.iterator
-  while (argsIterator.hasNext) {
-    argsIterator.next match {
-      case "--zookeeper" ⇒ zkConnect = argsIterator.next
-      case "--port"      ⇒ port = argsIterator.next.toInt
-      case arg: String   ⇒ println("Unknown argument " + arg)
-    }
-  }
-
-  //SPAWNING CLUSTER
-  val manager: DriftManager = new DriftManagerZk(zkConnect)
-  val localNumNodes = 4
-  val localNodes = (1 to localNumNodes).map(n ⇒ new AimNode(n, "localhost:" + (4000 + n - 1).toString, manager))
-
-  //CREATING TABLES
-  val storageType = classOf[BlockStorageLZ4]
-  manager.createTable("addthis", "views", "at_id(STRING), url(STRING), timestamp(LONG)", 50000000, storageType)
-  manager.createTable("addthis", "syncs", "at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(LONG)", 200000000, storageType)
-  //  manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), type(STRING), url(STRING)", 100000000, storageType)
-  manager.createTable("vdna", "pageviews", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), url(STRING)", 100000000, storageType)
-  //  manager.createTable("vdna", "syncs", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), id_space(STRING), partner_user_id(STRING)", 100000000, storageType)
-
-  //ATTACH CONSOLE
-  val console = new AimConsole("localhost", 4000)
-  console.start
-
-  //WAIT FOR DISTRIBUTED SHUTDOWN
-  if (localNodes.forall(_.isShutdown)) {
-    manager.close
-    console.close
-    System.exit(0)
-  }
-  log.debug("Main thread premature exit")
-  System.exit(1)
-}
+import net.imagini.aim.utils.BlockStorageMEMLZ4
 
 class AimNode(val id: Int, val address: String, val manager: DriftManager) {
 
