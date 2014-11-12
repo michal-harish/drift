@@ -29,7 +29,7 @@ class BlockStorageTest extends FlatSpec with Matchers {
   val instance = new BlockStorageMEMLZ4()
   instance.addBlock(ByteUtils.wrap((value1).getBytes))
   instance.addBlock(ByteUtils.wrap((value2).getBytes))
-  instance.compressedSize should equal(168)
+  instance.storedSize should equal(168)
   instance.originalSize should equal(value1.length + value2.length)
 
   ByteUtils.compare(instance.view(0).array, instance.view(0).offset, instance.view(0).size, value1.getBytes, 0, value1.getBytes.length) should be(0)

@@ -9,9 +9,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.JavaConverters._
 
 import grizzled.slf4j.Logger
-import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.partition.QueryParser
-import net.imagini.aim.partition.StatScanner
+import net.imagini.aim.region.AimRegion
+import net.imagini.aim.region.QueryParser
+import net.imagini.aim.region.StatScanner
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorage
@@ -54,21 +54,21 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
       shutdown
     }
   }
-  private var keyspaceRefs = new ConcurrentHashMap[String, ConcurrentMap[String, AimPartition]]()
+  private var keyspaceRefs = new ConcurrentHashMap[String, ConcurrentMap[String, AimRegion]]()
   def keyspaces = keyspaceRefs.keySet.asScala
-  def regions: Map[String, AimPartition] = keyspaceRefs.asScala.flatMap(r ⇒ {
+  def regions: Map[String, AimRegion] = keyspaceRefs.asScala.flatMap(r ⇒ {
     val keyspace = r._1
-    r._2.asScala.map(partition ⇒ {
-      val table = partition._1
-      val region = partition._2
+    r._2.asScala.map(reigion ⇒ {
+      val table = reigion._1
+      val region = reigion._2
       keyspace + "." + table -> region
     })
   }).toMap
   def stats(keyspaceName: String): AbstractScanner = {
     if (keyspaceName == null || keyspaceName.isEmpty) {
-      new StatScanner(id, keyspaceRefs.asScala.flatMap(k ⇒ k._2.asScala.map { case (t, partition) ⇒ k._1 + "." + t -> partition }).toMap)
+      new StatScanner(id, keyspaceRefs.asScala.flatMap(k ⇒ k._2.asScala.map { case (t, region) ⇒ k._1 + "." + t -> region }).toMap)
     } else {
-      new StatScanner(id, keyspaceRefs.get(keyspaceName).asScala.map { case (t, partition) ⇒ t -> partition }.toMap)
+      new StatScanner(id, keyspaceRefs.get(keyspaceName).asScala.map { case (t, region) ⇒ t -> region }.toMap)
     }
   }
   def query(query: String): AbstractScanner = new QueryParser(regions).parse(query)
@@ -112,7 +112,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   manager.watch("/keyspaces", (ks: Map[String, String]) ⇒ {
     keyspaceRefs.asScala.keys.filter(!ks.contains(_)).map(keyspaceRefs.remove(_))
     ks.keys.filter(!keyspaceRefs.containsKey(_)).map(k ⇒ {
-      keyspaceRefs.put(k, new ConcurrentHashMap[String, AimPartition]())
+      keyspaceRefs.put(k, new ConcurrentHashMap[String, AimRegion]())
       manager.watch("/keyspaces/" + k, (tables: Map[String, String]) ⇒ {
         keyspaceRefs.get(k).asScala.keys.filter(!tables.contains(_)).map(keyspaceRefs.get(k).remove(_))
         tables.filter(t ⇒ !keyspaceRefs.get(k).containsKey(t._1)).map(t ⇒ {
@@ -120,7 +120,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
           val schema = AimSchema.fromString(tableDescriptor(0))
           val segmentSize = java.lang.Integer.valueOf(tableDescriptor(1))
           val storageType = Class.forName(tableDescriptor(2)).asInstanceOf[Class[BlockStorage]]
-          keyspaceRefs.get(k).put(t._1, new AimPartition(schema, segmentSize, storageType))
+          keyspaceRefs.get(k).put(t._1, new AimRegion(schema, segmentSize, storageType))
           log.debug(id + ": " + k + "." + t._1 + " " + keyspaceRefs.get(k).get(t._1).toString)
         })
       })

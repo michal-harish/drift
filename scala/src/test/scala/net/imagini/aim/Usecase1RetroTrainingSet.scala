@@ -5,15 +5,15 @@ import org.scalatest.FlatSpec
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.utils.BlockStorageMEMLZ4
-import net.imagini.aim.partition.AimPartition
+import net.imagini.aim.region.AimRegion
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.segment.GroupScanner
-import net.imagini.aim.partition.EquiJoinScanner
-import net.imagini.aim.partition.IntersectionJoinScanner
-import net.imagini.aim.partition.UnionJoinScanner
+import net.imagini.aim.region.EquiJoinScanner
+import net.imagini.aim.region.IntersectionJoinScanner
+import net.imagini.aim.region.UnionJoinScanner
 import net.imagini.aim.types.Aim
 import java.io.EOFException
-import net.imagini.aim.partition.QueryParser
+import net.imagini.aim.region.QueryParser
 
 class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
 
@@ -29,17 +29,17 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
     val sA2 = new AimSegmentQuickSort(schemaPageviews, classOf[BlockStorageMEMLZ4])
     sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
     sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
-    val partitionPageviews1 = new AimPartition(schemaPageviews, 1000)
-    partitionPageviews1.add(sA1)
-    partitionPageviews1.add(sA2)
+    val regionPageviews1 = new AimRegion(schemaPageviews, 1000)
+    regionPageviews1.add(sA1)
+    regionPageviews1.add(sA2)
 
     //CONVERSIONS //TODO ttl = 10
     val schemaConversions = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)")
     val sB1 = new AimSegmentQuickSort(schemaConversions, classOf[BlockStorageMEMLZ4])
     sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
     sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
-    val partitionConversions1 = new AimPartition(schemaConversions, 1000)
-    partitionConversions1.add(sB1)
+    val regionConversions1 = new AimRegion(schemaConversions, 1000)
+    regionConversions1.add(sB1)
 
     //USERFLAGS //TODO ttl = -1
     val schemaUserFlags = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),flag(STRING),value(BOOL)")
@@ -50,16 +50,16 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
     sC2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "opt_out_targetting", "true")
     sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
     sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "false")
-    val partitionUserFlags1 = new AimPartition(schemaUserFlags, 1000)
-    partitionUserFlags1.add(sC1)
-    partitionUserFlags1.add(sC2)
+    val regionUserFlags1 = new AimRegion(schemaUserFlags, 1000)
+    regionUserFlags1.add(sC1)
+    regionUserFlags1.add(sC2)
 
 
     //PARTION
-    val regions = Map[String, AimPartition](
-      "vdna.pageviews" -> partitionPageviews1,
-      "vdna.conversions" -> partitionConversions1,
-      "vdna.flags" -> partitionUserFlags1)
+    val regions = Map[String, AimRegion](
+      "vdna.pageviews" -> regionPageviews1,
+      "vdna.conversions" -> regionConversions1,
+      "vdna.flags" -> regionUserFlags1)
     val parser = new QueryParser(regions)
     val tsetJoin = parser.parse("select user_uid from vdna.flags where value='true' and flag='quizzed' or flag='cc' join " +
         "(select user_uid,url,timestamp from vdna.pageviews where url contains 'travel.com' union " 

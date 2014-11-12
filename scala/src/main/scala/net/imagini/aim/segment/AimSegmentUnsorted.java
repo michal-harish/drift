@@ -5,7 +5,7 @@ import java.io.IOException;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.utils.BlockStorage;
 
-final public class AimSegmentUnsorted extends AimSegmentAbstract {
+final public class AimSegmentUnsorted extends AimSegment {
 
     public AimSegmentUnsorted(AimSchema schema,
             Class<? extends BlockStorage> storageType)

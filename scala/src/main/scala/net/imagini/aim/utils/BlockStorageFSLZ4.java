@@ -1,17 +1,21 @@
 package net.imagini.aim.utils;
 
-public class BlockStoragetFSLZ4 extends BlockStorage {
+public class BlockStorageFSLZ4 extends BlockStorage {
 
-    //var/lib/drift/..
+    private static final String BASE_PATH ="/var/lib/drift";
+    private final String path;
 
-    @Override
-    protected byte[] allocateBlock() {
-        // TODO Auto-generated method stub
-        return null;
+    public BlockStorageFSLZ4(String identifier) {
+        this.path = BASE_PATH + "/" + identifier + "/";
     }
 
     @Override
-    protected int compressBlock(byte[] array, int offset, int length) {
+    protected int blockSize() {
+        return 67108864; //64Mb
+    }
+
+    @Override
+    protected int storeBlock(byte[] array, int offset, int length) {
         // TODO Auto-generated method stub
         return 0;
     }
@@ -23,7 +27,7 @@ public class BlockStoragetFSLZ4 extends BlockStorage {
     }
 
     @Override
-    public long compressedSize() {
+    public long storedSize() {
         // TODO Auto-generated method stub
         return 0;
     }

@@ -1,4 +1,4 @@
-package net.imagini.aim.partition
+package net.imagini.aim.region
 
 import scala.collection.mutable.Queue
 import net.imagini.aim.segment.MergeScanner
@@ -26,7 +26,7 @@ case class PVar(name: String) extends PExp //[AimType]
 case class PWildcard(dataframe: PDataFrame) extends PExp //[AimType]
 abstract class PBoolExp extends PExp //[Boolean]
 
-class QueryParser(val regions: Map[String, AimPartition]) extends App {
+class QueryParser(val regions: Map[String, AimRegion]) extends App {
 
   def parse(query: String): AbstractScanner = compile(frame(query))
 

@@ -16,9 +16,9 @@ class BigLoadTest extends FlatSpec with Matchers {
     val node = new AimNode(1, "localhost:9998", manager)
     manager.createTable("addthis", "views", "at_id(STRING), url(STRING), timestamp(LONG)", 5000000, storageType)
     new DriftLoader("localhost", 9998, Protocol.LOADER_USER, "addthis", "views", "\t", this.getClass.getResourceAsStream("views_big.csv"), false).streamInput should be(5730)
-    val partition = node.regions("addthis.views")
-    partition.getCount should be(5730)
-    partition.segments.size should be(1)
+    val region = node.regions("addthis.views")
+    region.getCount should be(5730)
+    region.segments.size should be(1)
     node
   }
 
@@ -26,8 +26,8 @@ class BigLoadTest extends FlatSpec with Matchers {
     var total = 0
     var filtered = 0
     val node = getNode
-    val partition = node.regions("addthis.views")
-    val segment = partition.segments(0)
+    val region = node.regions("addthis.views")
+    val segment = region.segments(0)
     val segmentScanner = new SegmentScanner("*", "*", segment)
     while (segmentScanner.next) {
       total += 1
@@ -45,9 +45,9 @@ class BigLoadTest extends FlatSpec with Matchers {
     var total = 0
     var filtered = 0
     val node = getNode
-    val partition = node.regions("addthis.views")
-    val segment = partition.segments(0)
-    val mergeScanner = new MergeScanner("*", "*", partition.segments)
+    val region = node.regions("addthis.views")
+    val segment = region.segments(0)
+    val mergeScanner = new MergeScanner("*", "*", region.segments)
     while (mergeScanner.next) {
       total += 1
       if (mergeScanner.selectLine(" ").contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
@@ -63,8 +63,8 @@ class BigLoadTest extends FlatSpec with Matchers {
   "SegmentScanner with filter" should "yield same as grep" in {
     var filtered = 0
     val node = getNode
-    val partition = node.regions("addthis.views")
-    val segment = partition.segments(0)
+    val region = node.regions("addthis.views")
+    val segment = region.segments(0)
     val segmentScanner = new SegmentScanner("*", "url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'", segment)
     while (segmentScanner.next) {
       filtered += 1
@@ -96,14 +96,4 @@ class BigLoadTest extends FlatSpec with Matchers {
     node.manager.down
   }
 
-  "Partition for all" should "yield all loaded records" in {
-
-    //  val scanner = node.query("select * from addthis.views where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'")
-    //  var count = 0
-
-    //    while (scanner.next) {
-    //      System.err.println(scanner.nextLine)
-    //      count += 1
-    //    }
-  }
 }

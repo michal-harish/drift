@@ -1,4 +1,4 @@
-package net.imagini.aim.partition
+package net.imagini.aim.region
 
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.types.AimSchema

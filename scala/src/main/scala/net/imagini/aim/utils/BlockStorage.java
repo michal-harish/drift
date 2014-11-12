@@ -17,23 +17,19 @@ abstract public class BlockStorage {
     final public ByteBuffer hotSpot = null;
     protected LinkedList<Integer> lengths = new LinkedList<Integer>();
 
-    final public ByteBuffer newBlock() {
-        return ByteUtils.wrap(allocateBlock());
-    }
-
     final private ConcurrentMap<Integer, byte[]> cache = new ConcurrentHashMap<>();
 
     final private LinkedList<AtomicInteger> blocks = new LinkedList<>();
 
-    final public int addBlock(ByteBuffer block) {
-        return addBlock(block.array(), 0, block.limit());
+    final public ByteBuffer newBlock() {
+        return ByteUtils.wrap(new byte[blockSize()]);
     }
 
-    final public int addBlock(byte[] array, int offset, int length) {
+    final public int addBlock(ByteBuffer block) {
         synchronized(blocks) {
             blocks.add(new AtomicInteger(0));
-            lengths.add(length);
-            return compressBlock(array, offset, length);
+            lengths.add(block.limit());
+            return storeBlock(block.array(), 0, block.limit());
         }
     }
 
@@ -64,13 +60,13 @@ abstract public class BlockStorage {
         deref(block);
     }
 
-    abstract protected byte[] allocateBlock();
+    abstract protected int blockSize();
 
-    abstract protected int compressBlock(byte[] array, int offset, int length);
+    abstract protected int storeBlock(byte[] array, int offset, int length);
 
     abstract public int numBlocks();
 
-    abstract public long compressedSize();
+    abstract public long storedSize();
 
     abstract public long originalSize();
 

@@ -1,4 +1,4 @@
-package net.imagini.aim.partition
+package net.imagini.aim.region
 
 import scala.collection.immutable.SortedMap
 import net.imagini.aim.tools.AbstractScanner
@@ -10,26 +10,25 @@ import java.io.EOFException
 import net.imagini.aim.types.AimType
 import net.imagini.aim.utils.View
 
-class StatScanner(val partition: Int, val regions: Map[String,AimPartition]) extends AbstractScanner {
+class StatScanner(val region: Int, val regions: Map[String, AimRegion]) extends AbstractScanner {
 
   override val schema = AimSchema.fromString("table(STRING),region(INT),segments(LONG),count(LONG),distinct(LONG),compressed(LONG),uncompressed(LONG)")
 
-  override val keyType:AimType = Aim.STRING
+  override val keyType: AimType = Aim.STRING
 
-  private val data: SortedMap[String,Array[View]] = SortedMap(regions.map(r => {
-        r._1 -> Array( 
-            new View(schema.get(0).convert(r._1)),
-            new View(schema.get(1).convert(partition.toString)),
-            new View(schema.get(2).convert(r._2.getNumSegments.toString)),
-            new View(schema.get(3).convert(r._2.getCount.toString)),
-            //TODO count(!) count distinct should be different from count(*)
-            new View(schema.get(4).convert(r._2.getCount.toString)),
-            new View(schema.get(5).convert(r._2.getCompressedSize.toString)),
-            new View(schema.get(6).convert(r._2.getUncompressedSize.toString))
-         )
-  }).toSeq:_* )
+  private val data: SortedMap[String, Array[View]] = SortedMap(regions.map(r ⇒ {
+    r._1 -> Array(
+      new View(schema.get(0).convert(r._1)),
+      new View(schema.get(1).convert(region.toString)),
+      new View(schema.get(2).convert(r._2.getNumSegments.toString)),
+      new View(schema.get(3).convert(r._2.getCount.toString)),
+      //TODO count(!) count distinct should be different from count(*)
+      new View(schema.get(4).convert(r._2.getCount.toString)),
+      new View(schema.get(5).convert(r._2.getCompressedSize.toString)),
+      new View(schema.get(6).convert(r._2.getUncompressedSize.toString)))
+  }).toSeq: _*)
 
-  private val rowIndex: Map[Int,String] = (data.keys, 0 to data.size-1).zipped.map((t,i) => i -> t).toMap
+  private val rowIndex: Map[Int, String] = (data.keys, 0 to data.size - 1).zipped.map((t, i) ⇒ i -> t).toMap
 
   private var currentRow = -1
   private var rowMark = -1

@@ -10,14 +10,14 @@ import net.imagini.aim.types.TypeUtils
 class AimNodeLoader(val keyspace: String, val table: String, val node: AimNode) {
   val log = Logger[this.type]
   val totalNodes = node.manager.expectedNumNodes
-  val partition = node.regions(keyspace + "." + table)
-  val schema = partition.schema
+  val region = node.regions(keyspace + "." + table)
+  val schema = region.schema
   val keyType = schema.get(0)
   val peerLoaders: Map[Int, DriftLoader] = node.peers.map(peer ⇒ {
     peer._1 -> new DriftLoader(peer._2.getHost, peer._2.getPort, Protocol.LOADER_INTERNAL, keyspace, table, "", null, false)
   })
 
-  private var localSegment: AimSegment = partition.createNewSegment
+  private var localSegment: AimSegment = region.createNewSegment
   private var count: Long = 0
 
   def insert(record: String*) {
@@ -27,7 +27,7 @@ class AimNodeLoader(val keyspace: String, val table: String, val node: AimNode) 
   def insert(record: Array[Array[Byte]]) {
     val targetNode = keyType.partition(new View(record(0)), totalNodes) + 1
     if (targetNode == node.id) {
-      localSegment = partition.appendRecord(localSegment, record)
+      localSegment = region.appendRecord(localSegment, record)
       count += 1
     } else {
       var r = 0; while (r < record.length) {
@@ -41,7 +41,7 @@ class AimNodeLoader(val keyspace: String, val table: String, val node: AimNode) 
   def insert(record: Array[View]) {
     val targetNode = keyType.partition(record(0), totalNodes) + 1
     if (targetNode == node.id) {
-      localSegment = partition.appendRecord(localSegment, record)
+      localSegment = region.appendRecord(localSegment, record)
       count += 1
     } else {
       var r = 0; while (r < record.length) {
@@ -54,7 +54,7 @@ class AimNodeLoader(val keyspace: String, val table: String, val node: AimNode) 
   }
 
   def finish: Long = {
-    partition.add(localSegment)
+    region.add(localSegment)
     peerLoaders.values.foreach(peer ⇒ count += peer.ackLoadedCount)
     count
   }

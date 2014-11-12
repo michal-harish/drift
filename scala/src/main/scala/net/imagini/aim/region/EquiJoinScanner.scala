@@ -1,4 +1,4 @@
-package net.imagini.aim.partition
+package net.imagini.aim.region
 
 import java.io.EOFException
 import scala.collection.mutable.LinkedList

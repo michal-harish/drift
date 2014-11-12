@@ -3,7 +3,7 @@ package net.imagini.aim
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.partition.AimPartition
+import net.imagini.aim.region.AimRegion
 import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.types.TypeUtils
 import net.imagini.aim.utils.ByteUtils
@@ -17,31 +17,31 @@ import net.imagini.aim.utils.BlockStorage
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.segment.SegmentScanner
 
-class PartitionLoadTest extends FlatSpec with Matchers {
+class RegionLoadTest extends FlatSpec with Matchers {
   //unsorted
-  "Single-segment partition with unsorted raw storage" should "keep consistent state" in {
+  "Single-segment region with unsorted raw storage" should "keep consistent state" in {
     runLoadTestUnsorted(1, classOf[BlockStorageMEM])
   }
-  "Single-segment partition  with unsorted lz4 storage" should "keep consistent state" in {
+  "Single-segment region  with unsorted lz4 storage" should "keep consistent state" in {
     runLoadTestUnsorted(1, classOf[BlockStorageMEMLZ4])
   }
-  "5-segment partition  with unsorted raw storage" should "keep consistent state" in {
+  "5-segment region  with unsorted raw storage" should "keep consistent state" in {
     runLoadTestUnsorted(5, classOf[BlockStorageMEM])
   }
-  "5-segment partition with unsorted lz4 storage" should "keep consistent state" in {
+  "5-segment region with unsorted lz4 storage" should "keep consistent state" in {
     runLoadTestUnsorted(5, classOf[BlockStorageMEMLZ4])
   }
   //quick-sorted
   "Single block segment with quick-sorted raw storage" should "keep consistent state" in {
     runLoadTestQuickSorted(1, classOf[BlockStorageMEM])
   }
-  "5-segment partition with with quick-sorted raw storage" should "keep consistent state" in {
+  "5-segment region with with quick-sorted raw storage" should "keep consistent state" in {
     runLoadTestQuickSorted(5, classOf[BlockStorageMEM])
   }
   "Single block segment with quick-sorted LZ4 storage" should "keep consistent state" in {
     runLoadTestQuickSorted(1, classOf[BlockStorageMEMLZ4])
   }
-  "5-segment partition with with quick-sorted LZ4 storage" should "keep consistent state" in {
+  "5-segment region with with quick-sorted LZ4 storage" should "keep consistent state" in {
     runLoadTestQuickSorted(5, classOf[BlockStorageMEMLZ4])
   }
 
@@ -53,9 +53,9 @@ class PartitionLoadTest extends FlatSpec with Matchers {
     val numRecords = recordsPerSegment * numSegments
     val ids: Array[String] = Array("0dc56198-975d-4cf9-9b3f-a52581dee886", "32c07e66-0824-4e1c-b126-bd0a2e586bae")
 
-    val partition = new AimPartition(schema, segmentSize, storageType, classOf[AimSegmentUnsorted])
+    val region = new AimRegion(schema, segmentSize, storageType, classOf[AimSegmentUnsorted])
 
-    var segment = partition.createNewSegment
+    var segment = region.createNewSegment
     val recordView = new Array[View](schema.size)
     for (r ← (1 to numRecords)) {
 
@@ -70,17 +70,17 @@ class PartitionLoadTest extends FlatSpec with Matchers {
       recordView(2) = new View(schema.get(2).convert(s))
       schema.get(2).asString(recordView(2)) should equal(s)
 
-      segment = partition.appendRecord(segment, recordView)
+      segment = region.appendRecord(segment, recordView)
     }
-    partition.add(segment)
-    partition.getCount should equal(numRecords)
-    partition.getNumSegments should equal(numRecords * (16 + 4 + 14) / segmentSize)
+    region.add(segment)
+    region.getCount should equal(numRecords)
+    region.getNumSegments should equal(numRecords * (16 + 4 + 14) / segmentSize)
     if (storageType.equals(classOf[BlockStorageMEMLZ4])) {
-      (partition.getCompressedSize.toDouble / partition.getUncompressedSize < 0.3) should equal(true)
+      (region.getCompressedSize.toDouble / region.getUncompressedSize < 0.3) should equal(true)
     }
 
-    for (s ← (0 to partition.segments.length - 1)) {
-      val scanner = new SegmentScanner("*", "*", partition.segments(s))
+    for (s ← (0 to region.segments.length - 1)) {
+      val scanner = new SegmentScanner("*", "*", region.segments(s))
       for (r ← (s * recordsPerSegment + 1 to (s + 1) * recordsPerSegment)) {
         scanner.next should equal(true)
         val row = scanner.selectRow
@@ -100,9 +100,9 @@ class PartitionLoadTest extends FlatSpec with Matchers {
     val numRecords = recordsPerSegment * numSegments
     val ids: Array[String] = Array("0dc56198-975d-4cf9-9b3f-a52581dee886", "32c07e66-0824-4e1c-b126-bd0a2e586bae")
 
-    val partition = new AimPartition(schema, segmentSize, storageType, classOf[AimSegmentQuickSort])
+    val region = new AimRegion(schema, segmentSize, storageType, classOf[AimSegmentQuickSort])
 
-    var segment = partition.createNewSegment
+    var segment = region.createNewSegment
     val recordView = new Array[View](schema.size)
     for (r ← (1 to numRecords)) {
       recordView(0) = new View(schema.get(0).convert(ids(r % ids.size)))
@@ -116,17 +116,17 @@ class PartitionLoadTest extends FlatSpec with Matchers {
       recordView(2) = new View(schema.get(2).convert(s))
       schema.get(2).asString(recordView(2)) should equal(s)
 
-      segment = partition.appendRecord(segment, recordView)
+      segment = region.appendRecord(segment, recordView)
     }
-    partition.add(segment)
-    partition.getCount should equal(numRecords)
-    partition.getNumSegments should equal(numRecords * (16 + 4 + 14) / segmentSize)
+    region.add(segment)
+    region.getCount should equal(numRecords)
+    region.getNumSegments should equal(numRecords * (16 + 4 + 14) / segmentSize)
     if (storageType.equals(classOf[BlockStorageMEMLZ4])) {
-      (partition.getCompressedSize.toDouble / partition.getUncompressedSize < 0.3) should equal(true)
+      (region.getCompressedSize.toDouble / region.getUncompressedSize < 0.3) should equal(true)
     }
 
-    for (s ← (0 to partition.segments.length - 1)) {
-      val scanner = new SegmentScanner("*", "*", partition.segments(s))
+    for (s ← (0 to region.segments.length - 1)) {
+      val scanner = new SegmentScanner("*", "*", region.segments(s))
       for (r ← (1 to recordsPerSegment)) {
         val expectedId = ids(if (r <= recordsPerSegment / 2) 0 else 1)
         //System.err.println(s + ": " + r + " expecting " + expectedId)

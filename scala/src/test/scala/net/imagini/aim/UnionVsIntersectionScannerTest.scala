@@ -5,10 +5,10 @@ import org.scalatest.FlatSpec
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.utils.BlockStorageMEMLZ4
-import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.partition.IntersectionJoinScanner
+import net.imagini.aim.region.AimRegion
+import net.imagini.aim.region.IntersectionJoinScanner
 import net.imagini.aim.segment.MergeScanner
-import net.imagini.aim.partition.UnionJoinScanner
+import net.imagini.aim.region.UnionJoinScanner
 import java.io.EOFException
 import net.imagini.aim.types.Aim
 
@@ -24,9 +24,9 @@ class UnionVsIntersectionScannerTest extends FlatSpec with Matchers {
       val sA2 = new AimSegmentQuickSort(schemaA, classOf[BlockStorageMEMLZ4])
       sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
       sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
-      val partitionA1 = new AimPartition(schemaA, 1000)
-      partitionA1.add(sA1)
-      partitionA1.add(sA2)
+      val regionA1 = new AimRegion(schemaA, 1000)
+      regionA1.add(sA1)
+      regionA1.add(sA2)
 
       //CONVERSIONS
       val schemaB = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)")
@@ -35,12 +35,12 @@ class UnionVsIntersectionScannerTest extends FlatSpec with Matchers {
       sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
       sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
 
-      val partitionB1 = new AimPartition(schemaB, 1000)
-      partitionB1.add(sB1)
+      val regionB1 = new AimRegion(schemaB, 1000)
+      regionB1.add(sB1)
 
       val unionJoin = new UnionJoinScanner(
-          new MergeScanner("user_uid, url, timestamp", "*", partitionA1.segments), 
-          new MergeScanner("user_uid, url, timestamp, conversion", "*", partitionB1.segments)
+          new MergeScanner("user_uid, url, timestamp", "*", regionA1.segments), 
+          new MergeScanner("user_uid, url, timestamp, conversion", "*", regionB1.segments)
       )
       unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.auto.com/mycar\t2014-10-10 11:59:01\t" + Aim.EMPTY)
       unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 12:01:02\t" + Aim.EMPTY)
@@ -54,8 +54,8 @@ class UnionVsIntersectionScannerTest extends FlatSpec with Matchers {
       an[EOFException] must be thrownBy unionJoin.nextLine
 
       val intersectionJoin = new IntersectionJoinScanner(
-          new MergeScanner("user_uid, url, timestamp", "*", partitionA1.segments), 
-          new MergeScanner("user_uid, url, timestamp, conversion", "*", partitionB1.segments)
+          new MergeScanner("user_uid, url, timestamp", "*", regionA1.segments), 
+          new MergeScanner("user_uid, url, timestamp, conversion", "*", regionB1.segments)
       )
       intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.auto.com/mycar\t2014-10-10 11:59:01\t" + Aim.EMPTY)
       intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 12:01:02\t" + Aim.EMPTY)

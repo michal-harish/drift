@@ -22,7 +22,7 @@ import net.imagini.aim.utils.ByteKey;
  * 
  * @author mharis
  */
-public class AimSegmentQuickSort extends AimSegmentAbstract {
+public class AimSegmentQuickSort extends AimSegment {
 
     final private int sortColumn;
     private Map<ByteKey, List<byte[][]>> sortMap = new HashMap<>();

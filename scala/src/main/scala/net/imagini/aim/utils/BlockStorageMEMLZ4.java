@@ -20,7 +20,6 @@ import net.jpountz.lz4.LZ4Factory;
  */
 public class BlockStorageMEMLZ4 extends BlockStorage {
 
-    final public static Integer LZ4_BLOCK_SIZE = 524280;
     private int originalSize = 0;
     private int compressedSize = 0;
     private LinkedList<byte[]> compressedBlocks = new LinkedList<byte[]>();
@@ -29,12 +28,12 @@ public class BlockStorageMEMLZ4 extends BlockStorage {
     private LZ4Decompressor decompressor = LZ4Factory.fastestInstance().decompressor();
 
     @Override
-    public byte[] allocateBlock() {
-        return new byte[LZ4_BLOCK_SIZE];
+    public int blockSize() {
+        return 524280;
     }
 
     @Override
-    public int compressBlock(byte[] array, int offset, int length) {
+    public int storeBlock(byte[] array, int offset, int length) {
         int maxCLen = compressor.maxCompressedLength(length);
         byte[] compress_buffer = new byte[maxCLen];
         int cLen = compressor.compress(array, offset, length, compress_buffer,0);
@@ -57,7 +56,7 @@ public class BlockStorageMEMLZ4 extends BlockStorage {
     }
 
     @Override
-    public long compressedSize() {
+    public long storedSize() {
         return compressedSize;
     }
 

@@ -2,7 +2,7 @@ package net.imagini.aim
 
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-import net.imagini.aim.partition.AimPartition
+import net.imagini.aim.region.AimRegion
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.tools.RowFilter
@@ -24,12 +24,11 @@ class MergeScannerTest extends FlatSpec with Matchers {
     s2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT9876")
     s2.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.music.com}")
 
-    val partition = new AimPartition(schema, 1000)
-    //TODO either implement partition.appendRecord or move segment size paremeter to the parition loader 
-    partition.add(s1)
-    partition.add(s2)
+    val region = new AimRegion(schema, 1000)
+    region.add(s1)
+    region.add(s2)
 
-    val scanner = new MergeScanner("user_uid,column", "*", partition.segments)
+    val scanner = new MergeScanner("user_uid,column", "*", region.segments)
 
     scanner.next should be(true); scanner.selectLine(",") should be("17b22cfb-a29e-42c3-a3d9-12d32850e103,pageview")
     scanner.next should be(true); scanner.selectLine(",") should be("17b22cfb-a29e-42c3-a3d9-12d32850e103,addthis_id")
@@ -46,7 +45,7 @@ class MergeScannerTest extends FlatSpec with Matchers {
     scanner.count should be (6L)
 
     //TODO select only subset of columns: user_uid, value
-    val mergeScan = new MergeScanner("user_uid,value", "column='pageview'", partition.segments)
+    val mergeScan = new MergeScanner("user_uid,value", "column='pageview'", region.segments)
 
     mergeScan.nextLine should be("17b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.music.com}")
     mergeScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.ebay.com}")

@@ -1,4 +1,4 @@
-package net.imagini.aim.partition
+package net.imagini.aim.region
 
 import net.imagini.aim.types.AimSchema
 import scala.collection.mutable.ListBuffer
@@ -21,7 +21,7 @@ import java.nio.ByteBuffer
 import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.utils.View
 
-class AimPartition(
+class AimRegion(
   val schema: AimSchema,
   val segmentSizeBytes: Int,
   val storageType: Class[_ <: BlockStorage] = classOf[BlockStorageMEMLZ4],

@@ -5,16 +5,15 @@ import java.util.LinkedList;
 
 public class BlockStorageMEM  extends BlockStorage {
 
-    final public static Integer MEM_BLOCK_SIZE = 65535;
     private LinkedList<byte[]> blocks = new LinkedList<byte[]>();
 
     @Override
-    protected byte[] allocateBlock() {
-        return new byte[MEM_BLOCK_SIZE];
+    protected int blockSize() {
+        return 1048576; //1Mb
     }
 
     @Override
-    protected int compressBlock(byte[] array, int offset, int length) {
+    protected int storeBlock(byte[] array, int offset, int length) {
         blocks.add(Arrays.copyOfRange(array, offset, length));
         return array.length;
     }
@@ -25,7 +24,7 @@ public class BlockStorageMEM  extends BlockStorage {
     }
 
     @Override
-    public long compressedSize() {
+    public long storedSize() {
         return originalSize();
     }
 

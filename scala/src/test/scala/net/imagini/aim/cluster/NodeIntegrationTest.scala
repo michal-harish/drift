@@ -6,8 +6,8 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import net.imagini.aim.client.DriftClient
 import net.imagini.aim.client.DriftLoader
-import net.imagini.aim.partition.AimPartition
-import net.imagini.aim.partition.QueryParser
+import net.imagini.aim.region.AimRegion
+import net.imagini.aim.region.QueryParser
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorageMEMLZ4
@@ -72,7 +72,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     node.manager.down
   }
 
-  "Partition with 1 segment" should "should return all records after selecting loaded test data" in {
+  "Region with 1 segment" should "should return all records after selecting loaded test data" in {
 
     val node = fixutreNode
     fixutreLoadDataSyncs
@@ -141,7 +141,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     node.manager.down
   }
 
-  "Partition " should "understand simple query" in {
+  "Region " should "understand simple query" in {
     val parser = new QueryParser(regions)
     val scanner = parser.parse("select * from vdna.pageviews where url contains 'travel'")
     scanner.next should be(true);
@@ -164,7 +164,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     scanner3.count should be(3L)
   }
 
-  "Partition " should "understand complex join query" in {
+  "Region " should "understand complex join query" in {
     val parser = new QueryParser(regions)
     val scanner = parser.parse("select user_uid from vdna.flags where value='true' and flag='quizzed' or flag='cc' "
       + "JOIN (SELECT user_uid,url,timestamp FROM vdna.pageviews WHERE timestamp > '2014-10-10 11:59:01' UNION SELECT * FROM vdna.conversions)")
@@ -182,7 +182,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
 
   }
 
-  "Partition " should "understand complex join query with subquery" in {
+  "Region " should "understand complex join query with subquery" in {
     
     val parser = new QueryParser(regions)
 
@@ -199,12 +199,12 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     an[EOFException] must be thrownBy (scanner.selectLine(","))
 
   }
-  private val regions = Map[String, AimPartition](
+  private val regions = Map[String, AimRegion](
       "vdna.pageviews" -> pageviews,
       "vdna.conversions" -> conversions,
       "vdna.flags" -> flags)
 
-  private def pageviews: AimPartition = {
+  private def pageviews: AimRegion = {
     val schemaPageviews = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
     val sA1 = new AimSegmentQuickSort(schemaPageviews, classOf[BlockStorageMEMLZ4])
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01") //0  1
@@ -214,25 +214,25 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     val sA2 = new AimSegmentQuickSort(schemaPageviews, classOf[BlockStorageMEMLZ4])
     sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
     sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
-    val partitionPageviews = new AimPartition(schemaPageviews, 10000)
-    partitionPageviews.add(sA1)
-    partitionPageviews.add(sA2)
-    partitionPageviews
+    val regionPageviews = new AimRegion(schemaPageviews, 10000)
+    regionPageviews.add(sA1)
+    regionPageviews.add(sA2)
+    regionPageviews
 
   }
 
-  private def conversions: AimPartition = {
+  private def conversions: AimRegion = {
     //CONVERSIONS //TODO ttl = 10
     val schemaConversions = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)")
     val sB1 = new AimSegmentQuickSort(schemaConversions, classOf[BlockStorageMEMLZ4])
     sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
     sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
-    val partitionConversions1 = new AimPartition(schemaConversions, 1000)
-    partitionConversions1.add(sB1)
-    partitionConversions1
+    val regionConversions1 = new AimRegion(schemaConversions, 1000)
+    regionConversions1.add(sB1)
+    regionConversions1
   }
 
-  private def flags: AimPartition = {
+  private def flags: AimRegion = {
     //USERFLAGS //TODO ttl = -1
     val schemaUserFlags = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),flag(STRING),value(BOOL)")
     val sC1 = new AimSegmentQuickSort(schemaUserFlags, classOf[BlockStorageMEMLZ4])
@@ -242,10 +242,10 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     sC2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "opt_out_targetting", "true")
     sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
     sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "false")
-    val partitionUserFlags1 = new AimPartition(schemaUserFlags, 1000)
-    partitionUserFlags1.add(sC1)
-    partitionUserFlags1.add(sC2)
-    partitionUserFlags1
+    val regionUserFlags1 = new AimRegion(schemaUserFlags, 1000)
+    regionUserFlags1.add(sC1)
+    regionUserFlags1.add(sC2)
+    regionUserFlags1
   }
 
 }

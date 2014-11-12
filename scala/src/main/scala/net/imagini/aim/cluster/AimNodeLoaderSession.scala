@@ -10,7 +10,7 @@ import grizzled.slf4j.Logger
 import java.io.InputStreamReader
 import java.io.BufferedReader
 import net.imagini.aim.types.TypeUtils
-import net.imagini.aim.partition.AimPartition
+import net.imagini.aim.region.AimRegion
 import net.imagini.aim.client.DriftLoader
 import net.imagini.aim.tools.StreamUtils
 import net.imagini.aim.types.AimQueryException
@@ -21,15 +21,15 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
 
   val keyspace = pipe.readHeader
   val table = pipe.readHeader
-  val partition = node.regions(keyspace + "." + table)
+  val region = node.regions(keyspace + "." + table)
   val separator = pipe.readHeader
-  val schema = partition.schema
+  val schema = region.schema
   val keyType = schema.get(0)
   pipe.writeHeader(schema.toString)
 
   log.info("LOADING INTO " + keyspace + "." + table + " " + schema.toString)
   private val startTime = System.currentTimeMillis
-  private var localSegment = partition.createNewSegment
+  private var localSegment = region.createNewSegment
   private var count: Long = 0
 
   override def accept = {
@@ -40,7 +40,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
         case _                        ⇒ throw new AimQueryException("Invalid loader protocol " + pipe.protocol);
       }
     } finally {
-      partition.add(localSegment)
+      region.add(localSegment)
       log.info(Protocol.LOADER_USER + "/EOF records: " + count + " time(ms): " + (System.currentTimeMillis - startTime))
       pipe.writeInt(count.toInt)
       pipe.flush
@@ -55,7 +55,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
         record(c) = StreamUtils.read(in, schema.dataType(c))
         c += 1
       }
-      localSegment = partition.appendRecord(localSegment, record)
+      localSegment = region.appendRecord(localSegment, record)
       count += 1
     }
   }
