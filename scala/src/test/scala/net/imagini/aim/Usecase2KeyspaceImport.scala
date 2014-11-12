@@ -16,23 +16,23 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
     val schemaATPageviews = AimSchema.fromString("at_id(STRING), url(STRING), timestamp(TIME:LONG)")
     val schemaATSyncs = AimSchema.fromString("at_id(STRING), user_uid(UUID:BYTEARRAY[16])")
     val schemaVDNAPageviews = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
-    val regionVDNAPageviews1 = new AimRegion(schemaVDNAPageviews, 1000)
-    val existingVDNAPageviewsSegment = new AimSegmentQuickSort(schemaVDNAPageviews, classOf[BlockStorageMEMLZ4])
+    val regionVDNAPageviews1 = new AimRegion("vdna.pageviews", schemaVDNAPageviews, 1000)
+    val existingVDNAPageviewsSegment = new AimSegmentQuickSort(schemaVDNAPageviews).initStorage(classOf[BlockStorageMEMLZ4])
     existingVDNAPageviewsSegment.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e234", "www.work.com", "2014-10-10 08:59:01")
     existingVDNAPageviewsSegment.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e234", "www.work2.com", "2014-10-10 08:59:01")
     existingVDNAPageviewsSegment.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.cafe.com", "2014-10-10 10:59:01")
     regionVDNAPageviews1.add(existingVDNAPageviewsSegment)
 
     //Keyspace AT normal load
-    val AS1 = new AimRegion(schemaATSyncs, 1000)
-    AS1.add(new AimSegmentQuickSort(schemaATSyncs, classOf[BlockStorageMEMLZ4])
+    val AS1 = new AimRegion("addthis.syncs", schemaATSyncs, 1000)
+    AS1.add(new AimSegmentQuickSort(schemaATSyncs).initStorage(classOf[BlockStorageMEMLZ4])
       .appendRecord("AT1234", "37b22cfb-a29e-42c3-a3d9-12d32850e103")
       .appendRecord("AT5656", "a7b22cfb-a29e-42c3-a3d9-12d32850e234")
       .appendRecord("AT7888", "89777987-a29e-42c3-a3d9-12d32850e234")
       )
 
-    val AP1 = new AimRegion(schemaATPageviews, 1000)
-    AP1.add(new AimSegmentQuickSort(schemaATPageviews, classOf[BlockStorageMEMLZ4])
+    val AP1 = new AimRegion("addthis.views", schemaATPageviews, 1000)
+    AP1.add(new AimSegmentQuickSort(schemaATPageviews).initStorage(classOf[BlockStorageMEMLZ4])
       .appendRecord("AT1234", "www.tv.com", "2014-10-10 13:59:01")
       .appendRecord("AT5656", "www.auto.com", "2014-10-10 14:00:01")
       .appendRecord("AT1234", "www.auto.com/offers", "2014-10-10 15:00:01")
@@ -45,7 +45,7 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
     val joinScan = new EquiJoinScanner(
       new MergeScanner("user_uid", "*", AS1.segments),
       new MergeScanner("url, timestamp", "timestamp > '2014-10-10 16:00:00' ", AP1.segments))
-    val newVDNAPageviewsSegment = new AimSegmentQuickSort(schemaVDNAPageviews, classOf[BlockStorageMEMLZ4])
+    val newVDNAPageviewsSegment = new AimSegmentQuickSort(schemaVDNAPageviews).initStorage(classOf[BlockStorageMEMLZ4])
 
     while (joinScan.next) {
       newVDNAPageviewsSegment.appendRecord(joinScan.selectRow)

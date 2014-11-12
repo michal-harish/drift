@@ -3,13 +3,22 @@ package net.imagini.aim.utils;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-public class BlockStorageMEM  extends BlockStorage {
+public class BlockStorageMEM extends BlockStorage {
 
     private LinkedList<byte[]> blocks = new LinkedList<byte[]>();
 
+    public BlockStorageMEM() {
+        this("blockSize=1048576");
+    }
+
+    public BlockStorageMEM(String args) {
+        // TODO if args then look for blockSize arg
+        super();
+    }
+
     @Override
     protected int blockSize() {
-        return 1048576; //1Mb
+        return 1048576; // 1Mb
     }
 
     @Override
@@ -31,7 +40,7 @@ public class BlockStorageMEM  extends BlockStorage {
     @Override
     public long originalSize() {
         int size = 0;
-        for(byte[] a: blocks) {
+        for (byte[] a : blocks) {
             size += a.length;
         }
         return size;

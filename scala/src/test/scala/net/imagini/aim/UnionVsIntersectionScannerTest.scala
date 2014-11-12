@@ -17,25 +17,25 @@ class UnionVsIntersectionScannerTest extends FlatSpec with Matchers {
       //PAGEVIEWS
       val schemaA = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
       //TODO ttl = 10
-      val sA1 = new AimSegmentQuickSort(schemaA, classOf[BlockStorageMEMLZ4])
+      val sA1 = new AimSegmentQuickSort(schemaA).initStorage(classOf[BlockStorageMEMLZ4])
       sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01")
       sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02")
       sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03")
-      val sA2 = new AimSegmentQuickSort(schemaA, classOf[BlockStorageMEMLZ4])
+      val sA2 = new AimSegmentQuickSort(schemaA).initStorage(classOf[BlockStorageMEMLZ4])
       sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
       sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
-      val regionA1 = new AimRegion(schemaA, 1000)
+      val regionA1 = new AimRegion("vdna.pageviews", schemaA, 1000)
       regionA1.add(sA1)
       regionA1.add(sA2)
 
       //CONVERSIONS
       val schemaB = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)")
       //TODO ttl = 10
-      val sB1 = new AimSegmentQuickSort(schemaB, classOf[BlockStorageMEMLZ4])
+      val sB1 = new AimSegmentQuickSort(schemaB).initStorage(classOf[BlockStorageMEMLZ4])
       sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
       sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
 
-      val regionB1 = new AimRegion(schemaB, 1000)
+      val regionB1 = new AimRegion("vdna.conversions", schemaB, 1000)
       regionB1.add(sB1)
 
       val unionJoin = new UnionJoinScanner(

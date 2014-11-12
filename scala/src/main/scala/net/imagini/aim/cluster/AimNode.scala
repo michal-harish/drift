@@ -93,22 +93,29 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
 
   val acceptor = new AimNodeAcceptor(this, new URI("drift://" + address).getPort)
   log.info("Drift Node accepting connections on port " + acceptor.port)
+
+  //DETECTOR FOR THIS NODE ONLINE STATUS -> SHUTDOWN
   manager.registerNode(id, address)
   manager.watchData("/nodes/" + id.toString, (data: Option[String]) ⇒ data match {
     case Some(address) ⇒ {} //TODO check if address is this address
     case None          ⇒ doShutdown
   })
 
+  //DETECTOR FOR CLUSTER TOAL NUM NODES CHANGE 
   manager.watch("/nodes", (children: Map[String, String]) ⇒ {
     val newNodes = children.map(p ⇒ p._1.toInt -> new URI("drift://" + p._2)).toMap
     nodes.asScala.keys.filter(!newNodes.contains(_)).map(nodes.remove(_))
     newNodes.map(n ⇒ nodes.put(n._1, n._2))
     rebalance
   })
+
+  //DETECTOR FOR PEER NODES ONLINE STATUS
   manager.watchData("/nodes", (num: Option[String]) ⇒ num match {
     case Some(n) ⇒ { manager.expectedNumNodes = Integer.valueOf(n); rebalance }
     case None    ⇒ { manager.expectedNumNodes = -1; rebalance }
   })
+
+  //DETECTOR FOR CREATED AND MODIFIED TABLES
   manager.watch("/keyspaces", (ks: Map[String, String]) ⇒ {
     keyspaceRefs.asScala.keys.filter(!ks.contains(_)).map(keyspaceRefs.remove(_))
     ks.keys.filter(!keyspaceRefs.containsKey(_)).map(k ⇒ {
@@ -120,7 +127,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
           val schema = AimSchema.fromString(tableDescriptor(0))
           val segmentSize = java.lang.Integer.valueOf(tableDescriptor(1))
           val storageType = Class.forName(tableDescriptor(2)).asInstanceOf[Class[BlockStorage]]
-          keyspaceRefs.get(k).put(t._1, new AimRegion(schema, segmentSize, storageType))
+          keyspaceRefs.get(k).put(t._1, new AimRegion(id+"-"+k+"-"+t._1, schema, segmentSize, storageType))
           log.debug(id + ": " + k + "." + t._1 + " " + keyspaceRefs.get(k).get(t._1).toString)
         })
       })

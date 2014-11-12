@@ -13,19 +13,19 @@ import java.io.EOFException
 
 class EquiJoinScannerTest extends FlatSpec with Matchers {
   "Usecase2-keyspace import" should "should filter one region by co-partition from another table supllying flags" in {
-    //Keyspace:at, table: vdna_syncs
     val AS = AimSchema.fromString("at_id(STRING), user_uid(UUID:BYTEARRAY[16])")
-    val AS1 = new AimRegion(AS, 1000)
-    AS1.add(new AimSegmentQuickSort(AS, classOf[BlockStorageMEMLZ4])
+    val AS1 = new AimRegion("addthis.syncs", AS, 1000)
+    val segment1 = new AimSegmentQuickSort(AS).initStorage(classOf[BlockStorageMEMLZ4])
+    AS1.add(segment1
       .appendRecord("AT1234", "37b22cfb-a29e-42c3-a3d9-12d32850e103")
       .appendRecord("AT5656", "a7b22cfb-a29e-42c3-a3d9-12d32850e234")
       .appendRecord("AT7888", "89777987-a29e-42c3-a3d9-12d32850e234")
     )
 
-    //Keyspace:at, table: pageviews
     val AP = AimSchema.fromString("at_id(STRING), url(STRING), timestamp(TIME:LONG)")
-    val AP1 = new AimRegion(AP, 1000)
-    AP1.add(new AimSegmentQuickSort(AP, classOf[BlockStorageMEMLZ4])
+    val AP1 = new AimRegion("addthis.pageviews", AP, 1000)
+    val segment2 = new AimSegmentQuickSort(AP).initStorage(classOf[BlockStorageMEMLZ4])
+    AP1.add(segment2
       .appendRecord("AT1234", "www.tv.com", "2014-10-10 13:59:01")
       .appendRecord("AT5656", "www.auto.com", "2014-10-10 14:00:01")
       .appendRecord("AT1234", "www.auto.com/offers", "2014-10-10 15:00:01")

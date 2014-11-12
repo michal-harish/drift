@@ -12,6 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 abstract public class BlockStorage {
+    public static interface PersistentBlockStorage {
+
+    }
 
     private static final Logger log = LoggerFactory.getLogger(BlockStorage.class);
 
@@ -59,7 +62,8 @@ abstract public class BlockStorage {
             ref(block);
             return new View(cache.get(block), 0, lengths.get(block));
         } else {
-            return new View(load(block), 0, lengths.get(block));
+            byte[] blockData = load(block);
+            return new View(blockData, 0, lengths.get(block));
         }
     }
 

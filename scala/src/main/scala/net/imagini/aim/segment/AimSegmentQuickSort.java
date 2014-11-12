@@ -13,7 +13,6 @@ import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.types.SortOrder;
 import net.imagini.aim.types.TypeUtils;
-import net.imagini.aim.utils.BlockStorage;
 import net.imagini.aim.utils.ByteKey;
 
 /**
@@ -29,9 +28,8 @@ public class AimSegmentQuickSort extends AimSegment {
     private SortOrder sortOrder;
     private AimDataType sortDataType;
 
-    public AimSegmentQuickSort(AimSchema schema,  Class<? extends BlockStorage> storageType)
-    throws InstantiationException, IllegalAccessException {
-        super(schema, storageType);
+    public AimSegmentQuickSort(AimSchema schema) {
+        super(schema);
         this.sortColumn = 0;
         this.sortOrder = SortOrder.ASC;
         this.sortDataType = schema.dataType(sortColumn);

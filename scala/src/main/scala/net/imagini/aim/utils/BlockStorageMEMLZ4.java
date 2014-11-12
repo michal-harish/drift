@@ -27,6 +27,14 @@ public class BlockStorageMEMLZ4 extends BlockStorage {
     private LZ4Compressor compressor = LZ4Factory.fastestInstance().highCompressor();
     private LZ4Decompressor decompressor = LZ4Factory.fastestInstance().decompressor();
 
+    public BlockStorageMEMLZ4() {
+        this("blockSize=524280");
+    }
+    public BlockStorageMEMLZ4(String args) {
+        //TODO if args then look for blockSize arg
+        super();
+    }
+
     @Override
     public int blockSize() {
         return 524280;

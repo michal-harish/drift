@@ -23,8 +23,8 @@ class ScannerInputStreamTest extends FlatSpec with Matchers {
   }
 
   "Region select " should " use ScannerInputStream correctly" in {
-    val p = new AimRegion(schema, 10000)
-    val sA1 = new AimSegmentQuickSort(schema, classOf[BlockStorageMEMLZ4])
+    val p = new AimRegion("vdna.pageviews", schema, 10000)
+    val sA1 = new AimSegmentQuickSort(schema).initStorage(classOf[BlockStorageMEMLZ4])
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01")
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02")
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03")
@@ -42,8 +42,8 @@ class ScannerInputStreamTest extends FlatSpec with Matchers {
   "ScannerInputStream " should "be able to read can read MergeScanner byte by byte" in {
 
     val schemaATSyncs = AimSchema.fromString("at_id(STRING), user_uid(UUID:BYTEARRAY[16])")
-    val AS1 = new AimRegion(schemaATSyncs, 1000)
-    AS1.add(new AimSegmentQuickSort(schemaATSyncs, classOf[BlockStorageMEMLZ4])
+    val AS1 = new AimRegion("addthis.syncs", schemaATSyncs, 1000)
+    AS1.add(new AimSegmentQuickSort(schemaATSyncs).initStorage(classOf[BlockStorageMEMLZ4])
       .appendRecord("AT5656", "a7b22cfb-a29e-42c3-a3d9-12d32850e234")
       .appendRecord("AT1234", "37b22cfb-a29e-42c3-a3d9-12d32850e103")
       .appendRecord("AT7888", "89777987-a29e-42c3-a3d9-12d32850e234")

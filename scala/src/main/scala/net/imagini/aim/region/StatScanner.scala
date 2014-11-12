@@ -12,7 +12,7 @@ import net.imagini.aim.utils.View
 
 class StatScanner(val region: Int, val regions: Map[String, AimRegion]) extends AbstractScanner {
 
-  override val schema = AimSchema.fromString("table(STRING),region(INT),segments(LONG),count(LONG),distinct(LONG),compressed(LONG),uncompressed(LONG)")
+  override val schema = AimSchema.fromString("table(STRING),region(INT),segments(LONG),compressed(LONG),uncompressed(LONG)")
 
   override val keyType: AimType = Aim.STRING
 
@@ -21,11 +21,8 @@ class StatScanner(val region: Int, val regions: Map[String, AimRegion]) extends 
       new View(schema.get(0).convert(r._1)),
       new View(schema.get(1).convert(region.toString)),
       new View(schema.get(2).convert(r._2.getNumSegments.toString)),
-      new View(schema.get(3).convert(r._2.getCount.toString)),
-      //TODO count(!) count distinct should be different from count(*)
-      new View(schema.get(4).convert(r._2.getCount.toString)),
-      new View(schema.get(5).convert(r._2.getCompressedSize.toString)),
-      new View(schema.get(6).convert(r._2.getUncompressedSize.toString)))
+      new View(schema.get(3).convert(r._2.getCompressedSize.toString)),
+      new View(schema.get(4).convert(r._2.getUncompressedSize.toString)))
   }).toSeq: _*)
 
   private val rowIndex: Map[Int, String] = (data.keys, 0 to data.size - 1).zipped.map((t, i) ⇒ i -> t).toMap

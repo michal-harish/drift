@@ -1,10 +1,12 @@
 package net.imagini.aim.segment;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.imagini.aim.types.AimSchema;
@@ -15,33 +17,74 @@ import net.imagini.aim.utils.View;
  * zero-copy open methods, i.e. multiple stream readers should be able to
  * operate without doubling the memory foot-print.
  */
-abstract public class AimSegment { // implements AimSegment {
+abstract public class AimSegment {
 
     final public AimSchema schema;
     protected LinkedHashMap<Integer, BlockStorage> columnar = new LinkedHashMap<>();
     private boolean writable;
     private LinkedHashMap<Integer, ByteBuffer> writers = null;
-    private AtomicLong count = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
     protected AtomicLong originalSize = new AtomicLong(0);
 
-    public AimSegment(AimSchema schema,
+    public AimSegment(AimSchema schema) {
+        this.schema = schema;
+        this.writable = false;
+    }
+
+    final public AimSegment initStorage(
             Class<? extends BlockStorage> storageType)
             throws InstantiationException, IllegalAccessException {
-        this.schema = schema;
-        this.writable = true;
-        writers = new LinkedHashMap<>();
-        for (int col = 0; col < schema.size(); col++) {
-            BlockStorage blockStorage = storageType.newInstance(); 
-//            try {
-//                Constructor<? extends BlockStorage> c = storageType.getConstructor(String.class);
-//                blockStorage = c.newInstance("");
-//            } catch (Exception e) {
-//                throw new InstantiationException();
-//            }
-            columnar.put(col, blockStorage);
-            writers.put(col, blockStorage.newBlock());
+        return initStorage(storageType, "");
+    }
+
+    final private static Random r = new Random();
+
+    final public AimSegment initStorage(
+            Class<? extends BlockStorage> storageType, File segmentLocation,
+            String regionIdentifer) throws InstantiationException {
+        String segmentIdentifier = segmentLocation.getName();
+        try {
+            for (File columnLocation : segmentLocation.listFiles()) {
+                int col = schema.get(columnLocation.getName());
+                String columnIdentifier = segmentIdentifier + "/"
+                        + schema.name(col);
+                Constructor<? extends BlockStorage> c = storageType
+                        .getConstructor(String.class);
+                BlockStorage blockStorage = c.newInstance(columnIdentifier);
+                size.addAndGet(blockStorage.storedSize());
+                originalSize.addAndGet(blockStorage.originalSize());
+                columnar.put(col, blockStorage);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new InstantiationException();
         }
+        return this;
+    }
+
+    final public AimSegment initStorage(
+            Class<? extends BlockStorage> storageType, String regionIdentifer)
+            throws InstantiationException, IllegalAccessException {
+        writers = new LinkedHashMap<>();
+        // TODO something better then random string for persisted segments
+        String segmentIdentifier = regionIdentifer + "-"
+                + r.nextInt(Integer.MAX_VALUE);
+        for (int col = 0; col < schema.size(); col++) {
+            try {
+                String columnIdentifier = segmentIdentifier + "/"
+                        + schema.name(col);
+                Constructor<? extends BlockStorage> c = storageType
+                        .getConstructor(String.class);
+                BlockStorage blockStorage = c.newInstance(columnIdentifier);
+                columnar.put(col, blockStorage);
+                writers.put(col, blockStorage.newBlock());
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new InstantiationException();
+            }
+        }
+        this.writable = true;
+        return this;
     }
 
     final public BlockStorage getBlockStorage(int column) {
@@ -50,10 +93,6 @@ abstract public class AimSegment { // implements AimSegment {
 
     final public AimSchema getSchema() {
         return schema;
-    }
-
-    final public long count() {
-        return count.get();
     }
 
     final public long getCompressedSize() {
@@ -97,7 +136,13 @@ abstract public class AimSegment { // implements AimSegment {
     final public AimSegment appendRecord(View[] record) throws IOException {
         byte[][] byteRecord = new byte[record.length][];
         for (int col = 0; col < schema.size(); col++) {
-            byteRecord[col] = Arrays.copyOfRange(record[col].array, record[col].offset, record[col].offset + schema.get(col).getDataType().sizeOf(record[col]));
+            byteRecord[col] = Arrays
+                    .copyOfRange(
+                            record[col].array,
+                            record[col].offset,
+                            record[col].offset
+                                    + schema.get(col).getDataType()
+                                            .sizeOf(record[col]));
         }
         return appendRecord(byteRecord);
     }
@@ -115,7 +160,6 @@ abstract public class AimSegment { // implements AimSegment {
                 block.put(record[col]);
                 originalSize.addAndGet(record[col].length);
             }
-            count.incrementAndGet();
             return this;
         } catch (IllegalAccessException e1) {
             throw new IOException(e1);

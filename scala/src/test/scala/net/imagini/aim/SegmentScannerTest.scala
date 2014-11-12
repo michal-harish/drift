@@ -21,7 +21,7 @@ class SegmentScannerTest extends FlatSpec with Matchers {
     val column1 = new BlockStorageMEMLZ4()
     column1.addBlock(ByteUtils.createStringBuffer("Hello"))
     column1.addBlock(ByteUtils.createStringBuffer("World"))
-    val segment = new AimSegmentUnsorted(schema, classOf[BlockStorageMEMLZ4])
+    val segment = new AimSegmentUnsorted(schema).initStorage(classOf[BlockStorageMEMLZ4])
 
     segment.appendRecord("Hello", "101")
     segment.appendRecord("World", "99")
