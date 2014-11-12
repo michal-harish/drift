@@ -1,7 +1,9 @@
 package net.imagini.aim.utils;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -13,19 +15,21 @@ abstract public class BlockStorage {
 
     private static final Logger log = LoggerFactory.getLogger(BlockStorage.class);
 
-    final public int hotSpotBlock = -1;
-    final public ByteBuffer hotSpot = null;
-    protected LinkedList<Integer> lengths = new LinkedList<Integer>();
+    protected List<Integer> lengths = new ArrayList<Integer>();
+
+    //FIXME ref and deref need bullet-proofing - this is not just optimisaion but also group-filter dependency
+    //TODO provide also timeout for ref(.)
+    final private boolean memOptimisation = false;
 
     final private ConcurrentMap<Integer, byte[]> cache = new ConcurrentHashMap<>();
 
-    final private LinkedList<AtomicInteger> blocks = new LinkedList<>();
+    final private List<AtomicInteger> blocks = new ArrayList<>();
 
     final public ByteBuffer newBlock() {
         return ByteUtils.wrap(new byte[blockSize()]);
     }
 
-    final public int addBlock(ByteBuffer block) {
+    final public int addBlock(ByteBuffer block) throws IOException {
         synchronized(blocks) {
             blocks.add(new AtomicInteger(0));
             lengths.add(block.limit());
@@ -33,17 +37,16 @@ abstract public class BlockStorage {
         }
     }
 
-    //TODO provide a timeout
-    final public void ref(int block) {
-        synchronized(blocks) {
+    final public void ref(int block) throws IOException {
+        if (memOptimisation) synchronized(blocks) {
             if ( blocks.get(block).getAndIncrement() == 0) {
                 log.debug("adding cache " + block + " refCount= " + blocks.get(block).get());
-                cache.put(block, decompress(block));
+                cache.put(block, load(block));
             }
         }
     }
     final public void deref(int block) {
-        synchronized(blocks) {
+        if (memOptimisation) synchronized(blocks) {
             if (blocks.get(block).decrementAndGet() == 0) {
                 log.debug("removing cache " + block + " refCount= " + blocks.get(block).get());
                 cache.remove(block);
@@ -51,9 +54,13 @@ abstract public class BlockStorage {
         }
     }
 
-    final public View view(int block) {
-        ref(block);
-        return new View(cache.get(block), 0, lengths.get(block));
+    final public View view(int block) throws IOException {
+        if (memOptimisation) {
+            ref(block);
+            return new View(cache.get(block), 0, lengths.get(block));
+        } else {
+            return new View(load(block), 0, lengths.get(block));
+        }
     }
 
     final public void close(int block) {
@@ -62,7 +69,9 @@ abstract public class BlockStorage {
 
     abstract protected int blockSize();
 
-    abstract protected int storeBlock(byte[] array, int offset, int length);
+    abstract protected int storeBlock(byte[] array, int offset, int length) throws IOException;
+
+    abstract protected byte[] load(int block) throws IOException;
 
     abstract public int numBlocks();
 
@@ -70,7 +79,6 @@ abstract public class BlockStorage {
 
     abstract public long originalSize();
 
-    abstract protected byte[] decompress(int block);
 
 
 }

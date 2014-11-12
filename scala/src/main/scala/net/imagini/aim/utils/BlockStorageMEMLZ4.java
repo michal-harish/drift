@@ -66,7 +66,7 @@ public class BlockStorageMEMLZ4 extends BlockStorage {
     }
 
     @Override
-    protected byte[] decompress(int block) {
+    protected byte[] load(int block) {
         int length = lengths.get(block);
         byte[] result = new byte[length];
         decompressor.decompress(compressedBlocks.get(block), 0, result, 0, length);

@@ -85,7 +85,7 @@ public class StreamUtils {
 
     }
 
-    static private int readSize(InputStream in, AimDataType type)
+    static public int readSize(InputStream in, AimDataType type)
             throws IOException {
         int size = type.getLen();
         if (size == -1) {
@@ -149,7 +149,7 @@ public class StreamUtils {
         return totalSkipped;
     }
 
-    static private void read(InputStream in, byte[] buf, int offset, int len)
+    static public void read(InputStream in, byte[] buf, int offset, int len)
             throws IOException {
         int totalRead = 0;
         while (totalRead < len) {
@@ -161,7 +161,7 @@ public class StreamUtils {
         }
     }
 
-    static private void read(InputStream in, ByteBuffer buf, int len)
+    static public void read(InputStream in, ByteBuffer buf, int len)
             throws IOException {
         int totalRead = 0;
         while (totalRead < len) {

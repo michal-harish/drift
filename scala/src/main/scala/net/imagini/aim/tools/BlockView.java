@@ -1,5 +1,7 @@
 package net.imagini.aim.tools;
 
+import java.io.IOException;
+
 import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.utils.BlockStorage;
 import net.imagini.aim.utils.View;
@@ -20,7 +22,7 @@ public class BlockView extends View {
     private int markPosition = -1;
     public int count;
 
-    public BlockView(BlockStorage blockStorage, AimDataType aimDataType) {
+    public BlockView(BlockStorage blockStorage, AimDataType aimDataType) throws IOException {
         this.blockStorage = blockStorage;
         this.dataType = aimDataType;
         this.eof = !switchTo(0);
@@ -30,19 +32,19 @@ public class BlockView extends View {
         return eof;
     }
 
-    @Override public void rewind() {
+    @Override public void rewind() throws IOException {
         super.rewind();
         this.reset();
         this.eof = !switchTo(0);
     }
 
-    public void mark() {
+    public void mark() throws IOException {
         blockStorage.ref(currentBlock);
         markBlock = currentBlock;
         markPosition = offset;
     }
 
-    public void reset() {
+    public void reset() throws IOException {
         if (markBlock != -1) {
             if (currentBlock != markBlock) {
                 currentBlock = markBlock;
@@ -56,7 +58,7 @@ public class BlockView extends View {
         }
     }
 
-    private void checkEof() {
+    private void checkEof() throws IOException {
         if (offset >= size) {
             if (currentBlock == blockStorage.numBlocks() - 1) {
                 eof = true;
@@ -66,7 +68,7 @@ public class BlockView extends View {
         }
     }
 
-    public int read() {
+    public int read() throws IOException {
         if (eof) {
             return -1;
         } else {
@@ -77,7 +79,7 @@ public class BlockView extends View {
         }
     }
 
-    @Override public int skip() {
+    @Override public int skip() throws IOException {
         int skipLen = dataType.sizeOf(this);
         offset = offset + skipLen;
         count+=1;
@@ -89,9 +91,10 @@ public class BlockView extends View {
      * Skips the next n bytes but the caller must know that these bytes are
      * available as this method doesn't check the block overflow TODO remove
      * this method after we have AbstractScanner.asInputStream wrapping done
+     * @throws IOException 
      */
 
-    public long skip(int skipBytes) {
+    public long skip(int skipBytes) throws IOException {
         if (skipBytes > size - offset) {
             skipBytes = size - offset;
         }
@@ -102,7 +105,7 @@ public class BlockView extends View {
         return skipBytes;
     }
 
-    private boolean switchTo(Integer block) {
+    private boolean switchTo(Integer block) throws IOException {
         boolean validBlock = block > -1 && block < blockStorage.numBlocks();
         if (currentBlock != block) {
             if (currentBlock > -1 && currentBlock < blockStorage.numBlocks())

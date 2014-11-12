@@ -38,7 +38,7 @@ public class BlockStorageMEM  extends BlockStorage {
     }
 
     @Override
-    protected byte[] decompress(int block) {
+    protected byte[] load(int block) {
         return blocks.get(block);
     }
 

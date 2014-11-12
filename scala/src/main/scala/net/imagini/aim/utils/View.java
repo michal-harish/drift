@@ -1,5 +1,6 @@
 package net.imagini.aim.utils;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class View {
@@ -34,10 +35,10 @@ public class View {
     public boolean eof() {
         return offset >= size;
     }
-    public void rewind() {
+    public void rewind() throws IOException {
         offset = 0;
     }
-    public int skip() {
+    public int skip() throws IOException {
         offset +=1;
         return 1;
     }
