@@ -132,7 +132,8 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
   private def reconnect = {
     if (socket != null) socket.close
     socket = new Socket(InetAddress.getByName(host), port)
-    pipe = Pipe.newLZ4Pipe(socket, protocol) //FIXME LZ4BlockOutputStream creates a lot of garbage via pipe.createOutputPipe
+    //pipe = Pipe.newLZ4Pipe(socket, protocol) //FIXME LZ4BlockOutputStream creates a lot of garbage via pipe.createOutputPipe
+    pipe = Pipe.newGZIPPipe(socket, protocol)
   }
 
   def close = {

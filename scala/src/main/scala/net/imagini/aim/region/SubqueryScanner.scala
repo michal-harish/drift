@@ -26,20 +26,6 @@ class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val s
 
   private var eof = false
 
-  override def rewind = {
-    scanner.rewind
-    eof = false
-    move
-  }
-
-  override def mark = scanner.mark
-
-  override def reset = {
-    scanner.reset
-    eof = false
-    move
-  }
-
   override def next: Boolean = {
     do {
       if (!scanner.next) {
@@ -69,7 +55,6 @@ class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val s
   }
 
   override def count: Long = {
-    rewind
     throw new NotImplementedError
     eof = true
     0

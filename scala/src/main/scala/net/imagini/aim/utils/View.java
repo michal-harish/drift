@@ -11,7 +11,9 @@ public class View {
 
     public View() {}
     public View(View copy) {
-        set(copy);
+        this.array = copy.array;
+        this.size = copy.size;
+        this.offset = copy.offset;
     }
     public View(ByteBuffer buffer) {
         this(buffer.array(), buffer.position(), buffer.capacity() - buffer.position() );
@@ -26,18 +28,11 @@ public class View {
         this.array = array;
         this.size = size;
     }
-    public void set(View view) {
-        this.array = view.array;
-        this.size = view.size;
-        this.offset = view.offset;
-    }
 
     public boolean eof() {
         return offset >= size;
     }
-    public void rewind() throws IOException {
-        offset = 0;
-    }
+
     public int skip() throws IOException {
         offset +=1;
         return 1;

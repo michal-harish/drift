@@ -37,28 +37,11 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
   override def selectRow: Array[View] = if (eof) throw new EOFException else selectViews
 
   override def count: Long = {
-    rewind
     var count = 0
-    while (!eof) if (next) {
+    while (next) {
       count += 1
     }
     count
-  }
-
-  override def rewind = {
-    scanViews.map(s ⇒ s.rewind)
-    eof = scanViews.forall(_.eof)
-    initialised = false
-  }
-
-  override def mark = {
-    scanViews.map(s ⇒ s.asInstanceOf[BlockView].mark)
-  }
-
-  override def reset = {
-    scanViews.map(s ⇒ s.asInstanceOf[BlockView].reset)
-    eof = scanViews.forall(_.eof)
-    initialised = false
   }
 
   override def next: Boolean = if (eof) false else {
@@ -72,7 +55,7 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
         eof = eof || scanViews(i).eof
         i += 1
       }
-      if (!initialised) initialised = true
+      initialised = true
       if (!eof && !rowFilter.isEmptyFilter) {
         filterMatch = rowFilter.matches(scanViews)
       }

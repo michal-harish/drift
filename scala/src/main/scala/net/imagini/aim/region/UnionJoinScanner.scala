@@ -28,32 +28,12 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
   private val rightColumnIndex = schema.names.map(f ⇒ if (right.schema.has(f)) right.schema.get(f) else -1)
   private val sortOrder = SortOrder.ASC
 
+  private var initialised = false
   private var currentLeft = true
-  private var leftHasData = true
-  private var rightHasData = right.next
+  private var leftHasData = false
+  private var rightHasData = false
   private var selectedKey: View = null
   private val selectBuffer: Array[View] = new Array[View](schema.size)
-
-  override def rewind = {
-    left.rewind
-    right.rewind
-    currentLeft = true
-    leftHasData = true
-    rightHasData = right.next
-    move
-  }
-
-  override def mark = {
-    left.mark;
-    right.mark
-  }
-
-  override def reset = {
-    //TODO reset should remember whether left and right have had data at mark
-    left.reset
-    right.reset
-    move
-  }
 
   override def selectKey: View = if (!rightHasData && !leftHasData) throw new EOFException else selectedKey
 
@@ -61,6 +41,11 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
 
   override def next: Boolean = {
 
+    if (!initialised) {
+        leftHasData = true
+        rightHasData = right.next
+        initialised = true;
+    }
     if (!rightHasData && !leftHasData) return false
 
     if (currentLeft) {
@@ -102,9 +87,6 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
   }
 
   override def count: Long = {
-    rewind
-    rightHasData = false
-    leftHasData = false
     val executor = Executors.newFixedThreadPool(2)
     val l = executor.submit(new Callable[Long] { override def call: Long = left.count })
     val r = executor.submit(new Callable[Long] { override def call: Long = right.count })

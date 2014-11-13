@@ -28,28 +28,7 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
   private var currentLeft = true
   private var currentKey: Option[View] = None
   private var eof = false
-  right.next
-
-  override def rewind = {
-    left.rewind
-    right.rewind
-    currentLeft = true
-    currentKey = null
-    eof = false
-    move
-  }
-
-  override def mark = {
-    left.mark
-    right.mark
-  }
-
-  override def reset = {
-    left.reset
-    right.reset
-    eof = false
-    move
-  }
+  right.next // FIXME this will mess up the counting, use initialised var instead
 
   override def selectKey: View = if (eof) throw new EOFException else selectedKey
 
@@ -101,7 +80,6 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
   }
 
   override def count: Long = {
-    rewind
     throw new NotImplementedError
     eof = true
     0

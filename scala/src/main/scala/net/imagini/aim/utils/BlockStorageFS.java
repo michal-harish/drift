@@ -24,17 +24,10 @@ public class BlockStorageFS extends BlockStorage implements
 
     private static final String BASE_PATH = "/var/lib/drift/";
 
-    private final String path;
-    private AtomicInteger numBlocks = new AtomicInteger(0);
-    private final AtomicLong originalSize = new AtomicLong(0);
-    private final AtomicLong storedSize = new AtomicLong(0);
-    private final byte[] hackHotSpotBuffer = createHotSpotBuffer();
-
-    final private byte[] createHotSpotBuffer() {
-        return new byte[blockSize()];// this is only temporary until
-                                     // memOptimisation can be turned on
-    }
-
+    final private String path;
+    final private AtomicInteger numBlocks = new AtomicInteger(0);
+    final private AtomicLong originalSize = new AtomicLong(0);
+    final private AtomicLong storedSize = new AtomicLong(0);
     final private int compression; // 0->None, 1->LZ4, 2->GZIP
 
     public BlockStorageFS(String args) throws IOException {
@@ -110,15 +103,15 @@ public class BlockStorageFS extends BlockStorage implements
     }
 
     @Override
-    protected byte[] load(int block) throws IOException {
+    public InputStream openInputStream(int block) throws IOException {
+        if (block >= numBlocks.get()) {
+            throw new IllegalArgumentException();
+        }
         File blockFile = blockFile(block);
         InputStream fin = Pipe.createInputPipe(new FileInputStream(blockFile),
                 compression);
-        int len = StreamUtils.readInt(fin);
-        lengths.add(block, len);
-        StreamUtils.read(fin, hackHotSpotBuffer, 0, len);
-        fin.close();
-        return hackHotSpotBuffer;
+        lengths.add(block, StreamUtils.readInt(fin));
+        return fin;
     }
 
 }

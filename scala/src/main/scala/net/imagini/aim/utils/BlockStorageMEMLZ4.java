@@ -1,5 +1,8 @@
 package net.imagini.aim.utils;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 
@@ -24,14 +27,17 @@ public class BlockStorageMEMLZ4 extends BlockStorage {
     private int compressedSize = 0;
     private LinkedList<byte[]> compressedBlocks = new LinkedList<byte[]>();
 
-    private LZ4Compressor compressor = LZ4Factory.fastestInstance().highCompressor();
-    private LZ4Decompressor decompressor = LZ4Factory.fastestInstance().decompressor();
+    private LZ4Compressor compressor = LZ4Factory.fastestInstance()
+            .highCompressor();
+    private LZ4Decompressor decompressor = LZ4Factory.fastestInstance()
+            .decompressor();
 
     public BlockStorageMEMLZ4() {
         this("blockSize=524280");
     }
+
     public BlockStorageMEMLZ4(String args) {
-        //TODO if args then look for blockSize arg
+        // TODO if args then look for blockSize arg
         super();
     }
 
@@ -44,10 +50,11 @@ public class BlockStorageMEMLZ4 extends BlockStorage {
     public int storeBlock(byte[] array, int offset, int length) {
         int maxCLen = compressor.maxCompressedLength(length);
         byte[] compress_buffer = new byte[maxCLen];
-        int cLen = compressor.compress(array, offset, length, compress_buffer,0);
-        int inflation = (int)(Double.valueOf(maxCLen) / Double.valueOf(cLen) / 0.01) - 100;
+        int cLen = compressor.compress(array, offset, length, compress_buffer,
+                0);
+        int inflation = (int) (Double.valueOf(maxCLen) / Double.valueOf(cLen) / 0.01) - 100;
         if (inflation > 5) {
-            //log.debug("LZ4 estimate inflation = " + inflation + " %");
+            // log.debug("LZ4 estimate inflation = " + inflation + " %");
             compressedBlocks.add(Arrays.copyOfRange(compress_buffer, 0, cLen));
         } else {
             compressedBlocks.add(compress_buffer);
@@ -74,11 +81,10 @@ public class BlockStorageMEMLZ4 extends BlockStorage {
     }
 
     @Override
-    protected byte[] load(int block) {
+    public InputStream openInputStream(int block) throws IOException {
         int length = lengths.get(block);
         byte[] result = new byte[length];
         decompressor.decompress(compressedBlocks.get(block), 0, result, 0, length);
-        return result;
+        return new ByteArrayInputStream(result);
     }
-
 }

@@ -28,18 +28,10 @@ class SegmentScannerTest extends FlatSpec with Matchers {
     segment.close
 
     val scanner = new SegmentScanner(Array("a","b"), RowFilter.fromString(schema, "*"), segment)
-    scanner.mark
     scanner.next should be(true); scanner.selectLine("\t") should be("Hello\t101")
-    scanner.next should be(true); scanner.selectLine("\t") should be("World\t99")
-    scanner.reset
-    scanner.next should be(true); scanner.selectLine("\t") should be("Hello\t101")
-    scanner.rewind
-    scanner.next should be(true); scanner.selectLine("\t") should be("Hello\t101")
-    scanner.next should be(true); scanner.selectLine("\t") should be("World\t99")
-    scanner.mark
-    scanner.reset
     scanner.next should be(true); scanner.selectLine("\t") should be("World\t99")
     scanner.next should be(false); an[EOFException] must be thrownBy (scanner.selectLine("\t"))
-    scanner.count should be (2L)
+     val countScanner = new SegmentScanner(Array("a","b"), RowFilter.fromString(schema, "*"), segment)
+    countScanner.count should be (2L)
   }
 }

@@ -28,8 +28,6 @@ class StatScanner(val region: Int, val regions: Map[String, AimRegion]) extends 
   private val rowIndex: Map[Int, String] = (data.keys, 0 to data.size - 1).zipped.map((t, i) ⇒ i -> t).toMap
 
   private var currentRow = -1
-  private var rowMark = -1
-  override def rewind = currentRow = -1
 
   override def next: Boolean = {
     currentRow += 1
@@ -39,10 +37,6 @@ class StatScanner(val region: Int, val regions: Map[String, AimRegion]) extends 
   override def selectKey: View = if (currentRow < data.size) data(rowIndex(currentRow))(0) else throw new EOFException
 
   override def selectRow: Array[View] = if (currentRow < data.size) data(rowIndex(currentRow)) else throw new EOFException
-
-  override def mark = rowMark = currentRow
-
-  override def reset = currentRow = rowMark
 
   override def count: Long = data.size
 }

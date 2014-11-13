@@ -35,27 +35,15 @@ class MergeScannerTest extends FlatSpec with Matchers {
     scanner.next should be(true); scanner.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103,pageview")
     scanner.next should be(true); scanner.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103,pageview")
     scanner.next should be(true); scanner.selectLine(",") should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103,addthis_id")
-    scanner.mark
-    scanner.next should be(true); scanner.selectLine(",") should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103,pageview")
-    scanner.reset
-    scanner.next should be(true); scanner.selectLine(",") should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103,addthis_id")
     scanner.next should be(true); scanner.selectLine(",") should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103,pageview")
     scanner.next should be(false)
     an[EOFException] must be thrownBy scanner.selectLine(",")
-    scanner.count should be (6L)
+
+    val countScanner = new MergeScanner("user_uid,column", "*", region.segments)
+    countScanner.count should be (6L)
 
     //TODO select only subset of columns: user_uid, value
     val mergeScan = new MergeScanner("user_uid,value", "column='pageview'", region.segments)
-
-    mergeScan.nextLine should be("17b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.music.com}")
-    mergeScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.ebay.com}")
-    mergeScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.auto.com}")
-    mergeScan.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.travel.com}")
-
-    an[EOFException] must be thrownBy mergeScan.nextLine
-    an[EOFException] must be thrownBy mergeScan.nextLine
-
-    mergeScan.rewind
 
     mergeScan.nextLine should be("17b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.music.com}")
     mergeScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.ebay.com}")

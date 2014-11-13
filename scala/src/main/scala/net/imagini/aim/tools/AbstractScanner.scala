@@ -15,17 +15,11 @@ trait AbstractScanner {
 
   def count: Long
 
-  def rewind
-
   def next: Boolean
 
   def selectRow: Array[View] //TODO instead of Array this can be only View
 
   def selectKey: View
-
-  def mark
-
-  def reset
 
   def close = {
     //TODO implement close for all scanners

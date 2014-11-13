@@ -56,10 +56,10 @@ class ScannerInputStreamTest extends FlatSpec with Matchers {
     an[EOFException] must be thrownBy scanner.nextLine
     an[EOFException] must be thrownBy scanner.nextLine
 
-    scanner.rewind
+    val scanner2 = new MergeScanner("at_id", "*", AS1.segments)
 
     val t = schemaATSyncs.field("at_id").getDataType
-    val scannerStream = new ScannerInputStream(scanner)
+    val scannerStream = new ScannerInputStream(scanner2)
     t.convert(StreamUtils.read(scannerStream, t)) should be("AT1234")
     t.convert(StreamUtils.read(scannerStream, t)) should be("AT5656")
     t.convert(StreamUtils.read(scannerStream, t)) should be("AT7888")

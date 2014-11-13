@@ -144,11 +144,6 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
   "Region " should "understand simple query" in {
     val parser = new QueryParser(regions)
     val scanner = parser.parse("select * from vdna.pageviews where url contains 'travel'")
-    scanner.next should be(true);
-    scanner.next should be(true);
-    scanner.next should be(true);
-    scanner.next should be(false);
-    scanner.rewind
     scanner.next should be(true); scanner.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103,www.travel.com/offers,2014-10-10 12:01:02")
     scanner.next should be(true); scanner.selectLine(",") should be("37b22cfb-a29e-42c3-a3d9-12d32850e103,www.travel.com/offers/holiday,2014-10-10 12:01:03")
     scanner.next should be(true); scanner.selectLine(",") should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103,www.travel.com/offers,2014-10-10 13:01:03")
@@ -183,7 +178,6 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
   }
 
   "Region " should "understand complex join query with subquery" in {
-    
     val parser = new QueryParser(regions)
 
     val scanner = parser.parse("SELECT user_uid,url,conversion FROM ( select user_uid from vdna.flags where value='true' and flag='quizzed' or flag='cc' "

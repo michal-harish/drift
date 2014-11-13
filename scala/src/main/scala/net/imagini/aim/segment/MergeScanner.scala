@@ -35,27 +35,6 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
 
   private var eof = false
   private var currentScanner: SegmentScanner = null
-  private var markCurrentSegment: SegmentScanner = null
-//  private var currentKey: View = null
-//  private var currentRecord: Array[View] = null
-
-  override def rewind = {
-    scanners.foreach(_.rewind)
-    currentScanner = null
-    eof = false
-  }
-
-  override def mark = {
-    scanners.foreach(_.mark)
-    markCurrentSegment = currentScanner
-  }
-
-  override def reset = {
-    scanners.foreach(_.reset)
-    currentScanner = null
-    markCurrentSegment = null
-    eof = false
-  }
 
   /**
    * Optimized next method
@@ -105,13 +84,10 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
    * be bigger until the I/O becomes bottleneck.
    */
   override def count: Long = {
-    rewind
     val executor = Executors.newFixedThreadPool(4)
     val results: List[Future[Long]] = (0 to segments.size - 1).map(s ⇒ executor.submit(new Callable[Long] {
-      override def call: Long = {
-        scanners(s).count
-      }
-    })).toList
+      override def call: Long = scanners(s).count
+     })).toList
     eof = true
     results.foldLeft(0L)(_ + _.get)
   }

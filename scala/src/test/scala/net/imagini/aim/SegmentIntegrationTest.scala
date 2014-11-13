@@ -34,8 +34,8 @@ class SegmentIntegration extends FlatSpec with Matchers {
     schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
     in.close
 
-    merge.rewind
-    merge.count should be(3)
+    val mergeCount = new MergeScanner("*", "column='a'", p1.segments)
+    mergeCount.count should be(3)
   }
 
   "QuickSorted ASC segemnt select" should "give an input stream with the correct order" in {
@@ -53,8 +53,9 @@ class SegmentIntegration extends FlatSpec with Matchers {
     schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
     schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
     in.close
-    merge.rewind
-    merge.count should be(3)
+
+    val mergeCount = new MergeScanner("*", "column='a'", p1.segments)
+    mergeCount.count should be(3)
 
   }
 

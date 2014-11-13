@@ -7,7 +7,6 @@ import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.region.AimRegion
 import net.imagini.aim.segment.MergeScanner
-import net.imagini.aim.segment.GroupScanner
 import net.imagini.aim.region.EquiJoinScanner
 import net.imagini.aim.region.IntersectionJoinScanner
 import net.imagini.aim.region.UnionJoinScanner

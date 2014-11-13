@@ -30,26 +30,7 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
   private var selectedKey: View = null
   private val selectBuffer: Array[View] = new Array[View](schema.size)
   private var eof = false
-  left.next
-
-  override def rewind = {
-    left.rewind
-    right.rewind
-    eof = false
-    move
-  }
-
-  override def mark = {
-    left.mark
-    right.mark
-  }
-
-  override def reset = {
-    left.reset
-    right.reset
-    eof = false
-    move
-  }
+  left.next // FIXME this will mess up the counting, use initialised var instead
 
   override def selectKey: View = if (eof) throw new EOFException else selectedKey
 
@@ -94,7 +75,6 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
   }
 
   override def count: Long = {
-    rewind
     var count = 0
     //TODO optimize - do not call next when counting
     while (!eof && right.next) {

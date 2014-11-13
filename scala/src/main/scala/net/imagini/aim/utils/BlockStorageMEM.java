@@ -1,5 +1,8 @@
 package net.imagini.aim.utils;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 
@@ -46,9 +49,8 @@ public class BlockStorageMEM extends BlockStorage {
         return size;
     }
 
-    @Override
-    protected byte[] load(int block) {
-        return blocks.get(block);
+    @Override 
+    public InputStream openInputStream(int block) throws IOException {
+        return new ByteArrayInputStream(blocks.get(block));
     }
-
 }
