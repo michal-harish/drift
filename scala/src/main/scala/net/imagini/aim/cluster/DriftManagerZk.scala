@@ -13,7 +13,7 @@ import scala.collection.JavaConverters._
 import grizzled.slf4j.Logger
 import net.imagini.aim.types.AimSchema
 
-class DriftManagerZk(val zkConnect: String, override val root:String = "/drift") extends DriftManager {
+class DriftManagerZk(val zkConnect: String, override val clusterId:String = "default") extends DriftManager {
   val zkClient = new ZkClient(zkConnect)
   init
   override protected def pathExists(path: String) = zkClient.exists(path)

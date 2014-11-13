@@ -83,9 +83,16 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
     if (socket == null || hasNext) {
       reconnect
     }
-    pipe.write(query).flush
-    prepareResponse(pipe)
-    schema
+    try {
+        pipe.write(query).flush
+        prepareResponse(pipe)
+        schema
+    } catch {
+      case e: IOException => {
+        close
+        throw e
+      }
+    }
   }
 
   def getInputStream = pipe.getInputStream
@@ -125,7 +132,7 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
   private def reconnect = {
     if (socket != null) socket.close
     socket = new Socket(InetAddress.getByName(host), port)
-    pipe = Pipe.newLZ4Pipe(socket, protocol)
+    pipe = Pipe.newLZ4Pipe(socket, protocol) //FIXME LZ4BlockOutputStream creates a lot of garbage via pipe.createOutputPipe
   }
 
   def close = {

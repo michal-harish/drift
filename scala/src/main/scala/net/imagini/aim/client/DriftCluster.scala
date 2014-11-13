@@ -12,14 +12,14 @@ object DriftCluster extends App {
   val log = Logger[this.type]
   var port: Int = 4000
   var zkConnect: String = "localhost:2181"
-  var root = "/drift-default"
+  var clusterId = "default"
   var localNumNodes = 1
   val argsIterator = args.iterator
   var storageType: Class[_ <: BlockStorage] = classOf[BlockStorageMEMLZ4]
   while (argsIterator.hasNext) {
     argsIterator.next match {
       case "--zookeeper" ⇒ zkConnect = argsIterator.next
-      case "--root"      ⇒ root = argsIterator.next
+      case "--cluster-id"      ⇒ clusterId = argsIterator.next
       case "--num-nodes" ⇒ localNumNodes = argsIterator.next.toInt
       case "--storage-type" ⇒ storageType = Class.forName("net.imagini.aim.utils.BlockStorage" + argsIterator.next).asInstanceOf[Class[BlockStorage]]
       case "--port"      ⇒ port = argsIterator.next.toInt
@@ -27,8 +27,8 @@ object DriftCluster extends App {
     }
   }
   //SPAWNING CLUSTER
-  val manager: DriftManager = new DriftManagerZk(zkConnect, root)
-  println("Joining drift cluster: " + zkConnect + " "+root)
+  val manager: DriftManager = new DriftManagerZk(zkConnect, clusterId)
+  println("Joining drift cluster: "+clusterId + "@"+zkConnect)
   println("Number of local nodes: " + localNumNodes)
   println("Number of total nodes: " + manager.expectedNumNodes)
   println("Storage type: " + storageType.getSimpleName)

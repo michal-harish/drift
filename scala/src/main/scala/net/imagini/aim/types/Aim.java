@@ -70,6 +70,7 @@ public enum Aim implements AimDataType {
             b = new byte[value.length() + 4];
             ByteUtils.putIntValue(value.length(), b, 0);
             value.getBytes(0, value.length(), b, 4);
+            //TODO this deprecated method is a reminder of UTF-8 and other chars larger than byte
         } else {
             throw new IllegalArgumentException("Unknown data type "
                     + this.getClass().getSimpleName());

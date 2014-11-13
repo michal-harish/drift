@@ -114,7 +114,8 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
                 new ScannerInputStream(localScanner)
               } else {
                 val streams = peerClients.map(peer ⇒ peer.getInputStream).toArray ++ Array(new ScannerInputStream(localScanner))
-                new StreamMerger(localScanner.schema, 1, streams)
+                new StreamMerger(localScanner.schema, 16, streams)
+                //TODO queue size=100 must be exposed in the keyspace/table config
               }
             } else {
               throw new AimQueryException("Unexpected response from peers")

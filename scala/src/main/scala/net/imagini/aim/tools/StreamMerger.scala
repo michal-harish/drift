@@ -19,7 +19,7 @@ import net.imagini.aim.types.TypeUtils
 class InputStreamQueue(limit: Int) extends LinkedBlockingQueue[Option[Array[Array[Byte]]]](limit)
 class MergeQueue extends ConcurrentSkipListMap[ByteKey, Array[Array[Byte]]]
 /**
- * StreamMerger is a concurrent streaming merge tool which executes the filter over each input stream
+ * Concurrent streaming merge tool which executes the filter over each input stream
  * in parallel. It uses  LinkedBlockingQueue for each individual input stream and ConcurrentSkipListMap
  * to for the output which automatically does the merge sort. These 2 structures keep
  * each other in balance, since ConcurrentSkipListMap has a O(log(n)) insertion complexity, if the

@@ -101,11 +101,14 @@ Usecase 3. Benchmark - id-linking from newly discovered information (?)
 
 Design thoughts dump
 ================================================================================================= 
+* 64-bit DOUBLE AimType must be added
+* Compare Memory Mapped Files on SSD vs  spinning disk storage
+* some kind of consumption status of transformers at the segment level would be nice
+* co-location of drift data and YARN container is worth exploring (e.g. giraph algo interlaced with drift data) 
+* local cluster of 12 with fs storage seen crashing the heap but it shouldn't so needs mem-profiling
 * need to get rid of 'empty table' exception and return vlaid 0-length record stream
-* all counts should be refactored from Int to Long
-* co-partitioning to solve brut-forcie
-* by having partitions as defined above, the future map-reduce protocol is possible in principle, but until then at least something like parallel off-load to hdfs should be possible 
-* because the whole thing is sequential, storage could be a choice from memory, memory-mapped files, to hard files
+* all counts should be refactored from Int to Long 
+* the whole thing is sequential, there is no random-access whatsoever
 * fine-tuning load strategies, e.g.switching between heap-sort, quick-sort when closing a segment
 * fine-tuning select streams, e.g. if we want recent data we'll wait a bit longer for the initial response
 * range queries are filters that limit the segments used in the consequent select stream
@@ -113,23 +116,15 @@ Design thoughts dump
 * We should try to wrap segement processing units into cpu-bound threads (may require C programming) 
     -> https://github.com/peter-lawrey/Java-Thread-Affinity
 * Think about UTF8 column type before it's too late (everything is just a byte array atm)
-* We'll surely need a 64-bit DOUBLE too
-* Multiple records are stored together in an Segment, which can be distributed across different nodes
+* Multiple records are grouped into Segments with blockstorage for each column
+* Segments of the same table can live across different nodes
+* Each segment muss be pre-sorted at load-time by a configurable sort method and multiple segments are sorted with merge-sort at query time
 * All columns must be present in each segment for sophisticated mapping, i.e. columns cannot be stored across multiple locations
 * Each segment is stored as an LZ4-compressed in-memory buffer, therefore records cannot be addressed individually but can be 
   stored efficiently in memory and thus queried and filtered at very high speeds
 * All the communication storage and streaming is compressed with LZ4 High Compression algorithm.
-* Standard method of querying is replaced 2 separate processes: 
-  * Filter - produces a FilterBitSet for given range (set of segments)
-  *  Select - doesn't have a where condition but is given the FilterBitSet  
-* Components: Loaders -> Loading Interface -> Storage <- Filter Interface <- Select Interface 
-  *  Loading is done using IPC and is only defined by a protocol so any language can be used 
-  * Memory Mapped Files are used for storage 
-  *  Go , C and other low-level languages can be used to implement the central component
-  * Filter and Select Interfaces should be done in Scala as this allows for passing mapper/select code around nicely
-* The protocol uses BIG_ENDIAN format as it is better suited for filtering comparsions 
+* The protocol uses BIG_ENDIAN format as it is better suited for stream filtering 
 * Trivial binary protocol with transparent LZ4 streaming compression is used, with following data types:
-* Each segment can be sorted at load-time with quick-sort and multiple segments are sorted with merge-sort at query time
 
     ID  Data Type      Size(bytes)      Description
     ...................................................................................................
@@ -142,25 +137,16 @@ Design thoughts dump
     7-20   -            -               reserved
 
 
-Benchmark
-======================
-1.000.000 real events loaded into 10 segments on a single box -> 240Mb compressed to 24Mb
-count(user_quizzed=true and api_key contains 'mirror')
-result = 347 out of 1000000
-1 CPU avg consistent query time: 113 ms -> 240Mb(lz4)/sec/box
-2 CPUs: avg consistent query time: 61 ms -> 480Mb(lz4)/sec/box
-
 
 Quick-Start
 ===========
-
 
 Example 1)  building a cluster from scratch
 -------------------------------------------
 cd scala
 mvn package
-java -jar target/drift-cluster.jar --root drift-test1 --num-nodes 4
-java -jar target/drift-client.jar 'CLUSTER NUM NODES 4'
+java -jar target/drift-cluster.jar --cluster-id test1 --num-nodes 4
+java -jar target/drift-client.jar 'CLUSTER numNodes 4'
 #TODO create statment
 java -jar target/drift-client.jar 'CREATE TABLE addthis.views at_id(STRING), url(STRING), timestamp(LONG) WITH STORAGE=LZ4, SEGMENT_SIZE=50000000'
 java -jar target/drift-client.jar 'CREATE TABLE addthis.syncs at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(LONG) WITH STORAGE=LZ4, SEGMENT_SIZE=200000000'

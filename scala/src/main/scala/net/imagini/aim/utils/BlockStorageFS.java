@@ -26,6 +26,10 @@ public class BlockStorageFS extends BlockStorage implements PersistentBlockStora
     private AtomicInteger numBlocks = new AtomicInteger(0);
     private final AtomicLong originalSize = new AtomicLong(0);
     private final AtomicLong storedSize  = new AtomicLong(0);
+    private final byte[] hackHotSpotBuffer = createHotSpotBuffer();
+    final private byte[] createHotSpotBuffer() {
+        return new byte[blockSize()];//this is only temporary until memOptimisation can be turned on
+    }
 
     final private int compression; // 0->None, 1->LZ4, 2->GZIP
 
@@ -34,9 +38,9 @@ public class BlockStorageFS extends BlockStorage implements PersistentBlockStora
             throw new IllegalArgumentException(
                     "BlockStorageFS requires argument for relative path");
         }
-        String identifier = args;
+        String localId = args;
         this.compression = 1;
-        this.path = BASE_PATH + identifier + "/";
+        this.path = BASE_PATH + localId + "/";
         File p = new File(path);
         p.mkdirs();
         for (File blockFile: p.listFiles()) {
@@ -68,7 +72,7 @@ public class BlockStorageFS extends BlockStorage implements PersistentBlockStora
 
     @Override
     protected int blockSize() {
-        return 1048576 * 4; // 4Mb
+        return 1048576; // 1Mb
     }
 
     @Override
@@ -108,10 +112,9 @@ public class BlockStorageFS extends BlockStorage implements PersistentBlockStora
                 compression);
         int len = StreamUtils.readInt(fin);
         lengths.add(block, len);
-        byte[] result = new byte[len];
-        StreamUtils.read(fin, result, 0, len);
+        StreamUtils.read(fin, hackHotSpotBuffer, 0, len);
         fin.close();
-        return result;
+        return hackHotSpotBuffer;
     }
 
 }

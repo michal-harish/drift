@@ -7,7 +7,7 @@ import net.imagini.aim.utils.BlockStorageMEMLZ4
 
 trait DriftManager {
   val log = Logger[this.type]
-  val root = "/drift/default"
+  val clusterId = "default"
   var expectedNumNodes: Int = -1
   protected def pathExists(path: String): Boolean
   protected def pathCreatePersistent(path: String, data: Any)
@@ -18,17 +18,20 @@ trait DriftManager {
   protected def watchPathChildren[T](path: String, listener: (Map[String, T]) ⇒ Unit)
   def close
   final protected[cluster] def watchData[T](path: String, listener: (Option[T] ⇒ Unit)) = {
-    watchPathData(root + path, listener)
+    watchPathData("/drift/" + clusterId + path, listener)
   }
   final protected[cluster] def watch[T](path: String, listener: (Map[String, T]) ⇒ Unit) = {
-    watchPathChildren(root + path, listener)
+    watchPathChildren("/drift/" + clusterId + path, listener)
   }
 
   final def init = {
-    if (!pathExists(root)) {
-      pathCreatePersistent(root, "")
-      pathCreatePersistent(root + "/nodes", "1")
-      pathCreatePersistent(root + "/keyspaces", "")
+    if (!pathExists("/drift")) {
+      pathCreatePersistent("/drift", "")
+    }
+    if (!pathExists("/drift/" + clusterId)) {
+      pathCreatePersistent("/drift/" + clusterId, "")
+      pathCreatePersistent("/drift/" + clusterId + "/nodes", "1")
+      pathCreatePersistent("/drift/" + clusterId + "/keyspaces", "")
     }
     watchData("/nodes", (num: Option[String]) ⇒ num match {
       case Some(n) ⇒ expectedNumNodes = Integer.valueOf(n)
@@ -41,7 +44,7 @@ trait DriftManager {
   }
 
   final def setNumNodes(totalNodes: Int) {
-    pathUpdate(root + "/nodes", totalNodes.toString)
+    pathUpdate("/drift/" + clusterId + "/nodes", totalNodes.toString)
   }
 
   final def createTable(keyspace: String, name: String, schemaDeclaration: String) {
@@ -50,7 +53,7 @@ trait DriftManager {
 
   final def createTable(keyspace: String, name: String, schemaDeclaration: String, segmentSize: Int, storage: Class[_ <: BlockStorage]) {
     AimSchema.fromString(schemaDeclaration)
-    val keyspacePath = root + "/keyspaces/" + keyspace
+    val keyspacePath = "/drift/" + clusterId + "/keyspaces/" + keyspace
     if (!pathExists(keyspacePath)) pathCreatePersistent(keyspacePath, "")
     val tablePath = keyspacePath + "/" + name
     if (!pathExists(tablePath)) {
@@ -59,7 +62,7 @@ trait DriftManager {
   }
 
   final def registerNode(id: Int, address: String): Boolean = {
-    val nodePath = root + "/nodes/" + id.toString
+    val nodePath = "/drift/" + clusterId + "/nodes/" + id.toString
     for (i ← (1 to 30)) {
       if (pathExists(nodePath)) Thread.sleep(1000) else {
         pathCreateEphemeral(nodePath, address)
@@ -70,7 +73,7 @@ trait DriftManager {
   }
 
   final def unregisterNode(id: Int) = {
-    pathDelete(root + "/nodes/" + id.toString)
+    pathDelete("/drift/" + clusterId + "/nodes/" + id.toString)
   }
 
 }

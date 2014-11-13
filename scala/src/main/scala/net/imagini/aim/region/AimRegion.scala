@@ -25,7 +25,7 @@ import java.io.File
 import java.nio.file.Files
 
 class AimRegion(
-  val identifier: String,
+  val regionId: String,
   val schema: AimSchema,
   val segmentSizeBytes: Int,
   val storageType: Class[_ <: BlockStorage] = classOf[BlockStorageMEMLZ4],
@@ -43,17 +43,17 @@ class AimRegion(
 
   private val segmentConstructor = sortType.getConstructor(classOf[AimSchema])
 
-  def createNewSegment: AimSegment = segmentConstructor.newInstance(schema).initStorage(storageType, identifier)
-
   val persisted = storageType.getInterfaces.contains(classOf[PersistentBlockStorage])
 
   if (persisted) {
     val f = new File("/var/lib/drift")
-    if (f.exists) f.listFiles.filter(_.getName.startsWith(identifier)).foreach(segmentDir => {
-        segments += segmentConstructor.newInstance(schema).initStorage(storageType, segmentDir, identifier)
+    if (f.exists) f.listFiles.filter(_.getName.startsWith(regionId)).foreach(segmentFile => {
+        segments += segmentConstructor.newInstance(schema).open(storageType, segmentFile)
         numSegments.incrementAndGet
     })
   }
+
+  def newSegment: AimSegment = segmentConstructor.newInstance(schema).init(storageType, regionId)
 
   def add(segment: AimSegment) = {
     segment.close
@@ -92,7 +92,7 @@ class AimRegion(
   private def checkSegment(segment: AimSegment, size: Int): AimSegment = {
     if (segment.getOriginalSize + size > segmentSizeBytes) try {
       add(segment)
-      createNewSegment
+      newSegment
     } catch {
       case e: Throwable ⇒ {
         throw new IOException(e);

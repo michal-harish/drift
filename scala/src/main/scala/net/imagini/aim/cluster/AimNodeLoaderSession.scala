@@ -29,7 +29,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
 
   log.info("LOADING INTO " + keyspace + "." + table + " " + schema.toString)
   private val startTime = System.currentTimeMillis
-  private var localSegment = region.createNewSegment
+  private var localSegment = region.newSegment
   private var count: Long = 0
 
   override def accept = {

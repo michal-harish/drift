@@ -21,11 +21,9 @@ abstract public class BlockStorage {
     protected List<Integer> lengths = new ArrayList<Integer>();
 
     //FIXME ref and deref need bullet-proofing - this is not just optimisaion but also group-filter dependency
+    final private ConcurrentMap<Integer, byte[]> cache = new ConcurrentHashMap<>();
     //TODO provide also timeout for ref(.)
     final private boolean memOptimisation = false;
-
-    final private ConcurrentMap<Integer, byte[]> cache = new ConcurrentHashMap<>();
-
     final private List<AtomicInteger> blocks = new ArrayList<>();
 
     final public ByteBuffer newBlock() {
@@ -62,8 +60,7 @@ abstract public class BlockStorage {
             ref(block);
             return new View(cache.get(block), 0, lengths.get(block));
         } else {
-            byte[] blockData = load(block);
-            return new View(blockData, 0, lengths.get(block));
+            return new View(load(block), 0, lengths.get(block));
         }
     }
 

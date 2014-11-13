@@ -55,7 +55,7 @@ class RegionLoadTest extends FlatSpec with Matchers {
 
     val region = new AimRegion("test.data", schema, segmentSize, storageType, classOf[AimSegmentUnsorted])
 
-    var segment = region.createNewSegment
+    var segment = region.newSegment
     val recordView = new Array[View](schema.size)
     for (r ← (1 to numRecords)) {
 
@@ -102,7 +102,7 @@ class RegionLoadTest extends FlatSpec with Matchers {
 
     val region = new AimRegion("test.data", schema, segmentSize, storageType, classOf[AimSegmentQuickSort])
 
-    var segment = region.createNewSegment
+    var segment = region.newSegment
     val recordView = new Array[View](schema.size)
     for (r ← (1 to numRecords)) {
       recordView(0) = new View(schema.get(0).convert(ids(r % ids.size)))

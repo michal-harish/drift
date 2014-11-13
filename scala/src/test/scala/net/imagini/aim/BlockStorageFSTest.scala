@@ -17,7 +17,7 @@ class BlockStorageFSLZ4Test extends FlatSpec with Matchers {
   val f2 = new File("/var/lib/drift/drift-system-test-value"); if (f2.exists()) f2.listFiles.map(file => file.delete)
 
   val schema = AimSchema.fromString("uid(UUID:BYTEARRAY[16]),value(STRING)")
-  val segment = new AimSegmentUnsorted(schema).initStorage(classOf[BlockStorageFS],"drift-system-test")
+  val segment = new AimSegmentUnsorted(schema).init(classOf[BlockStorageFS],"drift-system-test")
   segment.appendRecord("95c54c2e-2542-4f5e-8914-47e669a9578f", "Hello")
   segment.appendRecord("95c54c2e-2542-4f5e-8914-47e669a9578f", "World")
   segment.close

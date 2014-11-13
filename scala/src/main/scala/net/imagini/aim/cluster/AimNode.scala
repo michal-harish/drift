@@ -21,6 +21,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
 
   val log = Logger[this.type]
   val nodes: ConcurrentMap[Int, URI] = new ConcurrentHashMap[Int, URI]()
+  val nodeId = manager.clusterId+"-"+id
   def peers: Map[Int, URI] = nodes.asScala.filter(n ⇒ n._1 != id).toMap
 
   private var suspended = new AtomicBoolean(true)
@@ -127,7 +128,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
           val schema = AimSchema.fromString(tableDescriptor(0))
           val segmentSize = java.lang.Integer.valueOf(tableDescriptor(1))
           val storageType = Class.forName(tableDescriptor(2)).asInstanceOf[Class[BlockStorage]]
-          keyspaceRefs.get(k).put(t._1, new AimRegion(id+"-"+k+"-"+t._1, schema, segmentSize, storageType))
+          keyspaceRefs.get(k).put(t._1, new AimRegion(nodeId+"-"+k+"-"+t._1, schema, segmentSize, storageType))
           log.debug(id + ": " + k + "." + t._1 + " " + keyspaceRefs.get(k).get(t._1).toString)
         })
       })

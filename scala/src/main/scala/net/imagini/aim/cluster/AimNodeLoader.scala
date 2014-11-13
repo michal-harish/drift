@@ -17,7 +17,7 @@ class AimNodeLoader(val keyspace: String, val table: String, val node: AimNode) 
     peer._1 -> new DriftLoader(peer._2.getHost, peer._2.getPort, Protocol.LOADER_INTERNAL, keyspace, table, "", null, false)
   })
 
-  private var localSegment: AimSegment = region.createNewSegment
+  private var localSegment: AimSegment = region.newSegment
   private var count: Long = 0
 
   def insert(record: String*) {

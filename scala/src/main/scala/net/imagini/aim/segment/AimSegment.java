@@ -31,26 +31,16 @@ abstract public class AimSegment {
         this.writable = false;
     }
 
-    final public AimSegment initStorage(
-            Class<? extends BlockStorage> storageType)
-            throws InstantiationException, IllegalAccessException {
-        return initStorage(storageType, "");
-    }
-
-    final private static Random r = new Random();
-
-    final public AimSegment initStorage(
-            Class<? extends BlockStorage> storageType, File segmentLocation,
-            String regionIdentifer) throws InstantiationException {
-        String segmentIdentifier = segmentLocation.getName();
+    final public AimSegment open(Class<? extends BlockStorage> storageType, File segmentLocation) throws InstantiationException {
+        String segmentId = segmentLocation.getName();
         try {
             for (File columnLocation : segmentLocation.listFiles()) {
                 int col = schema.get(columnLocation.getName());
-                String columnIdentifier = segmentIdentifier + "/"
+                String columnLocalId = segmentId + "/"
                         + schema.name(col);
                 Constructor<? extends BlockStorage> c = storageType
                         .getConstructor(String.class);
-                BlockStorage blockStorage = c.newInstance(columnIdentifier);
+                BlockStorage blockStorage = c.newInstance(columnLocalId);
                 size.addAndGet(blockStorage.storedSize());
                 originalSize.addAndGet(blockStorage.originalSize());
                 columnar.put(col, blockStorage);
@@ -62,20 +52,24 @@ abstract public class AimSegment {
         return this;
     }
 
-    final public AimSegment initStorage(
-            Class<? extends BlockStorage> storageType, String regionIdentifer)
+    final public AimSegment initStorage(Class<? extends BlockStorage> storageType) throws InstantiationException, IllegalAccessException {
+        return init(storageType, "");
+    }
+
+    final public AimSegment init(
+            Class<? extends BlockStorage> storageType, String regionId)
             throws InstantiationException, IllegalAccessException {
         writers = new LinkedHashMap<>();
-        // TODO something better then random string for persisted segments
-        String segmentIdentifier = regionIdentifer + "-"
-                + r.nextInt(Integer.MAX_VALUE);
+        //TODO something better then random string for persisted segments
+        String segmentId = regionId + "-" + new Random().nextInt(Integer.MAX_VALUE);
+        //TODO but until random id replaced at least check if this one conflicts with existing
         for (int col = 0; col < schema.size(); col++) {
             try {
-                String columnIdentifier = segmentIdentifier + "/"
+                String columnId = segmentId + "/"
                         + schema.name(col);
                 Constructor<? extends BlockStorage> c = storageType
                         .getConstructor(String.class);
-                BlockStorage blockStorage = c.newInstance(columnIdentifier);
+                BlockStorage blockStorage = c.newInstance(columnId);
                 columnar.put(col, blockStorage);
                 writers.put(col, blockStorage.newBlock());
             } catch (Exception e) {
