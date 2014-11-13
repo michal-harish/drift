@@ -63,6 +63,7 @@ trait DriftManager {
 
   final def registerNode(id: Int, address: String): Boolean = {
     val nodePath = "/drift/" + clusterId + "/nodes/" + id.toString
+    log.info("registering node " + id)
     for (i ← (1 to 30)) {
       if (pathExists(nodePath)) Thread.sleep(1000) else {
         pathCreateEphemeral(nodePath, address)

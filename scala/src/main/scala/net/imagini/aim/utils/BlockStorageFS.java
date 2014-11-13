@@ -16,19 +16,23 @@ import net.imagini.aim.utils.BlockStorage.PersistentBlockStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BlockStorageFS extends BlockStorage implements PersistentBlockStorage {
+public class BlockStorageFS extends BlockStorage implements
+        PersistentBlockStorage {
 
-    private static final Logger log = LoggerFactory.getLogger(BlockStorageFS.class);
+    private static final Logger log = LoggerFactory
+            .getLogger(BlockStorageFS.class);
 
     private static final String BASE_PATH = "/var/lib/drift/";
 
     private final String path;
     private AtomicInteger numBlocks = new AtomicInteger(0);
     private final AtomicLong originalSize = new AtomicLong(0);
-    private final AtomicLong storedSize  = new AtomicLong(0);
+    private final AtomicLong storedSize = new AtomicLong(0);
     private final byte[] hackHotSpotBuffer = createHotSpotBuffer();
+
     final private byte[] createHotSpotBuffer() {
-        return new byte[blockSize()];//this is only temporary until memOptimisation can be turned on
+        return new byte[blockSize()];// this is only temporary until
+                                     // memOptimisation can be turned on
     }
 
     final private int compression; // 0->None, 1->LZ4, 2->GZIP
@@ -43,17 +47,15 @@ public class BlockStorageFS extends BlockStorage implements PersistentBlockStora
         this.path = BASE_PATH + localId + "/";
         File p = new File(path);
         p.mkdirs();
-        for (File blockFile: p.listFiles()) {
+        for (File blockFile : p.listFiles()) {
             int b = Integer.valueOf(blockFile.getName().split("\\.")[0]);
-            if (!numBlocks.compareAndSet(b, b + 1)) {
-                throw new IllegalStateException(p.getAbsolutePath() + " contains corrupt blocks");
-            } else {
-                log.debug("Opening block " + blockFile.getAbsolutePath());
-                storedSize.addAndGet(blockFile.length());
-                InputStream bfin = Pipe.createInputPipe(new FileInputStream(blockFile), compression);
-                originalSize.addAndGet(StreamUtils.readInt(bfin));
-                bfin.close();
-            }
+            numBlocks.set(Math.max(numBlocks.get(), b + 1));
+            log.debug("Opening block " + blockFile.getAbsolutePath());
+            storedSize.addAndGet(blockFile.length());
+            InputStream bfin = Pipe.createInputPipe(new FileInputStream(
+                    blockFile), compression);
+            originalSize.addAndGet(StreamUtils.readInt(bfin));
+            bfin.close();
         }
     }
 
@@ -86,7 +88,9 @@ public class BlockStorageFS extends BlockStorage implements PersistentBlockStora
         fout.flush();
         fout.close();
         originalSize.addAndGet(length);
-        storedSize.addAndGet(blockFile.length());  //FIXME this actually adds the uncompressed size for some reason
+        storedSize.addAndGet(blockFile.length()); // FIXME this actually adds
+                                                  // the uncompressed size for
+                                                  // some reason
         return length;
     }
 
