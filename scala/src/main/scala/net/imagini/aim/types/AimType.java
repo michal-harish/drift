@@ -26,4 +26,6 @@ public interface AimType {
 
     public byte[] convert(String value);
 
+    public int convert(String value, byte[] dest, int destOffset); 
+
 }

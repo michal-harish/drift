@@ -25,6 +25,11 @@ public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
         return ByteUtils.sum(view.array, view.offset, size)  % numPartitions;
     }
 
+    @Override
+    public int convert(String value,  byte[] dest, int destOffset) {
+        return ByteUtils.copy(value.getBytes(), dest, destOffset, size);
+    }
+
     @Override public byte[] convert(String value) {
         byte[] bytes = new byte[size];
         Arrays.fill(bytes, (byte)0);

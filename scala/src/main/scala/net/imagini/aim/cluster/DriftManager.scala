@@ -48,7 +48,7 @@ trait DriftManager {
   }
 
   final def createTable(keyspace: String, name: String, schemaDeclaration: String) {
-    createTable(keyspace, name, schemaDeclaration, 100000000, classOf[BlockStorageMEMLZ4])
+    createTable(keyspace, name, schemaDeclaration, 10485760, classOf[BlockStorageMEMLZ4])
   }
 
   final def createTable(keyspace: String, name: String, schemaDeclaration: String, segmentSize: Int, storage: Class[_ <: BlockStorage]) {

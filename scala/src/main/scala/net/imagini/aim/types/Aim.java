@@ -79,6 +79,29 @@ public enum Aim implements AimDataType {
     }
 
     @Override
+    public int convert(String value,  byte[] dest, int destOffset) {
+        int len = this.getLen();
+        if (this.equals(Aim.BOOL)) {
+            dest[destOffset] = (byte)(Boolean.valueOf(value) ? 1 : 0);
+        } else if (this.equals(Aim.BYTE)) {
+            dest[destOffset] = Byte.valueOf(value);
+        } else if (this.equals(Aim.INT)) {
+            ByteUtils.putIntValue(Integer.valueOf(value), dest, destOffset);
+        } else if (this.equals(Aim.LONG)) {
+            ByteUtils.putLongValue(Long.valueOf(value), dest, destOffset);
+        } else if (this.equals(Aim.STRING)) {
+            len = value.length() + 4;
+            ByteUtils.putIntValue(value.length(), dest, destOffset);
+            value.getBytes(0, value.length(), dest, destOffset + 4);
+            //TODO this deprecated method is a reminder of UTF-8 and other chars larger than byte
+        } else {
+            throw new IllegalArgumentException("Unknown data type "
+                    + this.getClass().getSimpleName());
+        }
+        return len;
+    }
+
+    @Override
     public int sizeOf(View value) {
         if (this.size == -1) {
             return ByteUtils.asIntValue(value.array, value.offset) + 4;

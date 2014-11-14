@@ -38,6 +38,6 @@ public class View {
         return 1;
     }
     @Override public String toString() {
-        return offset + ":" + size;
+        return offset + ":" + size + " " + this.getClass().getSimpleName();
     }
 }

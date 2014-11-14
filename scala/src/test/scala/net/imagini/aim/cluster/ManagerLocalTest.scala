@@ -20,6 +20,6 @@ class ManagerLocalTest extends FlatSpec with Matchers {
       })
     })
     manager.createTable("xyz", "table1", "user_id(STRING)")
-    notification.get should be("user_id(STRING)\n100000000\nnet.imagini.aim.utils.BlockStorageMEMLZ4")
+    notification.get should be("user_id(STRING)\n10485760\nnet.imagini.aim.utils.BlockStorageMEMLZ4")
   }
 }

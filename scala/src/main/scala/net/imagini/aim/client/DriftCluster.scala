@@ -36,10 +36,10 @@ object DriftCluster extends App {
 
   //CREATING TABLES
   //TODO querysession handle CREATE TABLE
-  manager.createTable("addthis", "views", "at_id(STRING), url(STRING), timestamp(LONG)", 50000000, storageType)
-  manager.createTable("addthis", "syncs", "at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(LONG)", 200000000, storageType)
+  manager.createTable("addthis", "views", "at_id(STRING), url(STRING), timestamp(LONG)", 10485760, storageType)
+  manager.createTable("addthis", "syncs", "at_id(STRING), vdna_user_uid(UUID:BYTEARRAY[16]), timestamp(LONG)", 10485760, storageType)
   //  manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), type(STRING), url(STRING)", 100000000, storageType)
-  manager.createTable("vdna", "pageviews", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), url(STRING)", 100000000, storageType)
+  manager.createTable("vdna", "pageviews", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), url(STRING)", 10485760, storageType)
   //  manager.createTable("vdna", "syncs", "user_uid(UUID:BYTEARRAY[16]), timestamp(LONG), id_space(STRING), partner_user_id(STRING)", 100000000, storageType)
 
   //ATTACH CONSOLE

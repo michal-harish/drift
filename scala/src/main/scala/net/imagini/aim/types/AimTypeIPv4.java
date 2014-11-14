@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
+import net.imagini.aim.utils.ByteUtils;
 import net.imagini.aim.utils.View;
 
 public class AimTypeIPv4 extends AimTypeAbstract {
@@ -26,6 +27,16 @@ public class AimTypeIPv4 extends AimTypeAbstract {
         } catch (UnknownHostException e) {
             return null;
         }
+    }
+
+    @Override
+    public int convert(String value,  byte[] dest, int destOffset) {
+        try {
+            return ByteUtils.copy(InetAddress.getByName(value).getAddress(), dest, destOffset, 4);
+        } catch (UnknownHostException e) {
+            throw new IllegalArgumentException(e);
+        }
+
     }
 
     @Override public byte[] convert(String value) {

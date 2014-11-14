@@ -22,12 +22,17 @@ public class BlockView extends View {
     private InputStream blockInputStream;
     private boolean eof = false;
     private int currentBlock = -1;
+    private int currentSkip = -1;
     public int count;
 
     public BlockView(BlockStorage blockStorage, AimDataType aimDataType) throws IOException {
         this.blockStorage = blockStorage;
         this.dataType = aimDataType;
         this.eof = blockStorage.numBlocks() == 0;
+        //FIXME hard-coded rolling buffer !
+        this.size = 65535;
+        this.array = new byte[size];
+        this.offset = -1;
         if (!eof) {
             this.blockInputStream = blockStorage.openInputStream(0);
             currentBlock = 0;
@@ -41,21 +46,34 @@ public class BlockView extends View {
 
     @Override public int skip() throws IOException {
         while(!eof) try {
+            int skipped = 0;
+            if (offset == -1) {
+                offset = 0;
+            } else {
+                skipped = currentSkip;
+            }
+            offset += skipped;
+            int mark = offset;
             int len = dataType.getLen();
-            int o = 0;
+            currentSkip = 0;
             if (len == -1) {
                 len = StreamUtils.readInt(blockInputStream);
-                if (this.array == null || len+4 > this.array.length) this.array = new byte[len+4];
-                ByteUtils.putIntValue(len, this.array, 0);
-                o +=4;
+                if (offset + 4 + len > array.length) {
+                    offset = mark = 0;
+                }
+                ByteUtils.putIntValue(len, array, offset);
+                offset +=4;
+                currentSkip = 4 + len;
             } else {
-                if (this.array == null || len+4 > this.array.length) this.array = new byte[len+4];
+                if (offset + len > array.length) {
+                    offset = mark =  0;
+                }
+                currentSkip = len;
             }
+            StreamUtils.read(blockInputStream, array, offset, len);
+            offset = mark;
+            return skipped;
 
-            StreamUtils.read(blockInputStream, this.array, o, len);
-            this.offset = 0;
-            this.size = len;
-            return len;
         } catch (EOFException e) {
             blockInputStream.close();
             currentBlock++;

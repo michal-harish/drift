@@ -15,6 +15,13 @@ public class ByteUtils {
      * byte array utils
      */
 
+    public static int copy(byte[] src, byte[]dest, int destOffset, int len) {
+        for(int i = 0; i< len; i++) {
+            dest[i+destOffset] = src[i];
+        }
+        return len;
+    }
+
     static public int asIntValue(byte[] value) {
         return asIntValue(value, 0);
     }

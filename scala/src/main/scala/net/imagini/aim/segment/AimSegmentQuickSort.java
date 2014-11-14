@@ -39,7 +39,7 @@ public class AimSegmentQuickSort extends AimSegment {
     public AimSegment appendRecord(byte[][] record) throws IOException {
         try {
             checkWritable(true);
-            ByteKey sortValue = new ByteKey(record[0], TypeUtils.sizeOf(sortDataType, record[0]), 0);
+            ByteKey sortValue = new ByteKey(record[0], 0, TypeUtils.sizeOf(sortDataType, record[0]), 0);
             int recordSize = 0; 
             for(int i=0; i<record.length; i ++) {
                 recordSize += record[i].length;

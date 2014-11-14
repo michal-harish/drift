@@ -5,18 +5,22 @@ import java.util.Arrays;
 public class ByteKey implements Comparable<ByteKey> {
     final public byte[] bytes;
     final public int limit;
+    final public int size;
+    final public int offset;
     final public int classifier;
 
     public ByteKey(byte[] data) {
-        this(data, data.length, 0);
+        this(data, 0, data.length, 0);
     }
-    public ByteKey(byte[] data, int limit, int classifier) {
+    public ByteKey(byte[] data, int offset, int size, int classifier) {
         if (data == null) {
             throw new NullPointerException();
         }
         this.classifier = classifier;
         this.bytes = data;
-        this.limit = limit;
+        this.size = size;
+        this.limit = size + offset;
+        this.offset = offset;
     }
 
     @Override public boolean equals(Object other) {
@@ -33,18 +37,20 @@ public class ByteKey implements Comparable<ByteKey> {
 
     @Override
     public int compareTo(ByteKey val) {
-        int i = 0;
+        int i = offset;
+        int j = val.offset;
         while (i<limit) {
-            if (limit < val.limit) {
+            if (size < val.size) {
                 return -1;
-            } else if (limit > val.limit) {
+            } else if (size > val.size) {
                 return 1;
-            } else if ((bytes[i] & 0xFF) < (val.bytes[i] & 0xFF)) {
+            } else if ((bytes[i] & 0xFF) < (val.bytes[j] & 0xFF)) {
                 return -1;
-            } else if ((bytes[i] & 0xFF) > (val.bytes[i] & 0xFF) ) {
+            } else if ((bytes[i] & 0xFF) > (val.bytes[j] & 0xFF) ) {
                 return  1;
             }
             i++;
+            j++;
         }
         return classifier == val.classifier ? 0 : (classifier > val.classifier ? 1 : -1);
     }

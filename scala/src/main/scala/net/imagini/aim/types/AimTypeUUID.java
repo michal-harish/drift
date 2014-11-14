@@ -19,6 +19,20 @@ public class AimTypeUUID extends AimTypeAbstract {
     @Override public AimDataType getDataType() {
         return dataType;
     }
+
+    @Override
+    public int convert(String value,  byte[] dest, int destOffset) {
+        try {
+            UUID uuid = UUID.fromString(value);
+            ByteUtils.putLongValue(uuid.getMostSignificantBits(), dest, destOffset);
+            ByteUtils.putLongValue(uuid.getLeastSignificantBits(), dest, destOffset + 8);
+            return 16;
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+
+    }
+
     @Override public byte[] convert(String value) {
         try {
             UUID uuid = UUID.fromString(value);

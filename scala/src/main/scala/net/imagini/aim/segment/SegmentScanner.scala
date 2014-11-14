@@ -19,22 +19,21 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
   private val keyField: String = segment.getSchema.name(0)
   override val schema: AimSchema = segment.getSchema.subset(selectFields)
   private val numBlocks = segment.getBlockStorage(0).numBlocks
-  private val scanSchema: AimSchema = segment.getSchema.subset(selectFields ++ rowFilter.getColumns :+ keyField)
+  //TODO do not add filter columns and key column if already selected
+  private val scanSchema: AimSchema = segment.getSchema.subset(selectFields ++ rowFilter.getColumns.filter(!selectFields.contains(_)) :+ keyField)
   private val scanColumnIndex: Array[Int] = scanSchema.names.map(n ⇒ segment.getSchema.get(n))
   private val scanViews: Array[View] = scanColumnIndex.map(c ⇒ new BlockView(segment.getBlockStorage(c), segment.getSchema.dataType(c))).toArray
   private val scanKeyColumnIndex: Int = scanSchema.get(keyField)
   override val keyType: AimType = scanSchema.get(scanKeyColumnIndex)
   private val keyDataType = scanSchema.dataType(scanKeyColumnIndex)
   rowFilter.updateFormula(scanSchema.names)
-  private val selectIndex = schema.names.map(n ⇒ scanSchema.get(n))
 
   var eof = false
   private var initialised = false
-  private val selectViews: Array[View] = new Array[View](schema.size)
 
   override def selectKey: View = if (eof) throw new EOFException else scanViews(scanKeyColumnIndex)
 
-  override def selectRow: Array[View] = if (eof) throw new EOFException else selectViews
+  override def selectRow: Array[View] = if (eof) throw new EOFException else scanViews
 
   override def count: Long = {
     var count = 0
@@ -60,17 +59,7 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
         filterMatch = rowFilter.matches(scanViews)
       }
     } while (!eof && !filterMatch)
-    select
     !eof
-  }
-
-  private def select = {
-    val l = schema.size
-    var i = 0
-    while (i < l) {
-      selectViews(i) = if (eof) null else scanViews(selectIndex(i))
-      i += 1
-    }
   }
 
 }

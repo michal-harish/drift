@@ -15,9 +15,9 @@ import net.imagini.aim.types.SortOrder._
 import scala.Array.canBuildFrom
 import net.imagini.aim.types.TypeUtils
 
-
-class InputStreamQueue(limit: Int) extends LinkedBlockingQueue[Option[Array[Array[Byte]]]](limit)
 class MergeQueue extends ConcurrentSkipListMap[ByteKey, Array[Array[Byte]]]
+class InputStreamQueue(limit: Int) extends LinkedBlockingQueue[Option[Array[Array[Byte]]]](limit)
+
 /**
  * Concurrent streaming merge tool which executes the filter over each input stream
  * in parallel. It uses  LinkedBlockingQueue for each individual input stream and ConcurrentSkipListMap
@@ -63,15 +63,15 @@ class StreamMerger(val schema: AimSchema, val queueSize: Int, val inputStreams: 
   }
 
   private def nextRecord: Array[Array[Byte]] = {
+    //TODO optimise foreach
     fetchers.filter(!_.closed).foreach(fetcher ⇒ {
       fetcher.take match {
         case None ⇒ {}
         case Some(record) ⇒ {
-          val byteKey = new ByteKey(record(0), TypeUtils.sizeOf(schema.dataType(0), record(0)), counter.incrementAndGet)
+          val byteKey = new ByteKey(record(0), 0, TypeUtils.sizeOf(schema.dataType(0), record(0)), counter.incrementAndGet)
           /**
-           * assuming that the first field of schema is always the key - e.g. whatever provides
+           * FIXME assuming that the first field of schema is always the key - e.g. whatever provides
            * the underlying input stream must provide or transform the first field as the key
-           * - this also optimizes towards zero-copy
            */
           sortQueue.put(byteKey, record)
         }
@@ -100,6 +100,7 @@ class Fetcher(val schema: AimSchema, val in: InputStream, val executor: Executor
 
   override def run = {
     while (hasMoreData) try {
+      //TODO optimise this map into loop
       val record = schema.fields.map(t ⇒ StreamUtils.read(in, t.getDataType))
       ready.put(Some(record))
     } catch {

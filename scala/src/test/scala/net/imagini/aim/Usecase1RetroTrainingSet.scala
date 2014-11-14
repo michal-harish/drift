@@ -1,18 +1,17 @@
 package net.imagini.aim
 
-import org.scalatest.Matchers
-import org.scalatest.FlatSpec
-import net.imagini.aim.types.AimSchema
-import net.imagini.aim.segment.AimSegmentQuickSort
-import net.imagini.aim.utils.BlockStorageMEMLZ4
-import net.imagini.aim.region.AimRegion
-import net.imagini.aim.segment.MergeScanner
-import net.imagini.aim.region.EquiJoinScanner
-import net.imagini.aim.region.IntersectionJoinScanner
-import net.imagini.aim.region.UnionJoinScanner
-import net.imagini.aim.types.Aim
 import java.io.EOFException
+
+import org.scalatest.FlatSpec
+import org.scalatest.Matchers
+
+import net.imagini.aim.region.AimRegion
 import net.imagini.aim.region.QueryParser
+import net.imagini.aim.segment.AimSegmentQuickSort
+import net.imagini.aim.segment.MergeScanner
+import net.imagini.aim.types.Aim
+import net.imagini.aim.types.AimSchema
+import net.imagini.aim.utils.BlockStorageMEMLZ4
 
 class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
 

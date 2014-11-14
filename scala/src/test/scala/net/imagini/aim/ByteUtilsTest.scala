@@ -12,8 +12,8 @@ class ByteUtilsTest extends FlatSpec with Matchers {
 
   "ByteKeys with same value and different classifiers" should "be different" in {
         val tree = new TreeMap[ByteKey,String]()
-        val key2 = new ByteKey("12345678".getBytes(), 0 ,2) 
-        val key1 = new ByteKey("12345678".getBytes(), 0 ,1)
+        val key2 = new ByteKey("12345678".getBytes(), 0, 0 ,2) 
+        val key1 = new ByteKey("12345678".getBytes(), 0, 0 ,1)
         tree.put(key2, "two")
         tree.put(key1, "one")
         tree.size should equal(2)

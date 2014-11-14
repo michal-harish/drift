@@ -101,6 +101,7 @@ Usecase 3. Benchmark - id-linking from newly discovered information (?)
 
 Design thoughts dump
 ================================================================================================= 
+* use transformation method to do the merge sorting into larger and larger segments - e.g. start with tiny segments with quick sort and use maturing background transformations
 * 64-bit DOUBLE AimType must be added
 * Compare Memory Mapped Files on SSD vs  spinning disk storage
 * some kind of consumption status of transformers at the segment level would be nice

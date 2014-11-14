@@ -31,6 +31,25 @@ public class AimTypeTIME extends AimTypeAbstract {
     }
 
     @Override
+    public int convert(String value,  byte[] dest, int destOffset) {
+        if (value == null || value.isEmpty()) {
+            return Aim.LONG.convert("0", dest, destOffset);
+        } else if (dataType.equals(Aim.STRING)) {
+            return Aim.STRING.convert(value, dest, destOffset);
+        } else if (dataType.equals(Aim.LONG)) {
+            try {
+                //TODO joda time for thread-safe formatting and parsing
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd H:mm:ss");
+                Date d = formatter.parse(value);
+                return Aim.LONG.convert(String.valueOf(d.getTime()), dest, destOffset);
+            } catch (ParseException e) {
+                throw new AimQueryException("Could not parse timestamp " + value);
+            }
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+    @Override
     public byte[] convert(String value) {
         if (value != null && !value.isEmpty()) {
             if (dataType.equals(Aim.STRING)) {
