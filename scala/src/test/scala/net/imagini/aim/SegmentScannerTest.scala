@@ -33,5 +33,9 @@ class SegmentScannerTest extends FlatSpec with Matchers {
     scanner.next should be(false); an[EOFException] must be thrownBy (scanner.selectLine("\t"))
      val countScanner = new SegmentScanner(Array("a","b"), RowFilter.fromString(schema, "*"), segment)
     countScanner.count should be (2L)
+
+    val scanner2 = new SegmentScanner(Array("a","b"), RowFilter.fromString(schema, "a contains 'W'"), segment)
+    scanner2.next should be(true); scanner2.selectLine("\t") should be("World\t99")
+    scanner2.next should be(false); an[EOFException] must be thrownBy (scanner2.selectLine("\t"))
   }
 }

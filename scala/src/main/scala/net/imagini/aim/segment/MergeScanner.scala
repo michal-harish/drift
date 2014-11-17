@@ -8,8 +8,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
-import scala.Array.canBuildFrom
-import scala.Array.fallbackCanBuildFrom
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.types.Aim
 import net.imagini.aim.types.AimSchema
@@ -42,9 +40,6 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
   val keyDataType = keyType.getDataType
   rowFilter.updateFormula(scanSchema.names)
 
-  private val executor: ExecutorService = Executors.newFixedThreadPool(scanners.size)
-  private val fetchers: Seq[SegmentFetcher] = scanners.map(s ⇒ new SegmentFetcher(s))
-  val counter = new AtomicInteger(0)
   private val sortOrder = SortOrder.ASC
   private var currentRow: Array[View] = null
   private var initialised = false
@@ -54,29 +49,27 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
     if (eof) {
       return false
     } else if (!initialised) {
-      fetchers.map(executor.submit(_))
+      scanners.map(_.next)
       initialised = true
     }
-    var f = 0
+    var s = 0
     currentRow = null
-    var selectedFetcher: SegmentFetcher = null
-    while (f < fetchers.size) {
-      val fetcher = fetchers(f)
-      fetcher.peek match {
-        case Some(record) ⇒ {
-          if (currentRow == null || ((record(scanKeyColumnIndex).compareTo(currentRow(scanKeyColumnIndex)) < 0) ^ sortOrder.equals(DESC))) {
-            currentRow = record;
-            selectedFetcher = fetcher
-          }
+    var selectedScanner: SegmentScanner = null
+    while (s < scanners.size) {
+      val scanner = scanners(s)
+      if (!scanner.eof) {
+        val record = scanner.selectRow
+        if (currentRow == null || ((record(scanKeyColumnIndex).compareTo(currentRow(scanKeyColumnIndex)) < 0) ^ sortOrder.equals(DESC))) {
+          currentRow = record.map(v => new View(v))
+          selectedScanner = scanner
         }
-        case None ⇒ {}
       }
-      f += 1
+      s += 1
     }
     if (currentRow == null) {
       eof = true
     } else {
-      selectedFetcher.drop
+      selectedScanner.next
     }
     !eof
   }
@@ -96,13 +89,8 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
     }
   }
 
-  /**
-   * TODO currently hard-coded for 4-core processors, however once
-   * the table is distributed across multiple machines this thread pool should
-   * be bigger until the I/O becomes bottleneck.
-   */
   override def count: Long = {
-    val executor = Executors.newFixedThreadPool(4)
+    val executor: ExecutorService = Executors.newFixedThreadPool(scanners.size)
     val results: List[Future[Long]] = (0 to segments.size - 1).map(s ⇒ executor.submit(new Callable[Long] {
       override def call: Long = {
         scanners(s).count
@@ -112,39 +100,5 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
     results.foldLeft(0L)(_ + _.get)
   }
 
-}
-
-class SegmentFetcher(val scanner: SegmentScanner) extends Runnable {
-  var hasMoreData = true
-  private val ready = new SynchronizedQueue[Array[View]]
-
-  def drop = ready.synchronized {
-    ready.dequeue
-    ready.notify
-  }
-
-  def peek: Option[Array[View]] = {
-    this.synchronized {
-      while (ready.size == 0) {
-        if (!hasMoreData) return None
-        this.wait
-      }
-    }
-    Some(ready.front)
-  }
-
-  override def run = {
-    while (scanner.next) {
-      val scanRow = scanner.selectRow
-      this.synchronized {
-        ready.enqueue(scanRow.map(v ⇒ new View(v)))
-        this.notify
-      }
-    }
-    this.synchronized {
-      hasMoreData = false;
-      this.notify
-    }
-  }
 
 }

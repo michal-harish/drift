@@ -29,45 +29,70 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
   private val keyDataType = scanSchema.dataType(scanKeyColumnIndex)
   rowFilter.updateFormula(scanSchema.names)
   var eof = false
+  private var counted = 0
+
+  private val fetcher = new Thread() {
+    private val scanFilterView: Array[View] = new Array[View](scanBuffers.size)
+    override def run = {
+      var filterMatch = true
+      var done = false
+      while(!done) {
+        var i = 0
+        try {
+          while (i < scanStreams.length) {
+            scanFilterView(i) = scanBuffers(i).asInstanceOf[RollingBufferView].select(scanStreams(i))
+            i += 1
+          }
+          if (!eof && !rowFilter.isEmptyFilter) {
+            filterMatch = rowFilter.matches(scanFilterView)
+          }
+          if (filterMatch) {
+            var i = 0
+            while (i < scanStreams.length) {
+              scanBuffers(i).asInstanceOf[RollingBufferView].keep
+              i += 1
+            }
+            counted += 1
+          }
+        } catch {
+          //FIXME eof has to be marked in the rolling buffers not just by a bool var
+          case e: EOFException ⇒ {
+            done = true
+            var i = 0
+            while (i < scanStreams.length) {
+              scanBuffers(i).asInstanceOf[RollingBufferView].markEof
+              i += 1
+            }
+          }
+        }
+      }
+    }
+  }
+
+  fetcher.start
 
   override def selectKey: View = if (eof) throw new EOFException else scanBuffers(scanKeyColumnIndex)
 
   override def selectRow: Array[View] = if (eof) throw new EOFException else scanBuffers
 
   override def count: Long = {
-    var count = 0
-    while (next) {
-      count += 1
-    }
-    count
+    while (next) {}
+    counted
   }
 
   override def next: Boolean = if (eof) false else {
-    var filterMatch = true
-    do {
-      var i = 0
-      try {
-        while (i < scanStreams.length) {
-          scanBuffers(i).asInstanceOf[RollingBufferView].select(scanStreams(i))
-          i += 1
-        }
-      } catch {
-        case e: EOFException ⇒ eof = true
+    if (eof) {
+      return false
+    }
+    var i = 0
+    while (i < scanStreams.length) {
+      val rollingBuffer = scanBuffers(i).asInstanceOf[RollingBufferView]
+      if (rollingBuffer.eof) {
+        eof = true
+      } else {
+        rollingBuffer.next
       }
-      if (!eof && !rowFilter.isEmptyFilter) {
-        filterMatch = rowFilter.matches(scanBuffers)
-        if (!filterMatch) {
-          scanBuffers.map(b => b.offset -= 1) //unselect - TODO optimize
-        }
-      }
-    } while (!eof && !filterMatch)
-    if (!eof) {
-      var i = 0
-      while (i < scanBuffers.length) {
-        scanBuffers(i).asInstanceOf[RollingBufferView].keep
-        i += 1
-      }
-      //System.err.println((scanSchema.fields, scanBuffers).zipped.map((t, b) ⇒ t.asString(b)).mkString(" "))
+      i += 1
     }
     !eof
   }

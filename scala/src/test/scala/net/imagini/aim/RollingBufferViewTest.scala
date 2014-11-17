@@ -18,13 +18,15 @@ class RollingBufferViewTest extends FlatSpec with Matchers {
     for (i ← (1 to n)) ByteUtils.asIntValue(input, (i - 1) * 4) should be(i)
     val inputStream = new ByteArrayInputStream(input)
 
-    val buf = new RollingBufferView(18, Aim.INT)
+    val buf = new RollingBufferView(18, Aim.INT) 
 
     val writer = new Thread() {
       override def run = {
         for (i ← (1 to n)) {
-          buf.put(inputStream)
+          buf.select(inputStream)
+          buf.keep
         }
+        buf.markEof
       }
     }
 
@@ -37,10 +39,12 @@ class RollingBufferViewTest extends FlatSpec with Matchers {
       }
     }
 
-    reader.start
     writer.start
+    buf.eof should be (false)
+    reader.start
     writer.join
     reader.join
+    buf.eof should be (true)
   }
 
 }
