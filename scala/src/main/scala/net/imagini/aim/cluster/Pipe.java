@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import net.imagini.aim.tools.StreamUtils;
 import net.imagini.aim.types.Aim;
 import net.imagini.aim.types.AimDataType;
 import net.jpountz.lz4.LZ4BlockInputStream;

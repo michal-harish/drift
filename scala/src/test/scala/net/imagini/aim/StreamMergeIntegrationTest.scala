@@ -7,11 +7,11 @@ import net.imagini.aim.segment.AimSegmentUnsorted
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.utils.BlockStorageMEMLZ4
-import net.imagini.aim.tools.RowFilter
-import net.imagini.aim.tools.StreamMerger
+import net.imagini.aim.segment.RowFilter
+import net.imagini.aim.cluster.StreamMerger
 import java.io.EOFException
 import net.imagini.aim.region.AimRegion
-import net.imagini.aim.tools.StreamUtils
+import net.imagini.aim.cluster.StreamUtils
 import net.imagini.aim.cluster.ScannerInputStream
 import net.imagini.aim.segment.MergeScanner
 import java.io.InputStream

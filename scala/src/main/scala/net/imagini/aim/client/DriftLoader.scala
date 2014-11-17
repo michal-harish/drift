@@ -10,7 +10,7 @@ import net.imagini.aim.cluster.Pipe
 import net.imagini.aim.cluster.Protocol
 import net.imagini.aim.types.AimSchema
 import java.nio.ByteBuffer
-import net.imagini.aim.tools.StreamUtils
+import net.imagini.aim.cluster.StreamUtils
 
 object DriftLoader extends App {
   var host: String = "localhost"

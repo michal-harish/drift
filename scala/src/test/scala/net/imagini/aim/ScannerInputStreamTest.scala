@@ -7,10 +7,10 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 
 import net.imagini.aim.cluster.ScannerInputStream
+import net.imagini.aim.cluster.StreamUtils
 import net.imagini.aim.region.AimRegion
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.segment.MergeScanner
-import net.imagini.aim.tools.StreamUtils
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorageMEMLZ4
 

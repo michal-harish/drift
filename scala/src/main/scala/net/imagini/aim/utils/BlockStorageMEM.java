@@ -50,7 +50,7 @@ public class BlockStorageMEM extends BlockStorage {
     }
 
     @Override 
-    public InputStream openInputStream(int block) throws IOException {
+    public InputStream openInputStreamBlock(int block) throws IOException {
         return new ByteArrayInputStream(blocks.get(block));
     }
 }

@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.imagini.aim.cluster.Pipe;
-import net.imagini.aim.tools.StreamUtils;
+import net.imagini.aim.cluster.StreamUtils;
 import net.imagini.aim.utils.BlockStorage.PersistentBlockStorage;
 
 import org.slf4j.Logger;
@@ -103,7 +103,7 @@ public class BlockStorageFS extends BlockStorage implements
     }
 
     @Override
-    public InputStream openInputStream(int block) throws IOException {
+    public InputStream openInputStreamBlock(int block) throws IOException {
         if (block >= numBlocks.get()) {
             throw new IllegalArgumentException();
         }

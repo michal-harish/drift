@@ -5,7 +5,7 @@ import net.imagini.aim.utils.ByteUtils
 import net.imagini.aim.utils.View
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
-import net.imagini.aim.tools.StreamUtils
+import net.imagini.aim.cluster.StreamUtils
 import net.imagini.aim.utils.BlockStorageMEM
 import java.io.File
 import net.imagini.aim.types.AimSchema
@@ -42,15 +42,12 @@ class BlockStorageTest extends FlatSpec with Matchers {
     instance.storedSize should equal(instance.originalSize)
     instance.originalSize should equal(value1.length + value2.length)
 
-    val in0 = instance.openInputStream(0)
+    val in0 = instance.toInputStream;
     val b0 = new Array[Byte](value1.getBytes.length)
     StreamUtils.read(in0, b0, 0, b0.length)
-    in0.close
-
-    val in1 = instance.openInputStream(1)
     val b1 = new Array[Byte](value1.getBytes.length)
-    StreamUtils.read(in1, b1, 0, b1.length)
-    in1.close
+    StreamUtils.read(in0, b1, 0, b1.length)
+    in0.close
 
     ByteUtils.compare(b0, 0, b0.length, value1.getBytes, 0, value1.getBytes.length) should be(0)
     ByteUtils.compare(b1, 0, b1.length, value2.getBytes, 0, value2.getBytes.length) should be(0)
@@ -82,15 +79,12 @@ class BlockStorageTest extends FlatSpec with Matchers {
     instance.storedSize should equal(168)
     instance.originalSize should equal(value1.length + value2.length)
 
-    val in0 = instance.openInputStream(0)
+    val in0 = instance.toInputStream
     val b0 = new Array[Byte](value1.getBytes.length)
     StreamUtils.read(in0, b0, 0, b0.length)
-    in0.close
-
-    val in1 = instance.openInputStream(1)
     val b1 = new Array[Byte](value1.getBytes.length)
-    StreamUtils.read(in1, b1, 0, b1.length)
-    in1.close
+    StreamUtils.read(in0, b1, 0, b1.length)
+    in0.close
 
     ByteUtils.compare(b0, 0, b0.length, value1.getBytes, 0, value1.getBytes.length) should be(0)
     ByteUtils.compare(b1, 0, b1.length, value2.getBytes, 0, value2.getBytes.length) should be(0)
@@ -106,9 +100,17 @@ class BlockStorageTest extends FlatSpec with Matchers {
     segment.appendRecord("95c54c2e-2542-4f5e-8914-47e669a9578f", "World")
     segment.close
 
-    val scanner = new SegmentScanner("*", "*", segment)
-    scanner.next should be(true); scanner.selectLine(" ") should be("95c54c2e-2542-4f5e-8914-47e669a9578f Hello")
-    scanner.next should be(true); scanner.selectLine(" ") should be("95c54c2e-2542-4f5e-8914-47e669a9578f World")
-    scanner.next should be(false); an[EOFException] must be thrownBy (scanner.selectLine(" "))
+    val uuidStream = segment.getBlockStorage(0).toInputStream;
+    schema.get(0).convert(StreamUtils.read(uuidStream, schema.get(0).getDataType())) should be("95c54c2e-2542-4f5e-8914-47e669a9578f")
+    schema.get(0).convert(StreamUtils.read(uuidStream, schema.get(0).getDataType())) should be("95c54c2e-2542-4f5e-8914-47e669a9578f")
+    an[EOFException] must be thrownBy (StreamUtils.read(uuidStream, schema.get(0).getDataType()))
+    uuidStream.close
+
+    val valueStream = segment.getBlockStorage(1).toInputStream;
+    schema.get(1).convert(StreamUtils.read(valueStream, schema.get(1).getDataType())) should be("Hello")
+    schema.get(1).convert(StreamUtils.read(valueStream, schema.get(1).getDataType())) should be("World")
+    an[EOFException] must be thrownBy (StreamUtils.read(valueStream, schema.get(1).getDataType()))
+    valueStream.close
+
   }
 }

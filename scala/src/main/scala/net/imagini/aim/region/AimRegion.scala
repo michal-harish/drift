@@ -4,9 +4,9 @@ import net.imagini.aim.types.AimSchema
 import scala.collection.mutable.ListBuffer
 import net.imagini.aim.segment.AimSegment
 import java.util.concurrent.atomic.AtomicInteger
-import net.imagini.aim.tools.RowFilter
+import net.imagini.aim.segment.RowFilter
 import java.io.InputStream
-import net.imagini.aim.tools.StreamMerger
+import net.imagini.aim.cluster.StreamMerger
 import java.util.concurrent.Executors
 import scala.collection.mutable.MutableList
 import java.util.concurrent.Future

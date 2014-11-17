@@ -1,4 +1,4 @@
-package net.imagini.aim.tools;
+package net.imagini.aim.cluster;
 
 import java.io.EOFException;
 import java.io.IOException;

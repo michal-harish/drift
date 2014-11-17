@@ -3,7 +3,7 @@ package net.imagini.aim.region
 import scala.collection.mutable.Queue
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.tools.AbstractScanner
-import net.imagini.aim.tools.RowFilter
+import net.imagini.aim.segment.RowFilter
 import net.imagini.aim.utils.Tokenizer
 import net.imagini.aim.types.AimQueryException
 import net.imagini.aim.tools.CountScanner

@@ -1,4 +1,4 @@
-package net.imagini.aim.tools
+package net.imagini.aim.cluster
 
 import java.io.EOFException
 import java.io.InputStream
@@ -14,6 +14,7 @@ import net.imagini.aim.types.SortOrder
 import net.imagini.aim.types.SortOrder._
 import scala.Array.canBuildFrom
 import net.imagini.aim.types.TypeUtils
+import scala.Array.fallbackCanBuildFrom
 
 class MergeQueue extends ConcurrentSkipListMap[ByteKey, Array[Array[Byte]]]
 class InputStreamQueue(limit: Int) extends LinkedBlockingQueue[Option[Array[Array[Byte]]]](limit)

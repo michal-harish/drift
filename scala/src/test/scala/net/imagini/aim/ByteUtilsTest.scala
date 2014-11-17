@@ -53,8 +53,7 @@ class ByteUtilsTest extends FlatSpec with Matchers {
 
     "Contains and compare" should " always work around the edges" in {
       val container = new View("123456789".getBytes)
-      val subcontainer = new View(container)
-      subcontainer.offset += 4
+      val subcontainer = new View(container.array, 4, 9,9)
       ByteUtils.equals(container.array, container.offset, container.size , "123456789".getBytes, 0, 9) should be (true)
       ByteUtils.equals(subcontainer.array, subcontainer.offset, 5, "56789".getBytes, 0, 5) should be (true)
       ByteUtils.contains(container.array, container.offset , 9, subcontainer.array, subcontainer.offset, 5) should be (true)

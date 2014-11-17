@@ -5,7 +5,7 @@ import org.scalatest.Matchers
 import net.imagini.aim.region.AimRegion
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.segment.AimSegmentQuickSort
-import net.imagini.aim.tools.RowFilter
+import net.imagini.aim.segment.RowFilter
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.region.EquiJoinScanner

@@ -5,13 +5,11 @@ import java.io.IOException
 import java.net.SocketException
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.tools.CountScanner
-import net.imagini.aim.tools.StreamUtils
 import net.imagini.aim.types.Aim
 import net.imagini.aim.utils.Tokenizer
 import net.imagini.aim.types.AimQueryException
 import net.imagini.aim.client.DriftClient
 import net.imagini.aim.cluster.Protocol._
-import net.imagini.aim.tools.StreamMerger
 
 class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
 

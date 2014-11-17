@@ -2,7 +2,7 @@ package net.imagini.aim.region
 
 import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.tools.RowFilter
+import net.imagini.aim.segment.RowFilter
 import java.util.LinkedHashMap
 import net.imagini.aim.types.AimType
 import scala.collection.immutable.ListMap

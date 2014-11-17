@@ -12,7 +12,6 @@ import java.io.BufferedReader
 import net.imagini.aim.types.TypeUtils
 import net.imagini.aim.region.AimRegion
 import net.imagini.aim.client.DriftLoader
-import net.imagini.aim.tools.StreamUtils
 import net.imagini.aim.types.AimQueryException
 import net.imagini.aim.utils.View
 import java.nio.ByteBuffer

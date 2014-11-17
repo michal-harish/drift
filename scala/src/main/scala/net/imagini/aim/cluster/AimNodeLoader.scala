@@ -2,7 +2,6 @@ package net.imagini.aim.cluster
 
 import net.imagini.aim.client.DriftLoader
 import net.imagini.aim.segment.AimSegment
-import net.imagini.aim.tools.StreamUtils
 import net.imagini.aim.utils.View
 import grizzled.slf4j.Logger
 import net.imagini.aim.types.TypeUtils

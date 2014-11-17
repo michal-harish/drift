@@ -10,7 +10,7 @@ import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.utils.ByteUtils
 import net.imagini.aim.segment.AimSegmentUnsorted
 import net.imagini.aim.segment.SegmentScanner
-import net.imagini.aim.tools.RowFilter
+import net.imagini.aim.segment.RowFilter
 import net.imagini.aim.utils.View
 
 class SegmentScannerTest extends FlatSpec with Matchers {

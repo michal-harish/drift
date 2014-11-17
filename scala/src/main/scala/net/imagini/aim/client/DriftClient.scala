@@ -9,7 +9,7 @@ import net.imagini.aim.cluster.Pipe
 import net.imagini.aim.cluster.Protocol
 import java.io.EOFException
 import net.imagini.aim.types.AimQueryException
-import net.imagini.aim.tools.StreamUtils
+import net.imagini.aim.cluster.StreamUtils
 import net.imagini.aim.types.Aim
 import net.imagini.aim.utils.ByteUtils
 import java.nio.ByteBuffer

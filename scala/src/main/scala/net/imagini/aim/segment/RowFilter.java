@@ -1,4 +1,4 @@
-package net.imagini.aim.tools;
+package net.imagini.aim.segment;
 
 import java.io.IOException;
 import java.util.ArrayList;

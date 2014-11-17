@@ -1,14 +1,15 @@
 package net.imagini.aim
 
+import java.io.EOFException
+
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
+
 import net.imagini.aim.region.AimRegion
-import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.segment.AimSegmentQuickSort
-import net.imagini.aim.tools.RowFilter
+import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorageMEMLZ4
-import java.io.EOFException
 
 class MergeScannerTest extends FlatSpec with Matchers {
 
@@ -39,18 +40,14 @@ class MergeScannerTest extends FlatSpec with Matchers {
     scanner.next should be(false)
     an[EOFException] must be thrownBy scanner.selectLine(",")
 
-    //user_uid,column
-    val countScanner = new MergeScanner("*", "*", region.segments)
+    val countScanner = new MergeScanner("user_uid,column", "*", region.segments)
     countScanner.count should be (6L)
 
-    //TODO select only subset of columns: user_uid, value
     val mergeScan = new MergeScanner("user_uid,value", "column='pageview'", region.segments)
-
     mergeScan.nextLine should be("17b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.music.com}")
     mergeScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.auto.com}")
     mergeScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.ebay.com}")
     mergeScan.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.travel.com}")
-
     an[EOFException] must be thrownBy mergeScan.nextLine
     an[EOFException] must be thrownBy mergeScan.nextLine
 

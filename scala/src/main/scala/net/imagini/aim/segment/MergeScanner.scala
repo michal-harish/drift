@@ -11,16 +11,16 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.Array.canBuildFrom
 import scala.Array.fallbackCanBuildFrom
 import net.imagini.aim.tools.AbstractScanner
-import net.imagini.aim.tools.RowFilter
 import net.imagini.aim.types.Aim
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimTypeUUID
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.types.SortOrder.ASC
 import net.imagini.aim.types.SortOrder.DESC
-import net.imagini.aim.utils.ByteKey
 import net.imagini.aim.utils.View
 import java.util.TreeMap
+import scala.collection.mutable.Queue
+import scala.collection.mutable.SynchronizedQueue
 
 //TODO sourceSchema can be retrieved from any of the segments provided
 class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, val segments: Seq[AimSegment])
@@ -32,7 +32,6 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
 
   private val sourceSchema: AimSchema = segments(0).getSchema
   override val schema: AimSchema = sourceSchema.subset(selectFields)
-  private val sortOrder = SortOrder.ASC
   private val keyField: String = sourceSchema.name(0)
   private val scanSchema: AimSchema = sourceSchema.subset(selectFields ++ rowFilter.getColumns :+ keyField)
   private val scanners: Array[SegmentScanner] = segments.map(segment ⇒ new SegmentScanner(scanSchema.names, rowFilter, segment)).toArray
@@ -44,11 +43,10 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
   rowFilter.updateFormula(scanSchema.names)
 
   private val executor: ExecutorService = Executors.newFixedThreadPool(scanners.size)
-  private val fetchers: Seq[SegmentFetcher] = scanners.map(s ⇒ new SegmentFetcher(s, 10))
+  private val fetchers: Seq[SegmentFetcher] = scanners.map(s ⇒ new SegmentFetcher(s))
   val counter = new AtomicInteger(0)
-  private val mergeQueue = new TreeMap[ByteKey, Array[View]]()// in case this needs to be conurrent : new ConcurrentSkipListMap[ByteKey, Array[View]]() 
+  private val sortOrder = SortOrder.ASC
   private var currentRow: Array[View] = null
-  private var currentKey: View = null
   private var initialised = false
   private var eof = false
 
@@ -60,43 +58,34 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
       initialised = true
     }
     var f = 0
+    currentRow = null
+    var selectedFetcher: SegmentFetcher = null
     while (f < fetchers.size) {
       val fetcher = fetchers(f)
-      if (!fetcher.closed) {
-        fetcher.take match {
-          case None ⇒ {}
-          case Some(record) ⇒ {
-            val keyView = record(scanKeyColumnIndex);
-            val byteKey = new ByteKey(keyView.array, keyView.offset, keyDataType.sizeOf(keyView), counter.incrementAndGet)
-            mergeQueue.put(byteKey, record)
+      fetcher.peek match {
+        case Some(record) ⇒ {
+          if (currentRow == null || ((record(scanKeyColumnIndex).compareTo(currentRow(scanKeyColumnIndex)) < 0) ^ sortOrder.equals(DESC))) {
+            currentRow = record;
+            selectedFetcher = fetcher
           }
         }
+        case None ⇒ {}
       }
       f += 1
     }
-
-    val entry = sortOrder match {
-      case DESC ⇒ mergeQueue.pollLastEntry
-      case ASC  ⇒ mergeQueue.pollFirstEntry
-    }
-    if (entry == null) {
+    if (currentRow == null) {
       eof = true
-      currentRow = null
-      currentKey = null
-      false
     } else {
-      val scanRow = entry.getValue
-      currentKey = scanRow(scanKeyColumnIndex)
-      currentRow = scanColumnIndex.map(c ⇒ scanRow(c))
-      true
+      selectedFetcher.drop
     }
+    !eof
   }
 
   override def selectKey: View = {
     if (eof) {
       throw new EOFException
     } else {
-      currentKey
+      currentRow(scanKeyColumnIndex)
     }
   }
   override def selectRow: Array[View] = {
@@ -125,23 +114,37 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
 
 }
 
-//System.err.println(this + " " + new AimTypeUUID(Aim.BYTEARRAY(16)).asString(scanRow(0)))
-
-class SegmentFetcher(val scanner: SegmentScanner, val queueSize: Int) extends Runnable {
+class SegmentFetcher(val scanner: SegmentScanner) extends Runnable {
   var hasMoreData = true
-  val ready = new LinkedBlockingQueue[Option[Array[View]]](queueSize)
+  private val ready = new SynchronizedQueue[Array[View]]
 
-  def take: Option[Array[View]] = ready.take
+  def drop = ready.synchronized {
+    ready.dequeue
+    ready.notify
+  }
 
-  def closed: Boolean = !hasMoreData && ready.size == 0
+  def peek: Option[Array[View]] = {
+    this.synchronized {
+      while (ready.size == 0) {
+        if (!hasMoreData) return None
+        this.wait
+      }
+    }
+    Some(ready.front)
+  }
 
   override def run = {
     while (scanner.next) {
       val scanRow = scanner.selectRow
-      ready.put(Some(scanRow.map(v ⇒ new View(v))))
+      this.synchronized {
+        ready.enqueue(scanRow.map(v ⇒ new View(v)))
+        this.notify
+      }
     }
-    ready.put(None)
-    hasMoreData = false;
+    this.synchronized {
+      hasMoreData = false;
+      this.notify
+    }
   }
 
 }

@@ -81,7 +81,7 @@ public class BlockStorageMEMLZ4 extends BlockStorage {
     }
 
     @Override
-    public InputStream openInputStream(int block) throws IOException {
+    public InputStream openInputStreamBlock(int block) throws IOException {
         int length = lengths.get(block);
         byte[] result = new byte[length];
         decompressor.decompress(compressedBlocks.get(block), 0, result, 0, length);

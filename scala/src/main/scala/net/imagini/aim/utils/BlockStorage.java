@@ -40,6 +40,40 @@ abstract public class BlockStorage {
 
     abstract public long originalSize();
 
-    abstract public InputStream openInputStream(int block) throws IOException;
+    //FIXME protected
+    abstract public InputStream openInputStreamBlock(int block) throws IOException;
+
+    final public InputStream toInputStream()  throws IOException {
+        return new InputStream() {
+            private InputStream blockStream = null;
+            private int currentBlock = -1;
+            private boolean eof = BlockStorage.this.numBlocks() == 0;
+
+            @Override
+            public int read() throws IOException {
+                while (!eof) {
+                    if (currentBlock > -1) {
+                        int read = blockStream.read();
+                        if (read > -1) {
+                            return read;
+                        }
+                    }
+                    close();
+                    currentBlock +=1;
+                    if (currentBlock < numBlocks()) {
+                        blockStream = openInputStreamBlock(currentBlock);
+                    } else {
+                        eof = true;
+                    }
+                }
+                return -1;
+            }
+            @Override public void close() throws IOException {
+                if (blockStream != null) {
+                    blockStream.close();
+                }
+            }
+        };
+    }
 
 }
