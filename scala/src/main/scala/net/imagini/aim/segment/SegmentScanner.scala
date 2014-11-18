@@ -6,7 +6,6 @@ import net.imagini.aim.utils.View
 import net.imagini.aim.types.AimType
 import java.io.EOFException
 import net.imagini.aim.utils.BlockStorage
-import net.imagini.aim.types.RollingBufferView
 import net.imagini.aim.cluster.StreamUtils
 
 class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, val segment: AimSegment) extends AbstractScanner {
@@ -18,65 +17,26 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
 
   private val keyField: String = segment.getSchema.name(0)
   override val schema: AimSchema = segment.getSchema.subset(selectFields)
-  private val numBlocks = segment.getBlockStorage(0).numBlocks
   //TODO do not add filter columns and key column if already selected
   private val scanSchema: AimSchema = segment.getSchema.subset(selectFields ++ rowFilter.getColumns.filter(!selectFields.contains(_)) :+ keyField)
   private val scanColumnIndex: Array[Int] = scanSchema.names.map(n ⇒ segment.getSchema.get(n))
-  private val scanStreams = scanColumnIndex.map(c ⇒ segment.getBlockStorage(c).toInputStream).toArray
-  private val scanBuffers: Array[View] = scanSchema.fields.map(f ⇒ new RollingBufferView(8192, f)).toArray
+  private var scanViews = scanColumnIndex.map(c ⇒ segment.getBlockStorage(c).toView).toArray
   private val scanKeyColumnIndex: Int = scanSchema.get(keyField)
   override val keyType: AimType = scanSchema.get(scanKeyColumnIndex)
   private val keyDataType = scanSchema.dataType(scanKeyColumnIndex)
   rowFilter.updateFormula(scanSchema.names)
   var eof = false
-  private var counted = 0
+  var initialized = false
 
-  private val fetcher = new Thread() {
-    private val scanFilterView: Array[View] = new Array[View](scanBuffers.size)
-    override def run = {
-      var filterMatch = true
-      var done = false
-      while(!done) {
-        var i = 0
-        try {
-          while (i < scanStreams.length) {
-            scanFilterView(i) = scanBuffers(i).asInstanceOf[RollingBufferView].select(scanStreams(i))
-            i += 1
-          }
-          if (!eof && !rowFilter.isEmptyFilter) {
-            filterMatch = rowFilter.matches(scanFilterView)
-          }
-          if (filterMatch) {
-            var i = 0
-            while (i < scanStreams.length) {
-              scanBuffers(i).asInstanceOf[RollingBufferView].keep
-              i += 1
-            }
-            counted += 1
-          }
-        } catch {
-          //FIXME eof has to be marked in the rolling buffers not just by a bool var
-          case e: EOFException ⇒ {
-            done = true
-            var i = 0
-            while (i < scanStreams.length) {
-              scanBuffers(i).asInstanceOf[RollingBufferView].markEof
-              i += 1
-            }
-          }
-        }
-      }
-    }
-  }
+  override def selectKey: View = if (eof) throw new EOFException else scanViews(scanKeyColumnIndex)
 
-  fetcher.start
-
-  override def selectKey: View = if (eof) throw new EOFException else scanBuffers(scanKeyColumnIndex)
-
-  override def selectRow: Array[View] = if (eof) throw new EOFException else scanBuffers
+  override def selectRow: Array[View] = if (eof) throw new EOFException else scanViews
 
   override def count: Long = {
-    while (next) {}
+    var counted = 0
+    while (next) {
+      counted += 1
+    }
     counted
   }
 
@@ -84,16 +44,24 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
     if (eof) {
       return false
     }
-    var i = 0
-    while (i < scanStreams.length) {
-      val rollingBuffer = scanBuffers(i).asInstanceOf[RollingBufferView]
-      if (rollingBuffer.eof) {
-        eof = true
-      } else {
-        rollingBuffer.next
+    var filterMatch = true;
+    do {
+      var i = 0
+      while (i < scanViews.length) {
+        val view = scanViews(i)
+        if (initialized) {
+          view.skip
+        }
+        if (!view.available(scanSchema.dataType(i).getLen)) {
+          eof = true
+        }
+        i += 1
       }
-      i += 1
-    }
+      initialized = true
+      if (!eof && !rowFilter.isEmptyFilter) {
+        filterMatch = rowFilter.matches(scanViews);
+      }
+    } while (!eof && !filterMatch)
     !eof
   }
 

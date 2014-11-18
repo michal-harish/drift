@@ -19,8 +19,8 @@ class SegmentScannerTest extends FlatSpec with Matchers {
   "Marking scanner" should "restore the correct block" in {
     val schema = AimSchema.fromString("a(STRING),b(INT)")
     val column1 = new BlockStorageMEMLZ4()
-    column1.addBlock(ByteUtils.createStringBuffer("Hello"))
-    column1.addBlock(ByteUtils.createStringBuffer("World"))
+    column1.store(ByteUtils.createStringBuffer("Hello"))
+    column1.store(ByteUtils.createStringBuffer("World"))
     val segment = new AimSegmentUnsorted(schema).initStorage(classOf[BlockStorageMEMLZ4])
 
     segment.appendRecord("Hello", "101")

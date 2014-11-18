@@ -41,6 +41,7 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
   rowFilter.updateFormula(scanSchema.names)
 
   private val sortOrder = SortOrder.ASC
+  private var currentScanner: SegmentScanner = null
   private var currentRow: Array[View] = null
   private var initialised = false
   private var eof = false
@@ -51,26 +52,25 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
     } else if (!initialised) {
       scanners.map(_.next)
       initialised = true
-    }
+    } else if (currentScanner != null) {
+      currentScanner.next
+    } 
     var s = 0
     currentRow = null
-    var selectedScanner: SegmentScanner = null
     while (s < scanners.size) {
       val scanner = scanners(s)
       if (!scanner.eof) {
         val record = scanner.selectRow
         if (currentRow == null || ((record(scanKeyColumnIndex).compareTo(currentRow(scanKeyColumnIndex)) < 0) ^ sortOrder.equals(DESC))) {
           currentRow = record.map(v => new View(v))
-          selectedScanner = scanner
+          currentScanner = scanner
         }
       }
       s += 1
     }
     if (currentRow == null) {
       eof = true
-    } else {
-      selectedScanner.next
-    }
+    } 
     !eof
   }
 

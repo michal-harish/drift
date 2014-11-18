@@ -27,6 +27,7 @@ public class AimSegmentQuickSort extends AimSegment {
     private Map<ByteKey, List<byte[][]>> sortMap = new HashMap<>();
     private SortOrder sortOrder;
     private AimDataType sortDataType;
+    private int recordedSize = 0;
 
     public AimSegmentQuickSort(AimSchema schema) {
         super(schema);
@@ -40,22 +41,24 @@ public class AimSegmentQuickSort extends AimSegment {
         try {
             checkWritable(true);
             ByteKey sortValue = new ByteKey(record[0], 0, TypeUtils.sizeOf(sortDataType, record[0]), 0);
-            int recordSize = 0; 
-            for(int i=0; i<record.length; i ++) {
-                recordSize += record[i].length;
-            }
             if (sortValue != null) {
                 if (!sortMap.containsKey(sortValue)) {
                     sortMap.put(sortValue, new LinkedList<byte[][]>());
                 }
                 List<byte[][]> keyspace = sortMap.get(sortValue);
                 keyspace.add(record);
-                originalSize.addAndGet(recordSize);
+                for(byte[] r: record) {
+                    recordedSize += r.length;
+                }
             }
             return this;
         } catch (IllegalAccessException e) {
             throw new IOException(e);
         }
+    }
+
+    @Override public int getRecordedSize() {
+        return recordedSize;
     }
 
     @Override
@@ -66,7 +69,6 @@ public class AimSegmentQuickSort extends AimSegment {
         if (sortOrder.equals(SortOrder.DESC)) {
             Collections.reverse(keys);
         }
-        originalSize.set(0);
         for (ByteKey key : keys) {
             List<byte[][]> bucket = sortMap.get(key);
             for (byte[][] record : bucket) {

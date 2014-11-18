@@ -75,9 +75,6 @@ class RegionLoadTest extends FlatSpec with Matchers {
     region.add(segment)
     //TODO scan count region.getCount should equal(numRecords)
     region.getNumSegments should equal(numRecords * (16 + 4 + 14) / segmentSize)
-    if (storageType.equals(classOf[BlockStorageMEMLZ4])) {
-      (region.getCompressedSize.toDouble / region.getUncompressedSize < 0.3) should equal(true)
-    }
 
     for (s ← (0 to region.segments.length - 1)) {
       val scanner = new SegmentScanner("*", "*", region.segments(s))
@@ -121,9 +118,6 @@ class RegionLoadTest extends FlatSpec with Matchers {
     region.add(segment)
     //TODO scan count region.getCount should equal(numRecords)
     region.getNumSegments should equal(numRecords * (16 + 4 + 14) / segmentSize)
-    if (storageType.equals(classOf[BlockStorageMEMLZ4])) {
-      (region.getCompressedSize.toDouble / region.getUncompressedSize < 0.3) should equal(true)
-    }
 
     for (s ← (0 to region.segments.length - 1)) {
       val scanner = new SegmentScanner("*", "*", region.segments(s))

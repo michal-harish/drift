@@ -1,17 +1,18 @@
 package net.imagini.aim.utils;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
-import net.imagini.aim.cluster.Pipe;
 import net.imagini.aim.cluster.StreamUtils;
 import net.imagini.aim.utils.BlockStorage.PersistentBlockStorage;
+import net.jpountz.lz4.LZ4Compressor;
+import net.jpountz.lz4.LZ4Decompressor;
+import net.jpountz.lz4.LZ4Factory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,94 +25,87 @@ public class BlockStorageFS extends BlockStorage implements
 
     private static final String BASE_PATH = "/var/lib/drift/";
 
-    final private String path;
-    final private AtomicInteger numBlocks = new AtomicInteger(0);
-    final private AtomicLong originalSize = new AtomicLong(0);
-    final private AtomicLong storedSize = new AtomicLong(0);
-    final private int compression; // 0->None, 1->LZ4, 2->GZIP
+    final private File file;
+    private LZ4Compressor compressor = LZ4Factory.fastestInstance().fastCompressor();;
+    private LZ4Decompressor decompressor = LZ4Factory.fastestInstance()
+            .decompressor();
+    private OutputStream fout;
+    final private byte[] compressBuffer;
 
     public BlockStorageFS(String args) throws IOException {
+        super();
         if (args == null || args.isEmpty()) {
             throw new IllegalArgumentException(
                     "BlockStorageFS requires argument for relative path");
         }
         String localId = args;
-        this.compression = 1;
-        this.path = BASE_PATH + localId + "/";
-        File p = new File(path);
-        p.mkdirs();
-        for (File blockFile : p.listFiles()) {
-            int b = Integer.valueOf(blockFile.getName().split("\\.")[0]);
-            numBlocks.set(Math.max(numBlocks.get(), b + 1));
-            log.debug("Opening block " + blockFile.getAbsolutePath());
-            storedSize.addAndGet(blockFile.length());
-            InputStream bfin = Pipe.createInputPipe(new FileInputStream(
-                    blockFile), compression);
-            originalSize.addAndGet(StreamUtils.readInt(bfin));
-            bfin.close();
-        }
-    }
-
-    private File blockFile(int block) {
-        switch (compression) {
-        case 0:
-            return new File(path + block);
-        case 1:
-            return new File(path + block + ".lz");
-        case 2:
-            return new File(path + block + ".gz");
-        default:
-            throw new IllegalArgumentException();
+        new File(BASE_PATH).mkdirs();
+        this.file = new File(BASE_PATH + localId + ".lz");
+        this.file.getParentFile().mkdirs();
+        this.compressBuffer = new byte[blockSize()];
+        if (file.exists()) {
+            log.info("Found stored block " + file.getAbsolutePath());
+            storedSize.set(file.length());
+        } else {
+            fout = new FileOutputStream(file);
         }
     }
 
     @Override
-    protected int blockSize() {
-        return 1048576; // 1Mb
+    public int blockSize() {
+        return 65535; // 64Kb
     }
 
     @Override
     protected int storeBlock(byte[] array, int offset, int length)
             throws IOException {
-        File blockFile = blockFile(numBlocks.getAndIncrement());
-        OutputStream fout = Pipe.createOutputPipe(new FileOutputStream(
-                blockFile), compression);
+        int compressedLen = compressor.compress(array, offset, length,
+                compressBuffer, 0);
         StreamUtils.writeInt(fout, length);
-        fout.write(array, offset, length);
+        StreamUtils.writeInt(fout, compressedLen);
+        fout.write(compressBuffer, 0, compressedLen);
         fout.flush();
-        fout.close();
-        originalSize.addAndGet(length);
-        storedSize.addAndGet(blockFile.length()); // FIXME this actually adds
-                                                  // the uncompressed size for
-                                                  // some reason
-        return length;
+        return compressedLen;
     }
 
     @Override
-    public int numBlocks() {
-        return numBlocks.get();
-    }
-
-    @Override
-    public long storedSize() {
-        return storedSize.get();
-    }
-
-    @Override
-    public long originalSize() {
-        return originalSize.get();
-    }
-
-    @Override
-    public InputStream openInputStreamBlock(int block) throws IOException {
-        if (block >= numBlocks.get()) {
-            throw new IllegalArgumentException();
-        }
-        File blockFile = blockFile(block);
-        InputStream fin = Pipe.createInputPipe(new FileInputStream(blockFile),
-                compression);
-        lengths.add(block, StreamUtils.readInt(fin));
-        return fin;
+    public View toView() throws Exception {
+        final InputStream fin = new FileInputStream(file);
+        return new View(new byte[blockSize()], 0, -1, 0) {
+            boolean eof = false;
+            @Override public boolean available(int numBytes) {
+                if (!super.available(numBytes)) {
+                    if (!readNextBlock()) {
+                        eof = true;
+                        try {
+                            fin.close(); 
+                        } catch (IOException e) {}
+                        return false;
+                    } else {
+                        return super.available(numBytes);
+                    }
+                } else {
+                    return true;
+                }
+            }
+            private boolean readNextBlock() {
+                try {
+                    if (eof) throw new EOFException(); 
+                    limit = 0;
+                    offset = 0;
+                    size = StreamUtils.readInt(fin);
+                    int cLen = StreamUtils.readInt(fin);
+                    StreamUtils.read(fin, compressBuffer, 0, cLen);
+                    decompressor.decompress(compressBuffer, 0, array, 0, size);
+                    return true;
+                } catch (EOFException e) {
+                    return false;
+                } catch (IOException e) {
+                    log.error("Could not open lz4 block from " + file.getAbsolutePath(), e);
+                    return false;
+                }
+            }
+        };
     }
 
 }

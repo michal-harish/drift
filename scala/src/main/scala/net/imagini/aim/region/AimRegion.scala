@@ -39,8 +39,6 @@ class AimRegion(
 
   def getCompressedSize: Long = segments.foldLeft(0L)(_ + _.getCompressedSize)
 
-  def getUncompressedSize: Long = segments.foldLeft(0L)(_ + _.getOriginalSize)
-
   private val segmentConstructor = sortType.getConstructor(classOf[AimSchema])
 
   val persisted = storageType.getInterfaces.contains(classOf[PersistentBlockStorage])
@@ -57,7 +55,7 @@ class AimRegion(
 
   def add(segment: AimSegment) = {
     segment.close
-    if (segment.getOriginalSize > 0) {
+    if (segment.getCompressedSize() > 0) {
       segments.synchronized { //TODO use concurrent structure as this synchronisation really does nothing
         segments += segment
         numSegments.incrementAndGet
@@ -90,7 +88,7 @@ class AimRegion(
   }
 
   private def checkSegment(segment: AimSegment, size: Int): AimSegment = {
-    if (segment.getOriginalSize + size > segmentSizeBytes) try {
+    if (segment.getRecordedSize() + size > segmentSizeBytes) try {
       add(segment)
       newSegment
     } catch {

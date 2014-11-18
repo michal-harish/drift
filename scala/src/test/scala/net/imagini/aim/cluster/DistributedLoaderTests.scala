@@ -25,19 +25,19 @@ class DistributedLoaderTests extends FlatSpec with Matchers {
 
   val client = new DriftClient("localhost", 9997)
   client.query("STATS vdna")
-  client.hasNext should be(true); client.fetchRecordLine should be("events,1,1,1918,2322")
-  client.hasNext should be(true); client.fetchRecordLine should be("events,3,1,1586,2173")
-  client.hasNext should be(true); client.fetchRecordLine should be("events,4,1,2081,2604")
-  client.hasNext should be(true); client.fetchRecordLine should be("events,2,1,905,1050")
+  client.hasNext should be(true); client.fetchRecordLine should be("events,1,1,1918") //,2322
+  client.hasNext should be(true); client.fetchRecordLine should be("events,3,1,1586") //,2173
+  client.hasNext should be(true); client.fetchRecordLine should be("events,4,1,2081") //,2604
+  client.hasNext should be(true); client.fetchRecordLine should be("events,2,1,905") //,1050
   client.hasNext should be(false);
   an[EOFException] must be thrownBy (client.fetchRecordLine)
 
   new DriftLoader("localhost", 9998, Protocol.LOADER_USER, "addthis", "syncs", "    ", this.getClass.getResourceAsStream("datasync_string.csv"), false).streamInput should be(10)
   client.query("STATS addthis")
-  client.hasNext should be(true); client.fetchRecordLine should be("syncs,1,1,93,88")
-  client.hasNext should be(true); client.fetchRecordLine should be("syncs,3,1,165,176")
-  client.hasNext should be(true); client.fetchRecordLine should be("syncs,4,1,123,132")
-  client.hasNext should be(true); client.fetchRecordLine should be("syncs,2,1,49,44")
+  client.hasNext should be(true); client.fetchRecordLine should be("syncs,1,1,93") //,88
+  client.hasNext should be(true); client.fetchRecordLine should be("syncs,3,1,165") //,176
+  client.hasNext should be(true); client.fetchRecordLine should be("syncs,4,1,123") //,132
+  client.hasNext should be(true); client.fetchRecordLine should be("syncs,2,1,49") //,44
   client.hasNext should be(false);
   an[EOFException] must be thrownBy (client.fetchRecordLine)
 

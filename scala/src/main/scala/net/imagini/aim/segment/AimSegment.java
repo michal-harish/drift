@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import net.imagini.aim.types.AimSchema;
 import net.imagini.aim.utils.BlockStorage;
+import net.imagini.aim.utils.ByteUtils;
 import net.imagini.aim.utils.View;
 
 /**
@@ -24,7 +25,6 @@ abstract public class AimSegment {
     private boolean writable;
     private LinkedHashMap<Integer, ByteBuffer> writers = null;
     private AtomicLong size = new AtomicLong(0);
-    protected AtomicLong originalSize = new AtomicLong(0);
 
     public AimSegment(AimSchema schema) {
         this.schema = schema;
@@ -35,14 +35,13 @@ abstract public class AimSegment {
         String segmentId = segmentLocation.getName();
         try {
             for (File columnLocation : segmentLocation.listFiles()) {
-                int col = schema.get(columnLocation.getName());
+                int col = schema.get(columnLocation.getName().split("\\.")[0]);
                 String columnLocalId = segmentId + "/"
                         + schema.name(col);
                 Constructor<? extends BlockStorage> c = storageType
                         .getConstructor(String.class);
                 BlockStorage blockStorage = c.newInstance(columnLocalId);
-                size.addAndGet(blockStorage.storedSize());
-                originalSize.addAndGet(blockStorage.originalSize());
+                size.addAndGet(blockStorage.getStoredSize());
                 columnar.put(col, blockStorage);
             }
         } catch (Exception e) {
@@ -71,7 +70,7 @@ abstract public class AimSegment {
                         .getConstructor(String.class);
                 BlockStorage blockStorage = c.newInstance(columnId);
                 columnar.put(col, blockStorage);
-                writers.put(col, blockStorage.newBlock());
+                writers.put(col, ByteUtils.wrap(new byte[blockStorage.blockSize()]));
             } catch (Exception e) {
                 e.printStackTrace();
                 throw new InstantiationException();
@@ -93,21 +92,24 @@ abstract public class AimSegment {
         return size.get();
     }
 
-    final public long getOriginalSize() {
-        return originalSize.get();
-    }
-
     public abstract AimSegment appendRecord(byte[][] record) throws IOException;
 
+    public abstract int getRecordedSize();
+
+    private void commitBlock(int col) throws IOException {
+        ByteBuffer block = writers.get(col);
+        block.flip();
+        size.addAndGet(columnar.get(col).store(block));
+        block.clear();
+
+    }
     public AimSegment close() throws IOException, IllegalAccessException {
         checkWritable(true);
         // check open writer blocks and add them if available
         for (int col = 0; col < schema.size(); col++) {
             ByteBuffer block = writers.get(col);
             if (block.position() > 0) {
-                block.flip();
-                size.addAndGet(columnar.get(col).addBlock(block));
-                block.clear();
+                commitBlock(col);
             }
         }
         this.writers = null;
@@ -146,13 +148,11 @@ abstract public class AimSegment {
             checkWritable(true);
             for (int col = 0; col < record.length; col++) {
                 ByteBuffer block = writers.get(col);
+                //System.err.println("COMMIT RECORD " + block.position()  + " " + record[col].length); 
                 if (block.position() + record[col].length > block.capacity()) {
-                    block.flip();
-                    size.addAndGet(columnar.get(col).addBlock(block));
-                    block.clear();
+                    commitBlock(col);
                 }
                 block.put(record[col]);
-                originalSize.addAndGet(record[col].length);
             }
             return this;
         } catch (IllegalAccessException e1) {

@@ -38,8 +38,8 @@ class RegionTest extends FlatSpec with Matchers {
     regionUserFlags1.add(sC2)
 
     val scanner = new StatScanner(1, Map("pageviews" -> region1, "flags" -> regionUserFlags1))
-    scanner.nextLine should be("flags\t1\t2\t121\t141")
-    scanner.nextLine should be("pageviews\t1\t2\t218\t267")
+    scanner.nextLine should be("flags\t1\t2\t121") //\t141
+    scanner.nextLine should be("pageviews\t1\t2\t218") //\t267
     an[EOFException] must be thrownBy(scanner.nextLine)
   }
 

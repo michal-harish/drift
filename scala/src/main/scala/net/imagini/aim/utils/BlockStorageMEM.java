@@ -1,8 +1,5 @@
 package net.imagini.aim.utils;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 
@@ -11,7 +8,7 @@ public class BlockStorageMEM extends BlockStorage {
     private LinkedList<byte[]> blocks = new LinkedList<byte[]>();
 
     public BlockStorageMEM() {
-        this("blockSize=1048576");
+        this("blockSize=65535");
     }
 
     public BlockStorageMEM(String args) {
@@ -20,8 +17,8 @@ public class BlockStorageMEM extends BlockStorage {
     }
 
     @Override
-    protected int blockSize() {
-        return 1048576; // 1Mb
+    public int blockSize() {
+        return 65535; // 64Kb
     }
 
     @Override
@@ -31,26 +28,34 @@ public class BlockStorageMEM extends BlockStorage {
     }
 
     @Override
-    public int numBlocks() {
-        return blocks.size();
-    }
+    public View toView() throws Exception {
+        return new View(new byte[0], 0, -1, 0) {
+            private int block = -1;
 
-    @Override
-    public long storedSize() {
-        return originalSize();
-    }
+            @Override
+            public boolean available(int numBytes) {
+                if (!super.available(numBytes)) {
+                    if (!openNextBlock()) {
+                        return false;
+                    } else {
+                        return super.available(numBytes);
+                    }
+                } else {
+                    return true;
+                }
+            }
 
-    @Override
-    public long originalSize() {
-        int size = 0;
-        for (byte[] a : blocks) {
-            size += a.length;
-        }
-        return size;
-    }
-
-    @Override 
-    public InputStream openInputStreamBlock(int block) throws IOException {
-        return new ByteArrayInputStream(blocks.get(block));
+            private boolean openNextBlock() {
+                if (++block >= blocks.size()) {
+                    return false;
+                } else {
+                    array = blocks.get(block);
+                    limit = 0;
+                    offset = 0;
+                    size = array.length;
+                    return true;
+                }
+            }
+        };
     }
 }

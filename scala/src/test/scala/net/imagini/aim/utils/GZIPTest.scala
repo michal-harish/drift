@@ -1,9 +1,8 @@
-package net.imagini.aim
+package net.imagini.aim.utils
 
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPOutputStream
-import org.scalatest.Finders
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import java.util.zip.GZIPInputStream

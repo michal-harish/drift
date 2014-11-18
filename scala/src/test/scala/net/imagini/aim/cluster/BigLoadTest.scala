@@ -52,10 +52,19 @@ class BigLoadTest extends FlatSpec with Matchers {
     val segment = region.segments(0)
     val mergeScanner = new MergeScanner("*", "*", region.segments)
     while (mergeScanner.next) {
-      total += 1
-      if (mergeScanner.selectLine(" ").contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
-        filtered += 1
+      try {
+        val line = mergeScanner.selectLine(" ")
+        total += 1
+        if (line.contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
+          filtered += 1
+        }
+      } catch {
+        case e: Throwable ⇒ {
+          e.printStackTrace
+          throw e
+        }
       }
+
     }
     total should be(5730)
     filtered should be(158)
@@ -63,58 +72,58 @@ class BigLoadTest extends FlatSpec with Matchers {
     node.manager.down
   }
 
-//  "SegmentScanner with filter" should "yield same as grep" in {
-//    var filtered = 0
-//    val node = getNode
-//    val region = node.regions("addthis.views")
-//    val segment = region.segments(0)
-//    val segmentScanner = new SegmentScanner("*", "url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'", segment)
-//    while (segmentScanner.next) {
-//      filtered += 1
-//      val line = segmentScanner.selectLine(" ")
-//      if (!line.contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
-//        System.err.println(line)
-//      }
-//      line.contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets") should be(true)
-//    }
-//    filtered should be(158)
-//    an[EOFException] must be thrownBy (segmentScanner.nextLine)
-//    node.manager.down
-//  }
-//
-//  "MergeScanner for filtered" should "yield same as grep" in {
-//    var total = 0
-//    var filtered = 0
-//    val node = getNode
-//    val allScanner = node.query("select * from addthis.views")
-//    while (allScanner.next) {
-//      total += 1
-//      if (allScanner.selectLine(" ").contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
-//        filtered += 1
-//      }
-//    }
-//    total should be(5730)
-//    filtered should be(158)
-//    an[EOFException] must be thrownBy (allScanner.nextLine)
-//    node.manager.down
-//  }
-//
-//  "StreamMergeScanner for filtered" should "yield same as grep" in {
-//    var filtered = 0
-//    val node = getNode
-//    //at_id,url
-//    val mergeScanner = node.query("select * from addthis.views where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'")
-//    val streamScanner = new ScannerInputStream(mergeScanner)
-//    try {
-//      while (true) {
-//        val next: String = mergeScanner.schema.fields.map(field ⇒ field.convert(StreamUtils.read(streamScanner, field.getDataType))).mkString(" ")
-//        filtered += 1
-//      }
-//    } catch {
-//      case e:EOFException ⇒ {}
-//    }
-//    filtered should be(158)
-//    node.manager.down
-//  }
+    "SegmentScanner with filter" should "yield same as grep" in {
+      var filtered = 0
+      val node = getNode
+      val region = node.regions("addthis.views")
+      val segment = region.segments(0)
+      val segmentScanner = new SegmentScanner("*", "url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'", segment)
+      while (segmentScanner.next) {
+        filtered += 1
+        val line = segmentScanner.selectLine(" ")
+        if (!line.contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
+          System.err.println(line)
+        }
+        line.contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets") should be(true)
+      }
+      filtered should be(158)
+      an[EOFException] must be thrownBy (segmentScanner.nextLine)
+      node.manager.down
+    }
+  
+    "MergeScanner for filtered" should "yield same as grep" in {
+      var total = 0
+      var filtered = 0
+      val node = getNode
+      val allScanner = node.query("select * from addthis.views")
+      while (allScanner.next) {
+        total += 1
+        if (allScanner.selectLine(" ").contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
+          filtered += 1
+        }
+      }
+      total should be(5730)
+      filtered should be(158)
+      an[EOFException] must be thrownBy (allScanner.nextLine)
+      node.manager.down
+    }
+  
+    "StreamMergeScanner for filtered" should "yield same as grep" in {
+      var filtered = 0
+      val node = getNode
+      //at_id,url
+      val mergeScanner = node.query("select * from addthis.views where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'")
+      val streamScanner = new ScannerInputStream(mergeScanner)
+      try {
+        while (true) {
+          val next: String = mergeScanner.schema.fields.map(field ⇒ field.convert(StreamUtils.read(streamScanner, field.getDataType))).mkString(" ")
+          filtered += 1
+        }
+      } catch {
+        case e:EOFException ⇒ {}
+      }
+      filtered should be(158)
+      node.manager.down
+    }
 
 }

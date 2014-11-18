@@ -33,7 +33,7 @@ class AimNodeLoader(val keyspace: String, val table: String, val node: AimNode) 
         val dataType = schema.dataType(r)
         val value = record(r)
         peerLoaders(targetNode).pipe.getOutputStream.write(value, 0, TypeUtils.sizeOf(dataType, value))
-        r+=1
+        r += 1
       }
     }
   }
@@ -47,15 +47,22 @@ class AimNodeLoader(val keyspace: String, val table: String, val node: AimNode) 
         val dataType = schema.dataType(r)
         val view = record(r)
         peerLoaders(targetNode).pipe.getOutputStream.write(view.array, view.offset, dataType.sizeOf(view))
-        r+=1
+        r += 1
       }
     }
   }
 
   def finish: Long = {
-    region.add(localSegment)
-    peerLoaders.values.foreach(peer ⇒ count += peer.ackLoadedCount)
-    count
+    try {
+      region.add(localSegment)
+      peerLoaders.values.foreach(peer ⇒ count += peer.ackLoadedCount)
+      count
+    } catch {
+      case e: Throwable ⇒ {
+        e.printStackTrace
+        throw e
+      }
+    }
   }
 
 }

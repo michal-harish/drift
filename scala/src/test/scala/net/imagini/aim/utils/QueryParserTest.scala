@@ -1,4 +1,4 @@
-package net.imagini.aim
+package net.imagini.aim.utils
 
 import org.scalatest.Matchers
 import net.imagini.aim.region.QueryParser
@@ -8,10 +8,8 @@ import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.region.QueryParser
-import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.region.PSelect
 import net.imagini.aim.region.PTable
-import scala.collection.mutable.ListBuffer
 import net.imagini.aim.region.PWildcard
 import net.imagini.aim.region.PEquiJoin
 import net.imagini.aim.region.PVar

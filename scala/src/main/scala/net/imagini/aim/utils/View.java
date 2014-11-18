@@ -7,7 +7,7 @@ public class View implements Comparable<View> {
 
     public int offset = -1;
 
-    final public int size;
+    public int size;
     public byte[] array = null;
     public int limit;
 
@@ -33,13 +33,24 @@ public class View implements Comparable<View> {
         this.limit = limit;
     }
 
-    public boolean eof() {
-        return offset >= size;
+    public boolean available(int numBytes) {
+        if (numBytes == -1) {
+            if (!available(4)) {
+                return false;
+            } else {
+                numBytes = ByteUtils.asIntValue(array, offset) + 4;
+            }
+        }
+        if (offset + numBytes > size) {
+            return false;
+        } else {
+            limit = offset + numBytes - 1;
+            return true;
+        }
     }
 
-    public int skip() throws IOException {
-        offset += 1;
-        return 1;
+    public void skip() throws IOException {
+        offset = limit + 1;
     }
 
     @Override

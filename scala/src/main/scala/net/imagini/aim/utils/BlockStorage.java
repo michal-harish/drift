@@ -1,11 +1,8 @@
 package net.imagini.aim.utils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 abstract public class BlockStorage {
 
@@ -13,67 +10,23 @@ abstract public class BlockStorage {
 
     //private static final Logger log = LoggerFactory.getLogger(BlockStorage.class);
 
-    protected List<Integer> lengths = new ArrayList<Integer>();
+    protected int limit = 0;
+    final protected AtomicLong storedSize = new AtomicLong(0);
 
-
-    final private List<AtomicInteger> blocks = new ArrayList<>();
-
-    final public ByteBuffer newBlock() {
-        return ByteUtils.wrap(new byte[blockSize()]);
+    final public int store(ByteBuffer block) throws IOException {
+        int stored = storeBlock(block.array(), 0, block.limit());
+        storedSize.addAndGet(stored);
+        return stored;
     }
 
-    final public int addBlock(ByteBuffer block) throws IOException {
-        synchronized(blocks) {
-            blocks.add(new AtomicInteger(0));
-            lengths.add(block.limit());
-            return storeBlock(block.array(), 0, block.limit());
-        }
+    final public long getStoredSize() {
+        return storedSize.get();
     }
 
-    abstract protected int blockSize();
+    abstract public int blockSize();
 
     abstract protected int storeBlock(byte[] array, int offset, int length) throws IOException;
 
-    abstract public int numBlocks();
-
-    abstract public long storedSize();
-
-    abstract public long originalSize();
-
-    //FIXME protected
-    abstract public InputStream openInputStreamBlock(int block) throws IOException;
-
-    final public InputStream toInputStream()  throws IOException {
-        return new InputStream() {
-            private InputStream blockStream = null;
-            private int currentBlock = -1;
-            private boolean eof = BlockStorage.this.numBlocks() == 0;
-
-            @Override
-            public int read() throws IOException {
-                while (!eof) {
-                    if (currentBlock > -1) {
-                        int read = blockStream.read();
-                        if (read > -1) {
-                            return read;
-                        }
-                    }
-                    close();
-                    currentBlock +=1;
-                    if (currentBlock < numBlocks()) {
-                        blockStream = openInputStreamBlock(currentBlock);
-                    } else {
-                        eof = true;
-                    }
-                }
-                return -1;
-            }
-            @Override public void close() throws IOException {
-                if (blockStream != null) {
-                    blockStream.close();
-                }
-            }
-        };
-    }
+    abstract public View toView() throws Exception;
 
 }

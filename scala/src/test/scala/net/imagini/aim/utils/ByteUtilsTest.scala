@@ -1,12 +1,9 @@
-package net.imagini.aim
+package net.imagini.aim.utils
 
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import java.nio.ByteBuffer
-import net.imagini.aim.utils.ByteUtils
 import java.util.TreeMap
-import net.imagini.aim.utils.ByteKey
-import net.imagini.aim.utils.View
 
 class ByteUtilsTest extends FlatSpec with Matchers {
 

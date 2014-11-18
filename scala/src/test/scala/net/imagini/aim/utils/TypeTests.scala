@@ -1,14 +1,9 @@
-package net.imagini.aim
+package net.imagini.aim.utils
 
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
-import net.imagini.aim.types.AimTypeUUID
-import net.imagini.aim.types.AimTypeBYTEARRAY
 import java.nio.ByteBuffer
-import net.imagini.aim.utils.View
-import net.imagini.aim.types.Aim
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.types.TypeUtils
 
 class TypeTests  extends FlatSpec with Matchers {
 
