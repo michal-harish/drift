@@ -1,24 +1,19 @@
 package net.imagini.aim.segment
 
 import java.io.EOFException
+import java.util.TreeMap
 import java.util.concurrent.Callable
-import java.util.concurrent.ConcurrentSkipListMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.atomic.AtomicInteger
+import scala.collection.mutable.SynchronizedQueue
 import net.imagini.aim.tools.AbstractScanner
-import net.imagini.aim.types.Aim
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.types.AimTypeUUID
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.types.SortOrder.ASC
 import net.imagini.aim.types.SortOrder.DESC
 import net.imagini.aim.utils.View
-import java.util.TreeMap
-import scala.collection.mutable.Queue
-import scala.collection.mutable.SynchronizedQueue
+import net.imagini.aim.utils.ByteKey
 
 //TODO sourceSchema can be retrieved from any of the segments provided
 class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, val segments: Seq[AimSegment])
@@ -41,7 +36,8 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
   rowFilter.updateFormula(scanSchema.names)
 
   private val sortOrder = SortOrder.ASC
-  private var currentScanner: SegmentScanner = null
+  private val sortQueue = new TreeMap[ByteKey, Int]
+  private var currentScanner: Int = -1
   private var currentRow: Array[View] = null
   private var initialised = false
   private var eof = false
@@ -50,27 +46,32 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
     if (eof) {
       return false
     } else if (!initialised) {
-      scanners.map(_.next)
+      var i = 0;
+      while (i < scanners.size) {
+        val s = scanners(i)
+        if (s.next) {
+          sortQueue.put(new ByteKey(s.selectRow(scanKeyColumnIndex), i), i)
+        }
+        i += 1
+      }
       initialised = true
-    } else if (currentScanner != null) {
-      currentScanner.next
-    } 
-    var s = 0
-    currentRow = null
-    while (s < scanners.size) {
-      val scanner = scanners(s)
-      if (!scanner.eof) {
-        val record = scanner.selectRow
-        if (currentRow == null || ((record(scanKeyColumnIndex).compareTo(currentRow(scanKeyColumnIndex)) < 0) ^ sortOrder.equals(DESC))) {
-          currentRow = record.map(v => new View(v))
-          currentScanner = scanner
+    } else if (currentScanner != -1) {
+      val scanner = scanners(currentScanner)
+      if (scanner.next) {
+        if (currentRow(scanKeyColumnIndex).equals(scanner.selectRow(scanKeyColumnIndex))) {
+          currentRow = scanner.selectRow.map(v ⇒ new View(v))
+          return true
+        } else {
+          sortQueue.put(new ByteKey(scanner.selectRow(scanKeyColumnIndex), currentScanner), currentScanner)
         }
       }
-      s += 1
     }
-    if (currentRow == null) {
+    if (sortQueue.isEmpty) {
       eof = true
-    } 
+    } else {
+      currentScanner = if (sortOrder.equals(ASC)) sortQueue.pollFirstEntry.getValue else sortQueue.pollLastEntry.getValue
+      currentRow = scanners(currentScanner).selectRow.map(v ⇒ new View(v))
+    }
     !eof
   }
 
@@ -99,6 +100,5 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
     eof = true
     results.foldLeft(0L)(_ + _.get)
   }
-
 
 }

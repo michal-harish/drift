@@ -12,6 +12,9 @@ public class ByteKey implements Comparable<ByteKey> {
     public ByteKey(byte[] data) {
         this(data, 0, data.length, 0);
     }
+    public ByteKey(View data, int classifier) {
+        this(data.array, data.offset, data.limit - data.offset + 1, classifier);
+    }
     public ByteKey(byte[] data, int offset, int size, int classifier) {
         if (data == null) {
             throw new NullPointerException();
