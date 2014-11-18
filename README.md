@@ -37,7 +37,7 @@ BlockStorage
 Usecase 1. Benchmark - retroactive data windows: Solution - two tables in the same Keyspace, i.e. co-partitioned, with ScanJoin select 
 ---------------------------------------------------------------------------------------------------------------------------------------
 
-Usecase 2. Benchmark - combining datasets from id-spaces - two tables from different Keyspaces, with StreamJoin and key transformation (!) 
+Usecase 2A. Benchmark - combining datasets from id-spaces - two tables from different Keyspaces, with StreamJoin and key transformation (!) 
 -------------------------------------------------------------------------------------------------------------------------------------------
 
 <html><pre>
@@ -76,6 +76,8 @@ addthis.views    (6m, 266Mb.gz)         addthis.syncs      (1m, 32Mb.gz)        
 | 10. RANDOM ACCESS                | N/A        | N/A      | N/A    | N/A     |        |         | N/A     |                                                                                                                                                                              |
 +----------------------------------+------------+----------+--------+---------+--------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
+</pre></html>
+
 * hive add this views  2014-10-31 15:00-16:00 (6 million records) (0.63Gb uncompressed) (0.22Gb compressed)
 * bl-yarnpoc-p01 hive> select count(1) from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;
 * bl-yarnpoc-p01 ~> hive -e "select uid, url, timestamp from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;" > addthis_views_2014-10-31_15.csv
@@ -88,6 +90,55 @@ hive add this syncs  2014-10-31 15:00-16:00
 * bl-yarnpoc-p01 ~> gzip addthis_syncs_2014-10-31_15.csv
 * scp mharis@bl-yarnpoc-p01:~/addthis_syncs_2014-10-31_15.csv.gz ~/
 
+Usecase 2B. Benchmark - combining datasets from id-spaces - two tables from different Keyspaces, with StreamJoin and key transformation (!) 
+-------------------------------------------------------------------------------------------------------------------------------------------
+<html><pre>
+
+addthis.views  (102m, 4.1GB.gz)         addthis.syncs    (18m, 540Mb.gz)        addthis.views             (???m, ?????Mb)
++--------+--------+-----------+         +--------+---------------------+        +---------------------+-----------+-----+
+| at_id  | url    | timestamp |         | at_id  | vdna_user_id        |        | user_uid            | timestamp | url |
++--------+--------+-----------+         +--------+---------------------+        +---------------------+-----------+-----+
+| STRING | STRING | LONG      |         | STRING | UUID(BYTEARRAY[16]) |        | UUID(BYTEARRAY[16]) | LONG      |     |
++--------+--------+-----------+         +--------+---------------------+        +---------------------+-----------+-----+
+
++----------------------------------+------------+----------+--------+---------+-------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 102m views(266Mb)                | DRIFT3     | DRIFT2   | DRIFT1 | DRIFT0  | HBase | SPARK   | HADOOP  | (drift or equivalent command)                                                                                                                                                |
+| 18m syncs (540Mb)                | (LZ4fs)    | (LZ4mem) | (mem)  | (LZ4fs) | (mem) | (1.0.1) | (fs.gz) |                                                                                                                                                                              |
+| 24h window                       | Cluster[4] | Single   | Single | Single  |       |         |         |                                                                                                                                                                              |
++----------------------------------+------------+----------+--------+---------+-------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 1. Load Table 1 - Views          | ?16m       |          |        |         |       |         |         | time cat ~/addthis_views_2014-10-31.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table views                                      |
++----------------------------------+------------+----------+--------+---------+-------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 2. Load Table 2 - Syncs          | 120s       |          |        |         |       |         |         | time cat ~/addthis_syncs_2014-10-31.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table syncs                                      |
++----------------------------------+------------+----------+--------+---------+-------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 3. Stored Size (Mb)              | H213       |          |        |         |       |         |         |                                                                                                                                                                              |
++----------------------------------+------------+----------+--------+---------+-------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 4. Minimum Heap                  | 64         |          |        |         |       |         | 0       | use addthis; stats                                                                                                                                                           |
+|    Optimal Heap (Mb)             | 256        |          |        |         |       |         |         |                                                                                                                                                                              |
++----------------------------------+------------+----------+--------+---------+-------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 5. SCAN Syncs for a column value | 600ms      |          |        |         |       |         |         | select at_id,vdna_user_uid from addthis.syncs where vdna_user_uid= 'ce1e0d6b-6b11-428c-a9f7-c919721c669c'                                                                    |
++----------------------------------+------------+----------+--------+---------+-------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 6. SCAN Views for a url contains |            |          |        |         |       |         |         | select at_id,url from addthis.views where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'                                           |
++----------------------------------+------------+----------+--------+---------+-------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 7. COUNT inner join              |            |          |        |         |       |         |         | count (select at_id from addthis.syncs join select at_id from addthis.views)                                                                                                 |
++----------------------------------+------------+----------+--------+---------+-------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 8. TRANSFORM inner join          |            |          |        |         |       |         |         | select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views into vdna.pageviews                                                                     |
++----------------------------------+------------+----------+--------+---------+-------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 9. EXPORT inner join to file     |            |          |        |         |       |         |         | time java -jar target/drift-client.jar --keyspace addthis "select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views" > ~/vdna-addthis-export.csv |
++----------------------------------+------------+----------+--------+---------+-------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| 10. RANDOM ACCESS                | N/A        | N/A      | N/A    | N/A     |       |         | N/A     |                                                                                                                                                                              |
++----------------------------------+------------+----------+--------+---------+-------+---------+---------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+</pre></html>
+
+* bl-yarnpoc-p01 hive> select count(1) from hcat_addthis_raw_view_gb where d='2014-10-31'
+* bl-yarnpoc-p01 ~> hive -e "select uid, url, timestamp from hcat_addthis_raw_view_gb where d='2014-10-31'" | gzip --stdout > addthis_views_2014-10-31.csv.gz
+* bl-yarnpoc-p01 ~> gzip addthis_views_2014-10-31.csv
+* scp mharis@bl-yarnpoc-p01:~/addthis_views_2014-10-31.csv.gz ~/
+
+* bl-yarnpoc-p01 hive> select count(1) from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync';
+* bl-yarnpoc-p01 ~> hive -e "select partner_user_id, useruid, concat(timestamp,'000') from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync'" > addthis_syncs_2014-10-31.csv
+* bl-yarnpoc-p01 ~> gzip addthis_syncs_2014-10-31.csv
+* scp mharis@bl-yarnpoc-p01:~/addthis_syncs_2014-10-31.csv.gz ~/
 
 Usecase 3. Benchmark - id-linking from newly discovered information (?) 
 ---------------------------------------------------------------------------------------------------------------------------------------

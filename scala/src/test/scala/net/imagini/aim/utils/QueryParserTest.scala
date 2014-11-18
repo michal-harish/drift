@@ -6,7 +6,6 @@ import net.imagini.aim.region.AimRegion
 import org.scalatest.FlatSpec
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.region.QueryParser
 import net.imagini.aim.region.PSelect
 import net.imagini.aim.region.PTable

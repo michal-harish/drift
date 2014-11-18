@@ -79,7 +79,7 @@ public class AimSegmentQuickSort extends AimSegment {
                 }
             }
         }
-        sortMap = null;
+        sortMap.clear();
         return super.close();
     }
 
