@@ -12,6 +12,9 @@ public class View implements Comparable<View> {
     public int limit;
 
     public View(View copy) {
+        clone(copy);
+    }
+    public void clone(View copy) {
         this.array = copy.array;
         this.size = copy.size;
         this.offset = copy.offset;

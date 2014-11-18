@@ -38,7 +38,7 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
   private val sortOrder = SortOrder.ASC
   private val sortQueue = new TreeMap[ByteKey, Int]
   private var currentScanner: Int = -1
-  private var currentRow: Array[View] = null
+  private val currentRow: Array[View] = Array.fill(scanSchema.size)(new View(null, 0, -1, 0))
   private var initialised = false
   private var eof = false
 
@@ -59,7 +59,12 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
       val scanner = scanners(currentScanner)
       if (scanner.next) {
         if (currentRow(scanKeyColumnIndex).equals(scanner.selectRow(scanKeyColumnIndex))) {
-          currentRow = scanner.selectRow.map(v ⇒ new View(v))
+          val row = scanner.selectRow
+          var i = 0;
+          while (i < row.length)  {
+            currentRow(i).clone(row(i))
+            i+=1
+          }
           return true
         } else {
           sortQueue.put(new ByteKey(scanner.selectRow(scanKeyColumnIndex), currentScanner), currentScanner)
@@ -70,7 +75,12 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
       eof = true
     } else {
       currentScanner = if (sortOrder.equals(ASC)) sortQueue.pollFirstEntry.getValue else sortQueue.pollLastEntry.getValue
-      currentRow = scanners(currentScanner).selectRow.map(v ⇒ new View(v))
+      val row = scanners(currentScanner).selectRow
+      var i = 0;
+      while (i < row.length) {
+        currentRow(i).clone(row(i))
+        i+=1
+      }
     }
     !eof
   }

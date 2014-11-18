@@ -26,6 +26,7 @@ object DriftCluster extends App {
       case arg: String   ⇒ println("Unknown argument " + arg)
     }
   }
+
   //SPAWNING CLUSTER
   val manager: DriftManager = new DriftManagerZk(zkConnect, clusterId)
   println("Joining drift cluster: "+clusterId + "@"+zkConnect)

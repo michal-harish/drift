@@ -20,7 +20,11 @@ class AimNodeLoader(val keyspace: String, val table: String, val node: AimNode) 
   private var count: Long = 0
 
   def insert(record: String*) {
-    insert((schema.fields, record).zipped.map((f, r) ⇒ f.convert(r)))
+    try {
+        insert((schema.fields, record).zipped.map((f, r) ⇒ f.convert(r)))
+    } catch {
+      case e: NumberFormatException => log.warn(e)
+    }
   }
 
   def insert(record: Array[Array[Byte]]) {
