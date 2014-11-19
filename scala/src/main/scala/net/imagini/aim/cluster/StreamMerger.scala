@@ -7,7 +7,6 @@ import java.util.concurrent.Executors
 import scala.collection.JavaConverters._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ConcurrentSkipListMap
 import net.imagini.aim.utils.ByteKey
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.SortOrder
@@ -15,9 +14,7 @@ import net.imagini.aim.types.SortOrder._
 import scala.Array.canBuildFrom
 import net.imagini.aim.types.TypeUtils
 import scala.Array.fallbackCanBuildFrom
-
-class MergeQueue extends ConcurrentSkipListMap[ByteKey, Array[Array[Byte]]]
-class InputStreamQueue(limit: Int) extends LinkedBlockingQueue[Option[Array[Array[Byte]]]](limit)
+import java.util.TreeMap
 
 /**
  * Concurrent streaming merge tool which executes the filter over each input stream
@@ -36,16 +33,16 @@ class StreamMerger(val schema: AimSchema, val queueSize: Int, val inputStreams: 
   val keyColumn: Int = 0
   val keyField: String = schema.name(keyColumn)
   val keyType = schema.get(0)
-  val sortQueue = new MergeQueue
+  val sortQueue = new TreeMap[ByteKey, (Int, Array[Array[Byte]])]
 
   val executor: ExecutorService = Executors.newFixedThreadPool(inputStreams.length)
   val fetchers: Seq[Fetcher] = inputStreams.map(in ⇒ new Fetcher(schema, in, executor, queueSize))
-  val counter = new AtomicInteger(0)
 
   override def read: Int = if (position >= 0 && checkNextByte) record(field)(position) & 0xff else -1
   private var record: Array[Array[Byte]] = null
   private var field = schema.size - 1
   private var position = 0
+  var currentKey: Array[Byte] = null
   private def checkNextByte: Boolean = {
     try {
       position += 1
@@ -63,28 +60,39 @@ class StreamMerger(val schema: AimSchema, val queueSize: Int, val inputStreams: 
     }
   }
 
-  private def nextRecord: Array[Array[Byte]] = {
-    //TODO optimise foreach
-    fetchers.filter(!_.closed).foreach(fetcher ⇒ {
-      fetcher.take match {
-        case None ⇒ {}
-        case Some(record) ⇒ {
-          val byteKey = new ByteKey(record(0), 0, TypeUtils.sizeOf(schema.dataType(0), record(0)), counter.incrementAndGet)
-          /**
-           * FIXME assuming that the first field of schema is always the key - e.g. whatever provides
-           * the underlying input stream must provide or transform the first field as the key
-           */
-          sortQueue.put(byteKey, record)
-        }
+  private def takeNext(f: Int) {
+    val fetcher = fetchers(f)
+    if (!fetcher.closed) fetcher.take match {
+      case None ⇒ {}
+      case Some(record) ⇒ {
+        val byteKey = new ByteKey(record(0), 0, TypeUtils.sizeOf(schema.dataType(0), record(0)), f)
+        /**
+         * FIXME assuming that the first field of schema is always the key - e.g. whatever provides
+         * the underlying input stream must provide or transform the first field as the key
+         */
+        sortQueue.put(byteKey, (f, record))
       }
-    })
+    }
+
+  }
+  private def nextRecord: Array[Array[Byte]] = {
+    if (currentKey == null) {
+      var f = 0
+      while (f < fetchers.size) {
+        takeNext(f)
+        f += 1
+      }
+    }
 
     val entry = sortOrder match {
       case DESC ⇒ sortQueue.pollLastEntry
       case ASC  ⇒ sortQueue.pollFirstEntry
     }
     if (entry == null) throw new EOFException else {
-      entry.getValue
+      val tuple = entry.getValue
+      currentKey = tuple._2(0)
+      takeNext(tuple._1)
+      tuple._2
     }
   }
 
@@ -96,12 +104,12 @@ class Fetcher(val schema: AimSchema, val in: InputStream, val executor: Executor
   val keyDataType = schema.dataType(0)
   @volatile private var hasMoreData = true
   def closed: Boolean = !hasMoreData && ready.size == 0
-  private val ready = new InputStreamQueue(queueSize)
+  private val ready = new LinkedBlockingQueue[Option[Array[Array[Byte]]]](queueSize)
   executor.submit(this)
 
   override def run = {
     while (hasMoreData) try {
-      //TODO optimise this map into loop
+      //TODO optimise as buffered read instead of byte allocation for each read 
       val record = schema.fields.map(t ⇒ StreamUtils.read(in, t.getDataType))
       ready.put(Some(record))
     } catch {

@@ -12,12 +12,14 @@ final class ScannerInputStream(val scanner: AbstractScanner) extends InputStream
 
   val numColumns = scanner.schema.size
   var row: Array[View] = null
+  var column: View = null
   var col = -1
-  var offset = new AtomicInteger(-1)
+  var offset = -1
   var length = -1
 
   override def read: Int = if (checkNextByte) {
-    row(col).array(row(col).offset + offset.getAndIncrement) & 0xff
+    offset += 1 
+    column.array(column.offset + offset - 1) & 0xff
   } else {
     -1
   }
@@ -34,7 +36,7 @@ final class ScannerInputStream(val scanner: AbstractScanner) extends InputStream
   selectNextRow
 
   private def checkNextByte: Boolean = {
-    if (offset.get < length || selectNextColumn || selectNextRow) {
+    if (offset < length || selectNextColumn || selectNextRow) {
       return true
     }
     false
@@ -44,28 +46,27 @@ final class ScannerInputStream(val scanner: AbstractScanner) extends InputStream
     col += 1
     if (col >= numColumns) {
       col = 0
-      offset.set(0)
+      offset = 0
+      column = null
       false
     } else {
-      offset.set(0)
-      length = scanner.schema.get(col).getDataType.sizeOf(row(col))
-      //System.err.println(scanner.schema.get(col).asString(row(col)))
+      column = row(col)
+      offset = 0
+      length = scanner.schema.get(col).getDataType.sizeOf(column)
       true
     }
   }
   private def selectNextRow: Boolean = {
     if (!scanner.next) {
       length = 0
-      offset.set(0)
+      offset = 0
       col = numColumns -1
+      column = null
       false
     } else {
       row = scanner.selectRow
-      col = 0
-      scanner.schema.get(col).getDataType.sizeOf(row(col))
-      length = scanner.schema.get(col).getDataType.sizeOf(row(col))
-      offset.set(0)
-      true
+      col = -1
+      selectNextColumn
     }
   }
 

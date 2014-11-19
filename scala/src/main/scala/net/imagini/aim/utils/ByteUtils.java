@@ -27,9 +27,10 @@ public class ByteUtils {
     }
 
     static public int asIntValue(byte[] value, int offset) {
-        return ((((int) value[offset + 0]) << 24)
+        return (  (((int) value[offset + 0]) << 24)
                 + (((int) value[offset + 1] & 0xff) << 16)
-                + (((int) value[offset + 2] & 0xff) << 8) + (((int) value[offset + 3] & 0xff) << 0));
+                + (((int) value[offset + 2] & 0xff) << 8) 
+                + (((int) value[offset + 3] & 0xff) << 0));
 
     }
 

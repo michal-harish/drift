@@ -132,10 +132,14 @@ public class StreamUtils {
             size = StreamUtils.readInt(in);
             ByteUtils.putIntValue(size, view.array, view.offset);
             view.offset+=4;
+            read(in, view.array, view.offset, size);
+            view.offset+=size;
+            return size + 4;
+        } else {
+            read(in, view.array, view.offset, size);
+            view.offset+=size;
+            return size;
         }
-        read(in, view.array, view.offset, size);
-        view.offset+=size;
-        return size;
     }
     static public long skip(InputStream in, AimDataType type)
             throws IOException {

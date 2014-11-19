@@ -44,7 +44,6 @@ public class BlockStorageFS extends BlockStorage implements
         this.file.getParentFile().mkdirs();
         this.compressBuffer = new byte[blockSize()];
         if (file.exists()) {
-            log.info("Found stored block " + file.getAbsolutePath());
             storedSize.set(file.length());
         } else {
             fout = new FileOutputStream(file);
@@ -89,8 +88,7 @@ public class BlockStorageFS extends BlockStorage implements
                 }
             }
             private boolean readNextBlock() {
-                try {
-                    if (eof) throw new EOFException(); 
+                if (eof) return false; else try {
                     limit = 0;
                     offset = 0;
                     size = StreamUtils.readInt(fin);
