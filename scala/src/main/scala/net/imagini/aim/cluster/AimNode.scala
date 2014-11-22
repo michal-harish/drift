@@ -77,7 +77,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   def transform(srcQuery: String, destKeyspace: String, destTable: String): Long = {
     val t = System.currentTimeMillis
     val scanner = query(srcQuery)
-    val loader = new AimNodeLoader(destKeyspace, destTable, this)
+    val loader = new AimNodeLoader(manager, destKeyspace, destTable)
     while (scanner.next) {
       loader.insert(scanner.selectRow)
     }

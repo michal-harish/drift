@@ -150,6 +150,7 @@ Usecase 3. Benchmark - id-linking from newly discovered information (?)
 
 Design thoughts dump
 ================================================================================================= 
+* atm cluster doesn't have any replication and since partitioning is critical, the cluster suspends all operations if any one of the expected nodes is missing until it reappears
 * use transformation method to do the merge sorting into larger and larger segments - e.g. start with tiny segments with quick sort and use maturing background transformations
 * 64-bit DOUBLE AimType must be added
 * Compare Memory Mapped Files on SSD vs  spinning disk storage

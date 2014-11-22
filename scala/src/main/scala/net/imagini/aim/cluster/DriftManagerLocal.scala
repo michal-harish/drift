@@ -16,6 +16,8 @@ class DriftManagerLocal(numNodes: Int) extends DriftManager {
   init
   setNumNodes(numNodes)
   override def close = {}
+  override protected def get[T](path: String): T = tree.get(path).get.asInstanceOf[T]
+  override protected def list[T](path: String): Map[String, T] = tree.filter(e ⇒ e._1.matches("^" + path + "/[^/]+$")).map(e ⇒ e._1.split("/").last -> e._2.asInstanceOf[T]).toMap
   override protected def pathExists(path: String): Boolean = {
     log.debug("EXISTS ? " + path + " " + tree.contains(path))
     tree.contains(path)

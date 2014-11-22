@@ -11,11 +11,11 @@ class LoaderTest extends FlatSpec with Matchers {
     manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
     val node = new AimNode(1, "localhost:9998", manager)
 
-    new DriftLoader("localhost", 9998, Protocol.LOADER_USER, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv"), false).streamInput should be(3)
-    //TODO scan count node.regions("vdna.events").getCount should be(3L)
+    new DriftLoader(manager, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv"), false).streamInput should be(3)
+    node.query("count vdna.events").count should be(3L)
 
-    new DriftLoader("localhost", 9998, Protocol.LOADER_USER, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv.gz"), true).streamInput should be(3)
-    //TODO scan count node.regions("vdna.events").getCount should be(6L)
+    new DriftLoader(manager, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv.gz"), true).streamInput should be(3)
+    node.query("count vdna.events").count should be(6L)
 
     manager.down
   }
@@ -24,7 +24,7 @@ class LoaderTest extends FlatSpec with Matchers {
     val manager = new DriftManagerLocal(1)
     manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
     val node = new AimNode(1, "localhost:9998", manager)
-    val loader = new AimNodeLoader("vdna", "events", node)
+    val loader = new AimNodeLoader(manager, "vdna", "events")
     loader.insert("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413061544595", "VDNAUserPageview", "http://zh.pad.wikia.com/wiki/Puzzle_%26_Dragons_%E4%B8%AD%E6%96%87WIKI")
     loader.insert("04732d65-d530-4b18-a583-53799838731a", "1413061544599", "VDNAUserPageview", "http://www.gumtree.com/flats-and-houses-for-rent/caerphilly")
     loader.finish should be(2)

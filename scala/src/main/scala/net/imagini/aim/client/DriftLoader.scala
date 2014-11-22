@@ -2,19 +2,16 @@ package net.imagini.aim.client
 
 import java.io.FileInputStream
 import java.io.InputStream
-import java.net.InetAddress
-import java.net.Socket
-import java.util.zip.GZIPOutputStream
+import java.net.URI
 import grizzled.slf4j.Logger
-import net.imagini.aim.cluster.Pipe
-import net.imagini.aim.cluster.Protocol
-import net.imagini.aim.types.AimSchema
-import java.nio.ByteBuffer
-import net.imagini.aim.cluster.StreamUtils
+import net.imagini.aim.cluster.AimNodeLoader
+import net.imagini.aim.cluster.DriftManagerZk
+import java.util.zip.GZIPInputStream
+import net.imagini.aim.cluster.DriftManager
 
 object DriftLoader extends App {
-  var host: String = "localhost"
-  var port: Int = 4000
+  var zookeeper: String = "localhost:2181"
+  var clusterId: String = null
   var keyspace: String = null
   var table: String = null
   var separator: String = "\n"
@@ -23,54 +20,40 @@ object DriftLoader extends App {
   val argsIterator = args.iterator
   while (argsIterator.hasNext) {
     argsIterator.next match {
-      case "--host"      ⇒ host = argsIterator.next
-      case "--port"      ⇒ port = argsIterator.next.toInt
-      case "--keyspace"  ⇒ keyspace = argsIterator.next
-      case "--table"     ⇒ table = argsIterator.next
-      case "--separator" ⇒ separator = argsIterator.next
-      case "--file"      ⇒ file = Some(argsIterator.next)
-      case "--gzip"      ⇒ gzip = true
-      case arg: String   ⇒ println("Unknown argument " + arg)
+      case "--zookeer"    ⇒ zookeeper = argsIterator.next
+      case "--cluster-id" ⇒ clusterId = argsIterator.next
+      case "--keyspace"   ⇒ keyspace = argsIterator.next
+      case "--table"      ⇒ table = argsIterator.next
+      case "--separator"  ⇒ separator = argsIterator.next
+      case "--file"       ⇒ file = Some(argsIterator.next)
+      case "--gzip"       ⇒ gzip = true
+      case arg: String    ⇒ println("Unknown argument " + arg)
     }
   }
-  val loader = file match {
-    case None           ⇒ new DriftLoader(host, port, Protocol.LOADER_USER, keyspace, table, separator, null, gzip)
-    case Some(filename) ⇒ new DriftLoader(host, port, Protocol.LOADER_USER, keyspace, table, separator, new FileInputStream(filename), gzip)
+  val rawInput: InputStream = file match {
+    case None           ⇒ System.in
+    case Some(filename) ⇒ new FileInputStream(filename)
   }
-  loader.streamInput
+  val manager = new DriftManagerZk(zookeeper, clusterId)
+  val loader = new DriftLoader(manager, keyspace, table, separator, rawInput, gzip)
+  val count = loader.streamInput
+  println("Loader parsed " + count + " records")
 }
 
-class DriftLoader(host: String, port: Int, protocol: Protocol,
+class DriftLoader(
+  val manager: DriftManager,
   val keyspace: String,
   val table: String,
   val separator: String,
-  val fileinput: InputStream,
+  val inputStream: InputStream,
   val gzip: Boolean) {
 
-  val log = Logger[this.type]
-  val in: InputStream = if (fileinput == null) System.in else fileinput
-  val socket = new Socket(InetAddress.getByName(host), port)
-  val pipe = new Pipe(socket, protocol, if (gzip) 3 else 1) // 1-LZ4 2-GZIP 3-WRAPPED-GZIP
+  val in: InputStream = if (gzip) new GZIPInputStream(inputStream) else inputStream
 
-  //handshake
-  pipe.writeHeader(keyspace)
-  pipe.writeHeader(table)
-  pipe.writeHeader(separator)
-  val schemaDeclaration = pipe.readHeader
-  val schema = AimSchema.fromString(schemaDeclaration)
-
-  def streamInput: Int = {
-    StreamUtils.copy(in, pipe.getOutputStream)
-    ackLoadedCount
-  }
-
-  def ackLoadedCount: Int = {
-    pipe.flush
-    if (!gzip) {
-      pipe.finishOutput
-    }
-    val loadedCount: Int = pipe.readInt
-    pipe.close
-    loadedCount
+  def streamInput: Long = {
+    val loader = new AimNodeLoader(manager, keyspace, table)
+    val count = loader.loadUnparsedStream(in, separator)
+    manager.close
+    count
   }
 }

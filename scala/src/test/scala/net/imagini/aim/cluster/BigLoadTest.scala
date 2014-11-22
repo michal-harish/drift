@@ -18,31 +18,31 @@ class BigLoadTest extends FlatSpec with Matchers {
     val storageType = classOf[BlockStorageMEMLZ4]
     val node = new AimNode(1, "localhost:9998", manager)
     manager.createTable("addthis", "views", schema.toString, 5000000, storageType)
-    new DriftLoader("localhost", 9998, Protocol.LOADER_USER, "addthis", "views", "\t", this.getClass.getResourceAsStream("views_big.csv"), false).streamInput should be(5730)
+    new DriftLoader(manager, "addthis", "views", "\t", this.getClass.getResourceAsStream("views_big.csv"), false).streamInput should be(5730)
     val region = node.regions("addthis.views")
-    //TODO scan count region.getCount should be(5730)
+    node.query("count addthis.views").count should be(5730)
     region.segments.size should be(1)
     node
   }
 
-//  "SegmentScanner" should "yield same for all" in {
-//    var total = 0
-//    var filtered = 0
-//    val node = getNode
-//    val region = node.regions("addthis.views")
-//    val segment = region.segments(0)
-//    val segmentScanner = new SegmentScanner("*", "*", segment)
-//    while (segmentScanner.next) {
-//      total += 1
-//      if (segmentScanner.selectLine(" ").contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
-//        filtered += 1
-//      }
-//    }
-//    total should be(5730)
-//    filtered should be(158)
-//    an[EOFException] must be thrownBy (segmentScanner.nextLine)
-//    node.manager.down
-//  }
+  "SegmentScanner" should "yield same for all" in {
+    var total = 0
+    var filtered = 0
+    val node = getNode
+    val region = node.regions("addthis.views")
+    val segment = region.segments(0)
+    val segmentScanner = new SegmentScanner("*", "*", segment)
+    while (segmentScanner.next) {
+      total += 1
+      if (segmentScanner.selectLine(" ").contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
+        filtered += 1
+      }
+    }
+    total should be(5730)
+    filtered should be(158)
+    an[EOFException] must be thrownBy (segmentScanner.nextLine)
+    node.manager.down
+  }
 
   "MergeScanner for all" should "yield same as grep" in {
     var total = 0
@@ -72,58 +72,57 @@ class BigLoadTest extends FlatSpec with Matchers {
     node.manager.down
   }
 
-    "SegmentScanner with filter" should "yield same as grep" in {
-      var filtered = 0
-      val node = getNode
-      val region = node.regions("addthis.views")
-      val segment = region.segments(0)
-      val segmentScanner = new SegmentScanner("*", "url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'", segment)
-      while (segmentScanner.next) {
+  "SegmentScanner with filter" should "yield same as grep" in {
+    var filtered = 0
+    val node = getNode
+    val region = node.regions("addthis.views")
+    val segment = region.segments(0)
+    val segmentScanner = new SegmentScanner("*", "url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'", segment)
+    while (segmentScanner.next) {
+      filtered += 1
+      val line = segmentScanner.selectLine(" ")
+      if (!line.contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
+        System.err.println(line)
+      }
+      line.contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets") should be(true)
+    }
+    filtered should be(158)
+    an[EOFException] must be thrownBy (segmentScanner.nextLine)
+    node.manager.down
+  }
+
+  "MergeScanner for filtered" should "yield same as grep" in {
+    var total = 0
+    var filtered = 0
+    val node = getNode
+    val allScanner = node.query("select * from addthis.views")
+    while (allScanner.next) {
+      total += 1
+      if (allScanner.selectLine(" ").contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
         filtered += 1
-        val line = segmentScanner.selectLine(" ")
-        if (!line.contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
-          System.err.println(line)
-        }
-        line.contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets") should be(true)
       }
-      filtered should be(158)
-      an[EOFException] must be thrownBy (segmentScanner.nextLine)
-      node.manager.down
     }
-  
-    "MergeScanner for filtered" should "yield same as grep" in {
-      var total = 0
-      var filtered = 0
-      val node = getNode
-      val allScanner = node.query("select * from addthis.views")
-      while (allScanner.next) {
-        total += 1
-        if (allScanner.selectLine(" ").contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
-          filtered += 1
-        }
+    total should be(5730)
+    filtered should be(158)
+    an[EOFException] must be thrownBy (allScanner.nextLine)
+    node.manager.down
+  }
+
+  "StreamMergeScanner for filtered" should "yield same as grep" in {
+    var filtered = 0
+    val node = getNode
+    val mergeScanner = node.query("select * from addthis.views where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'")
+    val streamScanner = new ScannerInputStream(mergeScanner)
+    try {
+      while (true) {
+        val next: String = mergeScanner.schema.fields.map(field ⇒ field.convert(StreamUtils.read(streamScanner, field.getDataType))).mkString(" ")
+        filtered += 1
       }
-      total should be(5730)
-      filtered should be(158)
-      an[EOFException] must be thrownBy (allScanner.nextLine)
-      node.manager.down
+    } catch {
+      case e: EOFException ⇒ {}
     }
-  
-    "StreamMergeScanner for filtered" should "yield same as grep" in {
-      var filtered = 0
-      val node = getNode
-      //at_id,url
-      val mergeScanner = node.query("select * from addthis.views where url contains 'http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets'")
-      val streamScanner = new ScannerInputStream(mergeScanner)
-      try {
-        while (true) {
-          val next: String = mergeScanner.schema.fields.map(field ⇒ field.convert(StreamUtils.read(streamScanner, field.getDataType))).mkString(" ")
-          filtered += 1
-        }
-      } catch {
-        case e:EOFException ⇒ {}
-      }
-      filtered should be(158)
-      node.manager.down
-    }
+    filtered should be(158)
+    node.manager.down
+  }
 
 }

@@ -1,28 +1,22 @@
 package net.imagini.aim.region
 
-import net.imagini.aim.types.AimSchema
-import scala.collection.mutable.ListBuffer
-import net.imagini.aim.segment.AimSegment
-import java.util.concurrent.atomic.AtomicInteger
-import net.imagini.aim.segment.RowFilter
-import java.io.InputStream
-import net.imagini.aim.cluster.StreamMerger
-import java.util.concurrent.Executors
-import scala.collection.mutable.MutableList
-import java.util.concurrent.Future
-import java.util.concurrent.Callable
+import java.io.File
 import java.io.IOException
+import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.atomic.AtomicInteger
+import scala.collection.mutable.ListBuffer
 import net.imagini.aim.cluster.ScannerInputStream
+import net.imagini.aim.cluster.StreamMerger
+import net.imagini.aim.segment.AimSegment
+import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.tools.CountScanner
+import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorage
-import net.imagini.aim.segment.AimSegmentQuickSort
-import java.nio.ByteBuffer
 import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.utils.View
 import net.imagini.aim.utils.BlockStorage.PersistentBlockStorage
-import java.io.File
-import java.nio.file.Files
 
 class AimRegion(
   val regionId: String,
@@ -45,21 +39,40 @@ class AimRegion(
 
   if (persisted) {
     val f = new File("/var/lib/drift")
-    if (f.exists) f.listFiles.filter(_.getName.startsWith(regionId)).foreach(segmentFile => {
-        segments += segmentConstructor.newInstance(schema).open(storageType, segmentFile)
-        numSegments.incrementAndGet
+    if (f.exists) f.listFiles.filter(_.getName.startsWith(regionId)).foreach(segmentFile ⇒ {
+      segments += segmentConstructor.newInstance(schema).open(storageType, segmentFile)
+      numSegments.incrementAndGet
     })
   }
 
   def newSegment: AimSegment = segmentConstructor.newInstance(schema).init(storageType, regionId)
 
-  def add(segment: AimSegment) = {
-    segment.close
-    if (segment.getCompressedSize() > 0) {
-      segments.synchronized { //TODO use concurrent structure as this synchronisation really does nothing
-        segments += segment
-        numSegments.incrementAndGet
+  //TODO instead of fixed one this needs to allow for parallel compaction from multiple loaders
+  val compactionExecutor = Executors.newFixedThreadPool(1)
+
+  def add(segment: AimSegment, async:Boolean = false) = {
+    val syncLock = new Object
+    val runnable = new Runnable {
+      override def run = {
+        segment.close
+        if (segment.getCompressedSize() > 0) {
+          segments.synchronized { //TODO use concurrent structure as this synchronisation really does nothing
+            segments += segment
+            numSegments.incrementAndGet
+          }
+        }
+        if (!async) {
+          syncLock.synchronized(syncLock.notify)
+        }
       }
+    }
+    if (!async) {
+      syncLock.synchronized {
+        compactionExecutor.submit(runnable)
+        syncLock.wait
+      }
+    } else {
+      compactionExecutor.submit(runnable)
     }
   }
 
@@ -89,7 +102,7 @@ class AimRegion(
 
   private def checkSegment(segment: AimSegment, size: Int): AimSegment = {
     if (segment.getRecordedSize() + size > segmentSizeBytes) try {
-      add(segment)
+      add(segment, true)
       newSegment
     } catch {
       case e: Throwable ⇒ {

@@ -4,11 +4,14 @@ import net.imagini.aim.types.AimSchema
 import grizzled.slf4j.Logger
 import net.imagini.aim.utils.BlockStorage
 import net.imagini.aim.utils.BlockStorageMEMLZ4
+import java.net.URI
 
 trait DriftManager {
   val log = Logger[this.type]
   val clusterId = "default"
   var expectedNumNodes: Int = -1
+  protected def list[T](path: String): Map[String, T]
+  protected def get[T](path: String): T
   protected def pathExists(path: String): Boolean
   protected def pathCreatePersistent(path: String, data: Any)
   protected def pathCreateEphemeral(path: String, data: Any)
@@ -17,11 +20,27 @@ trait DriftManager {
   protected def watchPathData[T](path: String, listener: (Option[T] ⇒ Unit))
   protected def watchPathChildren[T](path: String, listener: (Map[String, T]) ⇒ Unit)
   def close
-  final protected[cluster] def watchData[T](path: String, listener: (Option[T] ⇒ Unit)) = {
+  final protected[aim] def watchData[T](path: String, listener: (Option[T] ⇒ Unit)) = {
     watchPathData("/drift/" + clusterId + path, listener)
   }
-  final protected[cluster] def watch[T](path: String, listener: (Map[String, T]) ⇒ Unit) = {
+  final protected[aim] def watch[T](path: String, listener: (Map[String, T]) ⇒ Unit) = {
     watchPathChildren("/drift/" + clusterId + path, listener)
+  }
+
+  final def getNodeConnectors: Map[Int, URI] = {
+    val nodeConnectors = list[String]("/drift/" + clusterId + "/nodes").map(p ⇒ p._1.toInt -> new URI("drift://" + p._2)).toMap
+    if (nodeConnectors.size != expectedNumNodes) throw new IllegalStateException("Expecting " + expectedNumNodes + " nodes, found " + nodeConnectors.size)
+    nodeConnectors
+  }
+
+  final def getSchema(keyspace: String, table: String): AimSchema = {
+    val descriptor = get[String]("/drift/" + clusterId +"/keyspaces/" + keyspace + "/" + table).split("\n")
+    AimSchema.fromString(descriptor(0))
+  }
+
+  final def clusterIsSuspended: Boolean = {
+    //TODO replicate behaviour from the AimNode
+    false
   }
 
   final def init = {

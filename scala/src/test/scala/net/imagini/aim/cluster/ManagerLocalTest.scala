@@ -13,7 +13,6 @@ class ManagerLocalTest extends FlatSpec with Matchers {
       children.keys.map(k ⇒ {
         manager.watch("/keyspaces/" + k, (tables: Map[String, String]) ⇒ {
           tables.map(t ⇒ {
-            println(t._2)
             notification = Some(t._2)
           })
         })

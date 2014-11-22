@@ -16,19 +16,19 @@ import net.imagini.aim.tools.CountScanner
 class NodeIntegrationTest extends FlatSpec with Matchers {
   val host = "localhost"
   val port = 9999
+  val manager = new DriftManagerLocal(1)
 
   def fixutreNode: AimNode = {
-    val manager = new DriftManagerLocal(1)
     manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
     val node = new AimNode(1, host + ":" + port, manager)
     node
   }
   def fixutreLoadDataSyncs = {
-    val loader = new DriftLoader(host, port,Protocol.LOADER_USER, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv"), false)
+    val loader = new DriftLoader(manager, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv"), false)
     loader.streamInput should be (3)
   }
   def fixutreLoadPageviews = {
-    val loader = new DriftLoader(host, port, Protocol.LOADER_USER, "vdna", "events", "\n", this.getClass.getResourceAsStream("pageviews.csv"), false)
+    val loader = new DriftLoader(manager, "vdna", "events", "\n", this.getClass.getResourceAsStream("pageviews.csv"), false)
     loader.streamInput should be (5)
   }
 

@@ -16,11 +16,11 @@ class DistributedLoaderTests extends FlatSpec with Matchers {
   val node3 = new AimNode(3, "localhost:9996", manager)
   val node4 = new AimNode(4, "localhost:9995", manager)
 
-  new DriftLoader("localhost", 9998, Protocol.LOADER_USER, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync_big.csv.gz"), true).streamInput should be(139)
-  //TODO scan count node1.regions("vdna.events").getCount should be(39)
-  //TODO scan count node2.regions("vdna.events").getCount should be(19)
-  //TODO scan count node3.regions("vdna.events").getCount should be(38)
-  //TODO scan count node4.regions("vdna.events").getCount should be(43)
+  new DriftLoader(manager, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync_big.csv.gz"), true).streamInput should be(139)
+  node1.query("count vdna.events").count should be(39)
+  node2.query("count vdna.events").count should be(19)
+  node3.query("count vdna.events").count should be(38)
+  node4.query("count vdna.events").count should be(43)
   (39 + 19 + 38 + 43) should be(139)
 
   val client = new DriftClient("localhost", 9997)
@@ -32,7 +32,7 @@ class DistributedLoaderTests extends FlatSpec with Matchers {
   client.hasNext should be(false);
   an[EOFException] must be thrownBy (client.fetchRecordLine)
 
-  new DriftLoader("localhost", 9998, Protocol.LOADER_USER, "addthis", "syncs", "    ", this.getClass.getResourceAsStream("datasync_string.csv"), false).streamInput should be(10)
+  new DriftLoader(manager, "addthis", "syncs", "    ", this.getClass.getResourceAsStream("datasync_string.csv"), false).streamInput should be(10)
   client.query("STATS addthis")
   client.hasNext should be(true); client.fetchRecordLine should be("syncs,1,1,93") //,88
   client.hasNext should be(true); client.fetchRecordLine should be("syncs,3,1,165") //,176

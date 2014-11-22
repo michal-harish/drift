@@ -101,11 +101,12 @@ public class Pipe {
         if (outputPipe != null) {
             if (outputPipe instanceof LZ4BlockOutputStream) {
                 ((LZ4BlockOutputStream) outputPipe).finish();
-                outputPipe = null;
             } else if (outputPipe instanceof GZIPOutputStream) {
                 ((GZIPOutputStream) outputPipe).finish();
-                outputPipe = null;
+            } else {
+              //TODO create end of output signature for uncompressed stream
             }
+            outputPipe = null;
         }
     }
 

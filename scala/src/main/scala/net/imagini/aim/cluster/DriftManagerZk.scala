@@ -16,6 +16,10 @@ import net.imagini.aim.types.AimSchema
 class DriftManagerZk(val zkConnect: String, override val clusterId:String = "default") extends DriftManager {
   val zkClient = new ZkClient(zkConnect)
   init
+  override protected def get[T](path: String): T = zkClient.readData(path)
+  override protected def list[T](path: String): Map[String, T] = {
+    zkClient.getChildren(path).asScala.map(child => child -> get(path + "/" + child)).toMap
+  }
   override protected def pathExists(path: String) = zkClient.exists(path)
   override protected def pathCreatePersistent(path: String, data:Any) = zkClient.create(path, data, CreateMode.PERSISTENT)
   override protected def pathUpdate(path: String, data:Any) = zkClient.writeData(path, data)
