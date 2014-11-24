@@ -40,7 +40,7 @@ class DriftConsole(val host: String = "localhost", val port: Int = 4000) extends
             }
           } catch {
             case e: AimQueryException ⇒ println(e.getMessage)
-            case e: IOException ⇒ println("Console encountered I/O error: " + e.getClass.getSimpleName)
+            case e: IOException ⇒ println("Console encountered I/O error: " + e.getMessage)
             case e: Throwable ⇒ println(e.getStackTrace)
           }
         }

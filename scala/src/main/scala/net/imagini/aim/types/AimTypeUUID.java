@@ -35,10 +35,22 @@ public class AimTypeUUID extends AimTypeAbstract {
 
     @Override public byte[] convert(String value) {
         try {
-            UUID uuid = UUID.fromString(value);
+            String[] components = value.split("-");
+            if (components.length != 5)
+                throw new IllegalArgumentException("Invalid UUID string: "+value);
+            for (int i=0; i<5; i++)
+                components[i] = "0x"+components[i];
+            long mostSigBits = Long.decode(components[0]).longValue();
+            mostSigBits <<= 16;
+            mostSigBits |= Long.decode(components[1]).longValue();
+            mostSigBits <<= 16;
+            mostSigBits |= Long.decode(components[2]).longValue();
+            long leastSigBits = Long.decode(components[3]).longValue();
+            leastSigBits <<= 48;
+            leastSigBits |= Long.decode(components[4]).longValue();
             byte[] b = new byte[16];
-            ByteUtils.putLongValue(uuid.getMostSignificantBits(), b, 0);
-            ByteUtils.putLongValue(uuid.getLeastSignificantBits(), b, 8);
+            ByteUtils.putLongValue(mostSigBits, b, 0);
+            ByteUtils.putLongValue(leastSigBits, b, 8);
             return b;
         } catch (Exception e) {
             byte[] result = new byte[16];

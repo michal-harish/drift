@@ -9,7 +9,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
   val keyspace = pipe.readHeader
   val table = pipe.readHeader
   val region = node.regions(keyspace + "." + table)
-  val separator = pipe.readHeader
+  val separator:Char = pipe.readHeader()(0)
   val schema = region.schema
   val keyType = schema.get(0)
   pipe.writeHeader(schema.toString)
@@ -28,6 +28,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
       }
     } finally {
       region.add(localSegment)
+      region.compact
       log.info(Protocol.LOADER_USER + "/EOF records: " + count + " time(ms): " + (System.currentTimeMillis - startTime))
       pipe.writeInt(count.toInt)
       pipe.flush
@@ -38,8 +39,6 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
   private def loadPartitionedStream = {
     val in = pipe.getInputStream
     while (!node.isSuspended) {
-      val eof = in.read.asInstanceOf[Byte]
-      if (eof == -1) throw new EOFException
       val record = new Array[Array[Byte]](schema.size)
       var c = 0; while (c < schema.size) {
         record(c) = StreamUtils.read(in, schema.dataType(c))

@@ -11,10 +11,10 @@ class LoaderTest extends FlatSpec with Matchers {
     manager.createTable("vdna", "events", "user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
     val node = new AimNode(1, "localhost:9998", manager)
 
-    new DriftLoader(manager, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv"), false).streamInput should be(3)
+    new DriftLoader(manager, "vdna", "events", '\t', this.getClass.getResourceAsStream("datasync.csv"), false).streamInput should be(3)
     node.query("count vdna.events").count should be(3L)
 
-    new DriftLoader(manager, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv.gz"), true).streamInput should be(3)
+    new DriftLoader(manager, "vdna", "events", '\t', this.getClass.getResourceAsStream("datasync.csv.gz"), true).streamInput should be(3)
     node.query("count vdna.events").count should be(6L)
 
     manager.down

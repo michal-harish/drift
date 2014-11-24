@@ -28,6 +28,7 @@ class MergeScannerTest extends FlatSpec with Matchers {
     val region = new AimRegion("vdna.events", schema, 1000)
     region.add(s1)
     region.add(s2)
+    region.compact
 
     val scanner = new MergeScanner("user_uid,column", "*", region.segments)
 

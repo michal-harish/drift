@@ -17,6 +17,9 @@ import java.net.Socket
 import java.net.InetAddress
 import scala.collection.mutable.LinkedList
 import scala.collection.mutable.Queue
+import net.imagini.aim.utils.CSVStreamParser
+import net.imagini.aim.utils.ByteUtils
+import java.util.concurrent.locks.ReentrantLock
 
 class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: String) {
   val log = Logger[this.type]
@@ -24,28 +27,19 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
   val schema = manager.getSchema(keyspace, table)
   val keyType = schema.get(0)
   val workers = manager.getNodeConnectors.map(c ⇒ c._1 -> new AimNodeLoaderWorker(c._1, keyspace, table, c._2)).toMap
-  val executor = Executors.newFixedThreadPool(workers.size)
-  workers.values.foreach(executor.submit(_))
+  //val executor = Executors.newFixedThreadPool(workers.size)
+  //workers.values.foreach(executor.submit(_))
 
-  def loadUnparsedStream(in: InputStream, separator: String): Long = {
+  def loadUnparsedStream(in: InputStream, separator: Char): Long = {
     try {
-      val source = scala.io.Source.fromInputStream(in)
-      val lines = source.getLines
+      val csv = new CSVStreamParser(in, separator)
       val values: Array[String] = new Array[String](schema.size)
-      var line: String = ""
       val totalNodes = manager.expectedNumNodes
       while (!manager.clusterIsSuspended) {
-        var fields: Int = 0
-        while (fields < schema.size) {
-          if (!lines.hasNext) {
-            throw new EOFException
-          } else {
-            val line = lines.next
-            for (value ← line.split(separator)) {
-              values(fields) = value
-              fields += 1
-            }
-          }
+        var f = 0;
+        while (f < schema.size) {
+          values(f) = csv.nextValue
+          f += 1
         }
         try {
           insert(values: _*)
@@ -63,9 +57,17 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
     }
     0L
   }
+
   def insert(record: String*) {
     try {
-      insert((schema.fields, record).zipped.map((f, r) ⇒ new View(f.convert(r))))
+      var f = 0
+      val recordView = new Array[View](schema.size)
+      while (f < schema.size) {
+        recordView(f) = new View(schema.get(f).convert(record(f)))
+        f += 1
+      }
+      val targetNode = keyType.partition(recordView(0), totalNodes) + 1
+      workers(targetNode).process(recordView)
     } catch {
       case e: NumberFormatException ⇒ log.warn(e)
     }
@@ -78,9 +80,9 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
 
   def finish: Long = {
     try {
-      executor.shutdown
+      //      executor.shutdown
       val totalLoadedCount = workers.values.map(_.finish).fold(0L)(_ + _)
-      executor.awaitTermination(10, TimeUnit.SECONDS)
+      //      executor.awaitTermination(10, TimeUnit.SECONDS)
       totalLoadedCount
     } catch {
       case e: Throwable ⇒ {
@@ -97,63 +99,96 @@ class AimNodeLoaderWorker(
   val keyspace: String,
   val table: String,
   val nodeURI: URI) extends Runnable {
-  private var incomingQueue = new Queue[Array[View]]
-  private var outgoingQueue: Queue[Array[View]] = null
+  private var incomingBuffer = new Array[Byte](65535)
+  private var incomingBufferPosition = 0
+  //  private var outgoingBuffer: Array[Byte] = new Array[Byte](65535)
+  //  private var outgoingBufferLimit = 0
   val socket = new Socket(InetAddress.getByName(nodeURI.getHost), nodeURI.getPort)
   val pipe = Pipe.newLZ4Pipe(socket, Protocol.LOADER_INTERNAL)
-  //handshake
+  //handshake with the loader session handler
   pipe.writeHeader(keyspace)
   pipe.writeHeader(table)
   pipe.writeHeader("N/A")
   val schemaDeclaration = pipe.readHeader
   val schema = AimSchema.fromString(schemaDeclaration)
-  val lock = new Object
+  //  val lock = new ReentrantLock
   @volatile private var finished = false
 
+  private def sendBuffer(buffer: Array[Byte], limit: Int) {
+    pipe.getOutputStream.write(buffer, 0, limit)
+  }
+
   def process(record: Array[View]) = {
-    if (incomingQueue.size >= 10000) {
-      lock.synchronized {
-        outgoingQueue = incomingQueue
-        incomingQueue = new Queue[Array[View]]
-        lock.notify
+    var c = 0; while (c < record.length) {
+      val view = record(c)
+      val len = view.limit - view.offset + 1
+      if (incomingBufferPosition + len >= incomingBuffer.length) {
+        //        swapBuffers
+        sendBuffer(incomingBuffer, incomingBufferPosition)
+        incomingBufferPosition = 0
       }
+      ByteUtils.copy(view.array, view.offset, incomingBuffer, incomingBufferPosition, len)
+      incomingBufferPosition += len
+      c += 1
     }
-    incomingQueue.enqueue(record)
+
   }
 
   def finish: Long = {
-    lock.synchronized {
-      finished = true
-      outgoingQueue = incomingQueue
-      incomingQueue = null
-      lock.notify
-    }
+    //    lock.lock
+    //    try {
+    //      finished = true
+    //      swapBuffers
+    //      flushOutgoingBuffer
+    //      pipe.flush
+    //      pipe.finishOutput
+    //    } finally {
+    //      lock.unlock
+    //    }
+    sendBuffer(incomingBuffer, incomingBufferPosition)
+    pipe.flush
+    pipe.finishOutput
     val loadedCount: Int = pipe.readInt
     pipe.close
     loadedCount
-
   }
 
+  //  private def flushOutgoingBuffer = {
+  //    lock.lock
+  //    try {
+  //      if (outgoingBufferLimit > 0) {
+  //        pipe.getOutputStream.write(outgoingBuffer, 0, outgoingBufferLimit)
+  //        outgoingBufferLimit = 0
+  //      }
+  //    } finally {
+  //      lock.unlock
+  //    }
+  //  }
+
+  //  private def swapBuffers = {
+  //    lock.lock
+  //    try {
+  //      val swapBuffer = outgoingBuffer
+  //      outgoingBuffer = incomingBuffer
+  //      outgoingBufferLimit = incomingBufferPosition
+  //      incomingBuffer = swapBuffer
+  //      incomingBufferPosition = 0
+  //      lock.synchronized {
+  //        lock.notify
+  //      }
+  //    } finally {
+  //      lock.unlock
+  //    }
+  //  }
+
   override def run = {
-    while (!finished) {
-      lock.synchronized {
-        //TOTO use reentrant lock instead
-        lock.wait
-        while (!outgoingQueue.isEmpty) {
-          val record = outgoingQueue.dequeue
-          pipe.getOutputStream.write(1)
-          var r = 0; while (r < record.length) {
-            val dataType = schema.dataType(r)
-            val view = record(r)
-            pipe.getOutputStream.write(view.array, view.offset, dataType.sizeOf(view))
-            r += 1
-          }
-        }
-      }
-    }
-    pipe.getOutputStream.write(-1)
-    pipe.flush
-    pipe.finishOutput
+    //    while (!finished) {
+    //      if (outgoingBufferLimit > 0) {
+    //        flushOutgoingBuffer
+    //      } else lock.synchronized {
+    //        lock.wait
+    //      }
+    //    }
   }
 
 }

@@ -18,7 +18,7 @@ class BigLoadTest extends FlatSpec with Matchers {
     val storageType = classOf[BlockStorageMEMLZ4]
     val node = new AimNode(1, "localhost:9998", manager)
     manager.createTable("addthis", "views", schema.toString, 5000000, storageType)
-    new DriftLoader(manager, "addthis", "views", "\t", this.getClass.getResourceAsStream("views_big.csv"), false).streamInput should be(5730)
+    new DriftLoader(manager, "addthis", "views", '\t', this.getClass.getResourceAsStream("views_big.csv"), false).streamInput should be(5730)
     val region = node.regions("addthis.views")
     node.query("count addthis.views").count should be(5730)
     region.segments.size should be(1)

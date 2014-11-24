@@ -32,7 +32,7 @@ public class AimTypeIPv4 extends AimTypeAbstract {
     @Override
     public int convert(String value,  byte[] dest, int destOffset) {
         try {
-            return ByteUtils.copy(InetAddress.getByName(value).getAddress(), dest, destOffset, 4);
+            return ByteUtils.copy(InetAddress.getByName(value).getAddress(), 0, dest, destOffset, 4);
         } catch (UnknownHostException e) {
             throw new IllegalArgumentException(e);
         }

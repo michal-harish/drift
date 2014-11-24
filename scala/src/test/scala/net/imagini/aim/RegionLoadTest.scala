@@ -73,7 +73,7 @@ class RegionLoadTest extends FlatSpec with Matchers {
       segment = region.appendRecord(segment, recordView)
     }
     region.add(segment)
-    //TODO scan count region.getCount should equal(numRecords)
+    region.compact
     region.getNumSegments should equal(numRecords * (16 + 4 + 14) / segmentSize)
 
     for (s ← (0 to region.segments.length - 1)) {
@@ -116,6 +116,7 @@ class RegionLoadTest extends FlatSpec with Matchers {
       segment = region.appendRecord(segment, recordView)
     }
     region.add(segment)
+    region.compact
     //TODO scan count region.getCount should equal(numRecords)
     region.getNumSegments should equal(numRecords * (16 + 4 + 14) / segmentSize)
 

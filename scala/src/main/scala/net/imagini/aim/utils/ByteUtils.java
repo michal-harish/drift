@@ -15,9 +15,9 @@ public class ByteUtils {
      * byte array utils
      */
 
-    public static int copy(byte[] src, byte[]dest, int destOffset, int len) {
+    public static int copy(byte[] src, int srcOffset, byte[]dest, int destOffset, int len) {
         for(int i = 0; i< len; i++) {
-            dest[i+destOffset] = src[i];
+            dest[i+destOffset] = src[i+srcOffset];
         }
         return len;
     }

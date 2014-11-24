@@ -16,7 +16,7 @@ class DistributedLoaderTests extends FlatSpec with Matchers {
   val node3 = new AimNode(3, "localhost:9996", manager)
   val node4 = new AimNode(4, "localhost:9995", manager)
 
-  new DriftLoader(manager, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync_big.csv.gz"), true).streamInput should be(139)
+  new DriftLoader(manager, "vdna", "events", '\t', this.getClass.getResourceAsStream("datasync_big.csv.gz"), true).streamInput should be(139)
   node1.query("count vdna.events").count should be(39)
   node2.query("count vdna.events").count should be(19)
   node3.query("count vdna.events").count should be(38)
@@ -32,7 +32,7 @@ class DistributedLoaderTests extends FlatSpec with Matchers {
   client.hasNext should be(false);
   an[EOFException] must be thrownBy (client.fetchRecordLine)
 
-  new DriftLoader(manager, "addthis", "syncs", "    ", this.getClass.getResourceAsStream("datasync_string.csv"), false).streamInput should be(10)
+  new DriftLoader(manager, "addthis", "syncs", ' ', this.getClass.getResourceAsStream("datasync_string.csv"), false).streamInput should be(10)
   client.query("STATS addthis")
   client.hasNext should be(true); client.fetchRecordLine should be("syncs,1,1,93") //,88
   client.hasNext should be(true); client.fetchRecordLine should be("syncs,3,1,165") //,176

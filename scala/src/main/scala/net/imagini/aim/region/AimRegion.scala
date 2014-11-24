@@ -17,6 +17,11 @@ import net.imagini.aim.utils.BlockStorage
 import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.utils.View
 import net.imagini.aim.utils.BlockStorage.PersistentBlockStorage
+import java.util.concurrent.Future
+import java.util.concurrent.Callable
+import java.util.concurrent.locks.ReentrantLock
+import scala.collection.mutable.LinkedList
+import scala.collection.mutable.Queue
 
 class AimRegion(
   val regionId: String,
@@ -24,8 +29,10 @@ class AimRegion(
   val segmentSizeBytes: Int,
   val storageType: Class[_ <: BlockStorage] = classOf[BlockStorageMEMLZ4],
   val sortType: Class[_ <: AimSegment] = classOf[AimSegmentQuickSort]) {
-
   val segments: ListBuffer[AimSegment] = ListBuffer()
+  val compactionExecutor = Executors.newFixedThreadPool(10)
+  val compactionQueue = new Queue[Future[Option[Int]]]
+  val compactionLock = new ReentrantLock
 
   private val numSegments = new AtomicInteger(0)
 
@@ -38,6 +45,7 @@ class AimRegion(
   val persisted = storageType.getInterfaces.contains(classOf[PersistentBlockStorage])
 
   if (persisted) {
+    //TODO invoke block storage instead of assuming it's in local file
     val f = new File("/var/lib/drift")
     if (f.exists) f.listFiles.filter(_.getName.startsWith(regionId)).foreach(segmentFile ⇒ {
       segments += segmentConstructor.newInstance(schema).open(storageType, segmentFile)
@@ -47,32 +55,33 @@ class AimRegion(
 
   def newSegment: AimSegment = segmentConstructor.newInstance(schema).init(storageType, regionId)
 
-  //TODO instead of fixed one this needs to allow for parallel compaction from multiple loaders
-  val compactionExecutor = Executors.newFixedThreadPool(1)
-
-  def add(segment: AimSegment, async:Boolean = false) = {
-    val syncLock = new Object
-    val runnable = new Runnable {
-      override def run = {
+  def add(segment: AimSegment) = {
+    val callable = new Callable[Option[Int]] {
+      override def call: Option[Int] = {
         segment.close
-        if (segment.getCompressedSize() > 0) {
-          segments.synchronized { //TODO use concurrent structure as this synchronisation really does nothing
-            segments += segment
-            numSegments.incrementAndGet
-          }
-        }
-        if (!async) {
-          syncLock.synchronized(syncLock.notify)
+        if (segment.getCompressedSize > 0) {
+          val index = numSegments.getAndIncrement
+          segments += segment
+          Some(index)
+        } else {
+          None
         }
       }
     }
-    if (!async) {
-      syncLock.synchronized {
-        compactionExecutor.submit(runnable)
-        syncLock.wait
-      }
-    } else {
-      compactionExecutor.submit(runnable)
+    compactionLock.lock
+    try {
+      compactionQueue.enqueue(compactionExecutor.submit(callable))
+    } finally {
+      compactionLock.unlock
+    }
+  }
+
+  def compact = {
+    compactionLock.lock
+    try {
+      compactionQueue.take(compactionQueue.size).foreach(future ⇒ future.get) //TODO log.debug compatction info
+    } finally {
+      compactionLock.unlock
     }
   }
 
@@ -102,7 +111,7 @@ class AimRegion(
 
   private def checkSegment(segment: AimSegment, size: Int): AimSegment = {
     if (segment.getRecordedSize() + size > segmentSizeBytes) try {
-      add(segment, true)
+      add(segment)
       newSegment
     } catch {
       case e: Throwable ⇒ {

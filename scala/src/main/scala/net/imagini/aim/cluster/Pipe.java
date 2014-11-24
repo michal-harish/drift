@@ -15,14 +15,9 @@ import net.jpountz.lz4.LZ4BlockOutputStream;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.xxhash.XXHashFactory;
 
-/**
- * Pipe is a bi-directional stream that is aimtype-aware
- * 
- * @author mharis
- */
 public class Pipe {
     private Socket socket;
-    final public static int LZ4_BLOCK_SIZE = 524280;
+    final public static int LZ4_BLOCK_SIZE = 131070;
     final public static int SIGNATURE = "DRIFT".hashCode();
     final public Protocol protocol;
     final public int compression;
@@ -54,9 +49,10 @@ public class Pipe {
             return underlyingOutputStream;
         case 1:
             return new LZ4BlockOutputStream(underlyingOutputStream,
-                    LZ4_BLOCK_SIZE, LZ4Factory.fastestInstance()
-                            .highCompressor(), XXHashFactory.fastestInstance()
-                            .newStreamingHash32(0x9747b28c).asChecksum(), true);
+                    LZ4_BLOCK_SIZE, 
+                    LZ4Factory.fastestInstance().fastCompressor(), 
+                    XXHashFactory.fastestInstance().newStreamingHash32(0x9747b28c).asChecksum()
+                    , true);
         case 2:
             return new GZIPOutputStream(underlyingOutputStream, true);
         default:

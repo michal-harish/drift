@@ -26,7 +26,7 @@ public class View implements Comparable<View> {
     }
 
     public View(byte[] array) {
-        this(array, 0, array.length, array.length);
+        this(array, 0, array.length - 1, array.length);
     }
 
     public View(byte[] array, int position, int limit, int size) {

@@ -27,7 +27,7 @@ public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
 
     @Override
     public int convert(String value,  byte[] dest, int destOffset) {
-        return ByteUtils.copy(value.getBytes(), dest, destOffset, size);
+        return ByteUtils.copy(value.getBytes(), 0, dest, destOffset, size);
     }
 
     @Override public byte[] convert(String value) {

@@ -30,6 +30,7 @@ class ScannerInputStreamTest extends FlatSpec with Matchers {
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03")
     sA1.appendRecord("12322cfb-a29e-42c3-a3d9-12d32850e103", "www.xyz.com", "2014-10-10 12:01:02")
     p.add(sA1)
+    p.compact
 
     val in = new ScannerInputStream(new MergeScanner("user_uid,url", "*", p.segments))
     readLine(in) should be("12322cfb-a29e-42c3-a3d9-12d32850e103 www.xyz.com")
@@ -48,6 +49,7 @@ class ScannerInputStreamTest extends FlatSpec with Matchers {
       .appendRecord("AT1234", "37b22cfb-a29e-42c3-a3d9-12d32850e103")
       .appendRecord("AT7888", "89777987-a29e-42c3-a3d9-12d32850e234")
       )
+    AS1.compact
 
     val scanner = new MergeScanner("at_id", "*", AS1.segments)
     scanner.nextLine should be("AT1234")

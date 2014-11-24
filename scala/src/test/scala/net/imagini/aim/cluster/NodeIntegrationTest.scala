@@ -24,12 +24,12 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     node
   }
   def fixutreLoadDataSyncs = {
-    val loader = new DriftLoader(manager, "vdna", "events", "\n", this.getClass.getResourceAsStream("datasync.csv"), false)
-    loader.streamInput should be (3)
+    val loader = new DriftLoader(manager, "vdna", "events", '\t', this.getClass.getResourceAsStream("datasync.csv"), false)
+    loader.streamInput should be(3)
   }
   def fixutreLoadPageviews = {
-    val loader = new DriftLoader(manager, "vdna", "events", "\n", this.getClass.getResourceAsStream("pageviews.csv"), false)
-    loader.streamInput should be (5)
+    val loader = new DriftLoader(manager, "vdna", "events", '\t', this.getClass.getResourceAsStream("pageviews.csv"), false)
+    loader.streamInput should be(5)
   }
 
   def newClient: DriftClient = {
@@ -42,6 +42,58 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
       records :+= client.fetchRecordLine
     }
     records
+  }
+
+  private val regions = Map[String, AimRegion](
+    "vdna.pageviews" -> pageviews,
+    "vdna.conversions" -> conversions,
+    "vdna.flags" -> flags)
+
+  private def pageviews: AimRegion = {
+    val schemaPageviews = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
+    val sA1 = new AimSegmentQuickSort(schemaPageviews).initStorage(classOf[BlockStorageMEMLZ4])
+    sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01") //0  1
+    sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02") //16 1
+    sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03") //32 1
+    sA1.appendRecord("12322cfb-a29e-42c3-a3d9-12d32850e103", "www.xyz.com", "2014-10-10 12:01:02") //48 2
+    val sA2 = new AimSegmentQuickSort(schemaPageviews).initStorage(classOf[BlockStorageMEMLZ4])
+    sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
+    sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
+    val regionPageviews = new AimRegion("vdna.pageviews", schemaPageviews, 10000)
+    regionPageviews.add(sA1)
+    regionPageviews.add(sA2)
+    regionPageviews.compact
+    regionPageviews
+
+  }
+
+  private def conversions: AimRegion = {
+    //CONVERSIONS //TODO ttl = 10
+    val schemaConversions = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)")
+    val sB1 = new AimSegmentQuickSort(schemaConversions).initStorage(classOf[BlockStorageMEMLZ4])
+    sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
+    sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
+    val regionConversions1 = new AimRegion("vdna.conversions", schemaConversions, 1000)
+    regionConversions1.add(sB1)
+    regionConversions1.compact
+    regionConversions1
+  }
+
+  private def flags: AimRegion = {
+    //USERFLAGS //TODO ttl = -1
+    val schemaUserFlags = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),flag(STRING),value(BOOL)")
+    val sC1 = new AimSegmentQuickSort(schemaUserFlags).initStorage(classOf[BlockStorageMEMLZ4])
+    sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "true")
+    sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
+    val sC2 = new AimSegmentQuickSort(schemaUserFlags).initStorage(classOf[BlockStorageMEMLZ4])
+    sC2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "opt_out_targetting", "true")
+    sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
+    sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "false")
+    val regionUserFlags1 = new AimRegion("vdna.flags", schemaUserFlags, 1000)
+    regionUserFlags1.add(sC1)
+    regionUserFlags1.add(sC2)
+    regionUserFlags1.compact
+    regionUserFlags1
   }
 
   "Multiple loaders" should "be merged and sorted" in {
@@ -96,18 +148,18 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     val node = fixutreNode
     val client = newClient
 
-//  TODO EmptyTableScanner
-//    client.query("SELECT * from vdna.events") match {
-//      case None ⇒ throw new IllegalArgumentException
-//      case Some(schema) ⇒ {
-//        client.hasNext should be(false)
-//        an[EOFException] must be thrownBy (client.fetchRecordStrings)
-//      }
-//    }
-//    node.query("COUNT vdna.events").asInstanceOf[CountScanner].count should be(0)
-//
-//    client.query("COUNT vdna.events") should be(None)
-//    client.getCount should be(0)
+    //  TODO EmptyTableScanner
+    //    client.query("SELECT * from vdna.events") match {
+    //      case None ⇒ throw new IllegalArgumentException
+    //      case Some(schema) ⇒ {
+    //        client.hasNext should be(false)
+    //        an[EOFException] must be thrownBy (client.fetchRecordStrings)
+    //      }
+    //    }
+    //    node.query("COUNT vdna.events").asInstanceOf[CountScanner].count should be(0)
+    //
+    //    client.query("COUNT vdna.events") should be(None)
+    //    client.getCount should be(0)
 
     fixutreLoadDataSyncs
     fixutreLoadPageviews
@@ -192,54 +244,6 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     scanner.next should be(false)
     an[EOFException] must be thrownBy (scanner.selectLine(","))
 
-  }
-  private val regions = Map[String, AimRegion](
-      "vdna.pageviews" -> pageviews,
-      "vdna.conversions" -> conversions,
-      "vdna.flags" -> flags)
-
-  private def pageviews: AimRegion = {
-    val schemaPageviews = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
-    val sA1 = new AimSegmentQuickSort(schemaPageviews).initStorage(classOf[BlockStorageMEMLZ4])
-    sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01") //0  1
-    sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02") //16 1
-    sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03") //32 1
-    sA1.appendRecord("12322cfb-a29e-42c3-a3d9-12d32850e103", "www.xyz.com", "2014-10-10 12:01:02") //48 2
-    val sA2 = new AimSegmentQuickSort(schemaPageviews).initStorage(classOf[BlockStorageMEMLZ4])
-    sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
-    sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
-    val regionPageviews = new AimRegion("vdna.pageviews", schemaPageviews, 10000)
-    regionPageviews.add(sA1)
-    regionPageviews.add(sA2)
-    regionPageviews
-
-  }
-
-  private def conversions: AimRegion = {
-    //CONVERSIONS //TODO ttl = 10
-    val schemaConversions = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)")
-    val sB1 = new AimSegmentQuickSort(schemaConversions).initStorage(classOf[BlockStorageMEMLZ4])
-    sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
-    sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
-    val regionConversions1 = new AimRegion("vdna.conversions", schemaConversions, 1000)
-    regionConversions1.add(sB1)
-    regionConversions1
-  }
-
-  private def flags: AimRegion = {
-    //USERFLAGS //TODO ttl = -1
-    val schemaUserFlags = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),flag(STRING),value(BOOL)")
-    val sC1 = new AimSegmentQuickSort(schemaUserFlags).initStorage(classOf[BlockStorageMEMLZ4])
-    sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "true")
-    sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
-    val sC2 = new AimSegmentQuickSort(schemaUserFlags).initStorage(classOf[BlockStorageMEMLZ4])
-    sC2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "opt_out_targetting", "true")
-    sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
-    sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "false")
-    val regionUserFlags1 = new AimRegion("vdna.flags", schemaUserFlags, 1000)
-    regionUserFlags1.add(sC1)
-    regionUserFlags1.add(sC2)
-    regionUserFlags1
   }
 
 }

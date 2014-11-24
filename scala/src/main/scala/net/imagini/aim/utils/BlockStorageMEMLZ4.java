@@ -47,7 +47,7 @@ public class BlockStorageMEMLZ4 extends BlockStorage {
         int cLen = compressor.compress(array, offset, length, compress_buffer,0);
         byte[] block = new byte[cLen + 4];
         ByteUtils.putIntValue(length, block, 0);
-        ByteUtils.copy(compress_buffer, block, 4, cLen);
+        ByteUtils.copy(compress_buffer, 0, block, 4, cLen);
         compressedBlocks.add(block);
         return cLen;
     }
