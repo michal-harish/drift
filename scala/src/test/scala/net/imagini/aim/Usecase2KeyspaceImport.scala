@@ -28,8 +28,8 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
     AS1.add(new AimSegmentQuickSort(schemaATSyncs).initStorage(classOf[BlockStorageMEMLZ4])
       .appendRecord("AT1234", "37b22cfb-a29e-42c3-a3d9-12d32850e103")
       .appendRecord("AT5656", "a7b22cfb-a29e-42c3-a3d9-12d32850e234")
-      .appendRecord("AT7888", "89777987-a29e-42c3-a3d9-12d32850e234")
-      )
+      .appendRecord("AT7888", "89777987-a29e-42c3-a3d9-12d32850e234"))
+    AS1.compact
 
     val AP1 = new AimRegion("addthis.views", schemaATPageviews, 1000)
     AP1.add(new AimSegmentQuickSort(schemaATPageviews).initStorage(classOf[BlockStorageMEMLZ4])
@@ -38,8 +38,8 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
       .appendRecord("AT1234", "www.auto.com/offers", "2014-10-10 15:00:01")
       .appendRecord("AT1234", "www.travel.com", "2014-10-10 16:00:01")
       .appendRecord("AT5656", "www.marvel.com", "2014-10-10 17:00:01")
-      .appendRecord("AT1234", "www.bank.com", "2014-10-10 18:00:01")
-      )
+      .appendRecord("AT1234", "www.bank.com", "2014-10-10 18:00:01"))
+    AP1.compact
 
     //Scan join transformation of AT pageviews into VDNA Pageviews 
     val joinScan = new EquiJoinScanner(
@@ -52,6 +52,7 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
     }
     regionVDNAPageviews1.add(newVDNAPageviewsSegment)
     joinScan.close
+    regionVDNAPageviews1.compact
 
     //scan VDNA Pageviews which should contain previous pageviews with the ones imported from AT
     val vdnaPageviewScan = new MergeScanner("user_uid,url,timestamp", "*", regionVDNAPageviews1.segments)

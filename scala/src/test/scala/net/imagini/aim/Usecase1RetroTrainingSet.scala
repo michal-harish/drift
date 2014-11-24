@@ -30,6 +30,7 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
     val regionPageviews1 = new AimRegion("vdna.pageviews", schemaPageviews, 1000)
     regionPageviews1.add(sA1)
     regionPageviews1.add(sA2)
+    regionPageviews1.compact
 
     //CONVERSIONS //TODO ttl = 10
     val schemaConversions = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)")
@@ -38,6 +39,7 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
     sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
     val regionConversions1 = new AimRegion("vdna.conversions", schemaConversions, 1000)
     regionConversions1.add(sB1)
+    regionConversions1.compact
 
     //USERFLAGS //TODO ttl = -1
     val schemaUserFlags = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),flag(STRING),value(BOOL)")
@@ -51,6 +53,7 @@ class Usecase1RetroTrainingSet extends FlatSpec with Matchers {
     val regionUserFlags1 = new AimRegion("vdna.flags", schemaUserFlags, 1000)
     regionUserFlags1.add(sC1)
     regionUserFlags1.add(sC2)
+    regionUserFlags1.compact
 
 
     //PARTION

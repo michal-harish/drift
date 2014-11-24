@@ -23,6 +23,7 @@ class RegionTest extends FlatSpec with Matchers {
     val region1 = new AimRegion("vdna.events", schema, 1000)
     region1.add(s1)
     region1.add(s2)
+    region1.compact
 
     //USERFLAGS //TODO ttl = -1
     val schemaUserFlags = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),flag(STRING),value(BOOL)")
@@ -36,6 +37,7 @@ class RegionTest extends FlatSpec with Matchers {
     val regionUserFlags1 = new AimRegion("vdna.flags", schemaUserFlags, 1000)
     regionUserFlags1.add(sC1)
     regionUserFlags1.add(sC2)
+    regionUserFlags1.compact
 
     val scanner = new StatScanner(1, Map("pageviews" -> region1, "flags" -> regionUserFlags1))
     scanner.nextLine should be("flags\t1\t2\t121") //\t141
