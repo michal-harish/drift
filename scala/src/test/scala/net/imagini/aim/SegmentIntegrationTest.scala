@@ -14,13 +14,15 @@ import net.imagini.aim.cluster.StreamUtils
 import net.imagini.aim.cluster.ScannerInputStream
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.tools.CountScanner
+import net.imagini.aim.types.AimTableDescriptor
 
 class SegmentIntegration extends FlatSpec with Matchers {
 
   "Unsorted segemnt select" should "give an input stream with the same order of records" in {
     val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
-    val p1 = new AimRegion("vdna.events", schema, 10000)
-    val s1 = new AimSegmentUnsorted(schema).initStorage(classOf[BlockStorageMEMLZ4])
+    val d = new AimTableDescriptor(schema, 10000, classOf[BlockStorageMEMLZ4], classOf[AimSegmentUnsorted])
+    val p1 = new AimRegion("vdna.events", d)
+    val s1 = p1.newSegment
     s1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "a", "6571796330792743131")
     s1.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748042", "a", "6571796330792743131")
     s1.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748043", "a", "6571796330792743131")
@@ -43,8 +45,9 @@ class SegmentIntegration extends FlatSpec with Matchers {
 
   "QuickSorted ASC segemnt select" should "give an input stream with the correct order" in {
     val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
-    val p1 = new AimRegion("vdna.events", schema, 10000)
-    val s1 = new AimSegmentQuickSort(schema).initStorage(classOf[BlockStorageMEMLZ4])
+    val d = new AimTableDescriptor(schema, 10000, classOf[BlockStorageMEMLZ4], classOf[AimSegmentQuickSort])
+    val p1 = new AimRegion("vdna.events", d)
+    val s1 = p1.newSegment
     s1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "a", "6571796330792743131")
     s1.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748042", "a", "6571796330792743131")
     s1.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748043", "a", "6571796330792743131")

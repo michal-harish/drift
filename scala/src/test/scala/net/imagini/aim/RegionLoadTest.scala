@@ -16,6 +16,7 @@ import net.imagini.aim.segment.AimSegment
 import net.imagini.aim.utils.BlockStorage
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.segment.SegmentScanner
+import net.imagini.aim.types.AimTableDescriptor
 
 class RegionLoadTest extends FlatSpec with Matchers {
   //unsorted
@@ -53,7 +54,8 @@ class RegionLoadTest extends FlatSpec with Matchers {
     val numRecords = recordsPerSegment * numSegments
     val ids: Array[String] = Array("0dc56198-975d-4cf9-9b3f-a52581dee886", "32c07e66-0824-4e1c-b126-bd0a2e586bae")
 
-    val region = new AimRegion("test.data", schema, segmentSize, storageType, classOf[AimSegmentUnsorted])
+    val descriptor = new AimTableDescriptor(schema, segmentSize, storageType, classOf[AimSegmentUnsorted])
+    val region = new AimRegion("test.data", descriptor)
 
     var segment = region.newSegment
     val recordView = new Array[View](schema.size)
@@ -97,7 +99,8 @@ class RegionLoadTest extends FlatSpec with Matchers {
     val numRecords = recordsPerSegment * numSegments
     val ids: Array[String] = Array("0dc56198-975d-4cf9-9b3f-a52581dee886", "32c07e66-0824-4e1c-b126-bd0a2e586bae")
 
-    val region = new AimRegion("test.data", schema, segmentSize, storageType, classOf[AimSegmentQuickSort])
+    val descriptor = new AimTableDescriptor(schema, segmentSize, storageType, classOf[AimSegmentQuickSort])
+    val region = new AimRegion("test.data", descriptor)
 
     var segment = region.newSegment
     val recordView = new Array[View](schema.size)

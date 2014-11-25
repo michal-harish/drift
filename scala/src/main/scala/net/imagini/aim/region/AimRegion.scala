@@ -22,13 +22,19 @@ import java.util.concurrent.Callable
 import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable.LinkedList
 import scala.collection.mutable.Queue
+import net.imagini.aim.cluster.StreamUtils
+import java.io.InputStream
+import net.imagini.aim.types.AimTableDescriptor
 
 class AimRegion(
   val regionId: String,
-  val schema: AimSchema,
-  val segmentSizeBytes: Int,
-  val storageType: Class[_ <: BlockStorage] = classOf[BlockStorageMEMLZ4],
-  val sortType: Class[_ <: AimSegment] = classOf[AimSegmentQuickSort]) {
+  val descriptor: AimTableDescriptor) {
+
+  val schema = descriptor.schema
+  val segmentSizeBytes = descriptor.segmentSize
+  val storageType: Class[_ <: BlockStorage] = descriptor.storageType
+  val sortType: Class[_ <: AimSegment] = descriptor.sortType
+
   val segments: ListBuffer[AimSegment] = ListBuffer()
   val compactionExecutor = Executors.newFixedThreadPool(10)
   val compactionQueue = new Queue[Future[Option[Int]]]
@@ -51,6 +57,18 @@ class AimRegion(
       segments += segmentConstructor.newInstance(schema).open(storageType, segmentFile)
       numSegments.incrementAndGet
     })
+  }
+
+  def loadRecord(segment: AimSegment, in: InputStream): AimSegment = {
+//    val theSegment = checkSegment(segment, 0)
+//    theSegment.loadRecord(in)
+//    return theSegment
+    val record = new Array[Array[Byte]](schema.size)
+    var c = 0; while (c < schema.size) {
+      record(c) = StreamUtils.read(in, schema.dataType(c))
+      c += 1
+    }
+    return appendRecord(segment, record)
   }
 
   def newSegment: AimSegment = segmentConstructor.newInstance(schema).init(storageType, regionId)

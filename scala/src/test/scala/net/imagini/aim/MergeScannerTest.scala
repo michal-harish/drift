@@ -1,31 +1,34 @@
 package net.imagini.aim
 
 import java.io.EOFException
-
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-
 import net.imagini.aim.region.AimRegion
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorageMEMLZ4
+import net.imagini.aim.types.AimTableDescriptor
 
 class MergeScannerTest extends FlatSpec with Matchers {
 
   "ScannerMerge " should "produce same result as stream merge" in {
-    val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),column(STRING),value(STRING)")
-    val s1 = new AimSegmentQuickSort(schema).initStorage(classOf[BlockStorageMEMLZ4])
+    val descriptor = new AimTableDescriptor(
+        AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),column(STRING),value(STRING)"),
+        1000,
+        classOf[BlockStorageMEMLZ4],
+        classOf[AimSegmentQuickSort])
+    val region = new AimRegion("vdna.events", descriptor)
+    val s1 = region.newSegment
     s1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.auto.com}")
     s1.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT1234")
     s1.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.travel.com}")
 
-    val s2 = new AimSegmentQuickSort(schema).initStorage(classOf[BlockStorageMEMLZ4])
+    val s2 = region.newSegment
     s2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.ebay.com}")
     s2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT9876")
     s2.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.music.com}")
 
-    val region = new AimRegion("vdna.events", schema, 1000)
     region.add(s1)
     region.add(s2)
     region.compact

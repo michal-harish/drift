@@ -11,61 +11,67 @@ import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.region.UnionJoinScanner
 import java.io.EOFException
 import net.imagini.aim.types.Aim
+import net.imagini.aim.types.AimTableDescriptor
 
 class UnionVsIntersectionScannerTest extends FlatSpec with Matchers {
-    "Union and Intersection Join " should "return different sets" in {
-      //PAGEVIEWS
-      val schemaA = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
-      //TODO ttl = 10
-      val sA1 = new AimSegmentQuickSort(schemaA).initStorage(classOf[BlockStorageMEMLZ4])
-      sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01")
-      sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02")
-      sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03")
-      val sA2 = new AimSegmentQuickSort(schemaA).initStorage(classOf[BlockStorageMEMLZ4])
-      sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
-      sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
-      val regionA1 = new AimRegion("vdna.pageviews", schemaA, 1000)
-      regionA1.add(sA1)
-      regionA1.add(sA2)
+  "Union and Intersection Join " should "return different sets" in {
+    //PAGEVIEWS
+    val pageviewsDescriptor = new AimTableDescriptor(
+      AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)"),
+      1000,
+      classOf[BlockStorageMEMLZ4],
+      classOf[AimSegmentQuickSort])
+    val regionA1 = new AimRegion("vdna.pageviews", pageviewsDescriptor)
+    val sA1 = regionA1.newSegment
+    sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01")
+    sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02")
+    sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03")
+    val sA2 = regionA1.newSegment
+    sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
+    sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
 
-      //CONVERSIONS
-      val schemaB = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)")
-      //TODO ttl = 10
-      val sB1 = new AimSegmentQuickSort(schemaB).initStorage(classOf[BlockStorageMEMLZ4])
-      sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
-      sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
+    regionA1.add(sA1)
+    regionA1.add(sA2)
+    regionA1.compact
 
-      val regionB1 = new AimRegion("vdna.conversions", schemaB, 1000)
-      regionB1.add(sB1)
+    //CONVERSIONS
+    val conversionsDescriptor = new AimTableDescriptor(
+      AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)"),
+      1000,
+      classOf[BlockStorageMEMLZ4],
+      classOf[AimSegmentQuickSort])
+    val regionB1 = new AimRegion("vdna.conversions", conversionsDescriptor)
+    val sB1 = regionB1.newSegment
+    sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
+    sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
+    regionB1.add(sB1)
+    regionB1.compact
 
-      val unionJoin = new UnionJoinScanner(
-          new MergeScanner("user_uid, url, timestamp", "*", regionA1.segments), 
-          new MergeScanner("user_uid, url, timestamp, conversion", "*", regionB1.segments)
-      )
-      unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.auto.com/mycar\t2014-10-10 11:59:01\t" + Aim.EMPTY)
-      unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 12:01:02\t" + Aim.EMPTY)
-      unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers/holiday\t2014-10-10 12:01:03\t" + Aim.EMPTY)
-      unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.bank.com/myaccunt\t2014-10-10 13:59:01\tcheck")
-      unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers/holiday/book\t2014-10-10 13:01:03\tbuy")
-      unionJoin.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103\twww.bank.com/myaccunt\t2014-10-10 13:59:01\t" + Aim.EMPTY)
-      unionJoin.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 13:01:03\t" + Aim.EMPTY)
-      unionJoin.next should be(false)
-      an[EOFException] must be thrownBy unionJoin.nextLine
-      an[EOFException] must be thrownBy unionJoin.nextLine
+    val unionJoin = new UnionJoinScanner(
+      new MergeScanner("user_uid, url, timestamp", "*", regionA1.segments),
+      new MergeScanner("user_uid, url, timestamp, conversion", "*", regionB1.segments))
+    unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.auto.com/mycar\t2014-10-10 11:59:01\t" + Aim.EMPTY)
+    unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 12:01:02\t" + Aim.EMPTY)
+    unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers/holiday\t2014-10-10 12:01:03\t" + Aim.EMPTY)
+    unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.bank.com/myaccunt\t2014-10-10 13:59:01\tcheck")
+    unionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers/holiday/book\t2014-10-10 13:01:03\tbuy")
+    unionJoin.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103\twww.bank.com/myaccunt\t2014-10-10 13:59:01\t" + Aim.EMPTY)
+    unionJoin.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 13:01:03\t" + Aim.EMPTY)
+    unionJoin.next should be(false)
+    an[EOFException] must be thrownBy unionJoin.nextLine
+    an[EOFException] must be thrownBy unionJoin.nextLine
 
-      val intersectionJoin = new IntersectionJoinScanner(
-          new MergeScanner("user_uid, url, timestamp", "*", regionA1.segments), 
-          new MergeScanner("user_uid, url, timestamp, conversion", "*", regionB1.segments)
-      )
-      intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.auto.com/mycar\t2014-10-10 11:59:01\t" + Aim.EMPTY)
-      intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 12:01:02\t" + Aim.EMPTY)
-      intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers/holiday\t2014-10-10 12:01:03\t" + Aim.EMPTY)
-      intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.bank.com/myaccunt\t2014-10-10 13:59:01\tcheck")
-      intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers/holiday/book\t2014-10-10 13:01:03\tbuy")
-      intersectionJoin.next should be(false)
-      an[EOFException] must be thrownBy intersectionJoin.nextLine
-      an[EOFException] must be thrownBy intersectionJoin.nextLine
-    }
-
+    val intersectionJoin = new IntersectionJoinScanner(
+      new MergeScanner("user_uid, url, timestamp", "*", regionA1.segments),
+      new MergeScanner("user_uid, url, timestamp, conversion", "*", regionB1.segments))
+    intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.auto.com/mycar\t2014-10-10 11:59:01\t" + Aim.EMPTY)
+    intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers\t2014-10-10 12:01:02\t" + Aim.EMPTY)
+    intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers/holiday\t2014-10-10 12:01:03\t" + Aim.EMPTY)
+    intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.bank.com/myaccunt\t2014-10-10 13:59:01\tcheck")
+    intersectionJoin.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com/offers/holiday/book\t2014-10-10 13:01:03\tbuy")
+    intersectionJoin.next should be(false)
+    an[EOFException] must be thrownBy intersectionJoin.nextLine
+    an[EOFException] must be thrownBy intersectionJoin.nextLine
+  }
 
 }

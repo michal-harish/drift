@@ -8,7 +8,8 @@ public class CSVStreamParser {
 
     private InputStream input;
     private char separator;
-    private byte[] buffer = new byte[131070];
+    private char[] charBuffer = new char[65535];
+    private byte[] buffer = new byte[65535];
     private int position = -1;
     private int limit = -1;
 
@@ -18,9 +19,10 @@ public class CSVStreamParser {
     }
 
     public String nextValue() throws IOException {
+        String result = null;
         int start = -1;
         int end = -1;
-        String result = null;
+        char ch;
         try {
             while (true) {
                 if (position >= limit - 1) {
@@ -32,7 +34,7 @@ public class CSVStreamParser {
                     }
                     loadBuffer();
                 }
-                char ch = (char) buffer[++position];
+                ch = (char) buffer[++position];
                 if (start == -1) {
                     if (ch == '\r' || ch == ' ') {
                         continue;

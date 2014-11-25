@@ -5,6 +5,7 @@ import grizzled.slf4j.Logger
 import net.imagini.aim.utils.BlockStorage
 import net.imagini.aim.utils.BlockStorageMEMLZ4
 import java.net.URI
+import net.imagini.aim.types.AimTableDescriptor
 
 trait DriftManager {
   val log = Logger[this.type]
@@ -33,9 +34,8 @@ trait DriftManager {
     nodeConnectors
   }
 
-  final def getSchema(keyspace: String, table: String): AimSchema = {
-    val descriptor = get[String]("/drift/" + clusterId +"/keyspaces/" + keyspace + "/" + table).split("\n")
-    AimSchema.fromString(descriptor(0))
+  final def getDescriptor(keyspace: String, table: String): AimTableDescriptor = {
+    new AimTableDescriptor(get[String]("/drift/" + clusterId +"/keyspaces/" + keyspace + "/" + table))
   }
 
   final def clusterIsSuspended: Boolean = {

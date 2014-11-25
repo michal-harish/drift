@@ -12,6 +12,7 @@ import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.tools.CountScanner
+import net.imagini.aim.types.AimTableDescriptor
 
 class NodeIntegrationTest extends FlatSpec with Matchers {
   val host = "localhost"
@@ -50,16 +51,21 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     "vdna.flags" -> flags)
 
   private def pageviews: AimRegion = {
-    val schemaPageviews = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
-    val sA1 = new AimSegmentQuickSort(schemaPageviews).initStorage(classOf[BlockStorageMEMLZ4])
+    val pageviewsDescriptor = new AimTableDescriptor(
+        AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)"),
+        10000,
+        classOf[BlockStorageMEMLZ4],
+        classOf[AimSegmentQuickSort])
+    val regionPageviews = new AimRegion("vdna.pageviews", pageviewsDescriptor)
+    val sA1 = regionPageviews.newSegment
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01") //0  1
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02") //16 1
     sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03") //32 1
     sA1.appendRecord("12322cfb-a29e-42c3-a3d9-12d32850e103", "www.xyz.com", "2014-10-10 12:01:02") //48 2
-    val sA2 = new AimSegmentQuickSort(schemaPageviews).initStorage(classOf[BlockStorageMEMLZ4])
+    val sA2 = regionPageviews.newSegment
     sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
     sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
-    val regionPageviews = new AimRegion("vdna.pageviews", schemaPageviews, 10000)
+
     regionPageviews.add(sA1)
     regionPageviews.add(sA2)
     regionPageviews.compact
@@ -69,11 +75,16 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
 
   private def conversions: AimRegion = {
     //CONVERSIONS //TODO ttl = 10
-    val schemaConversions = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)")
-    val sB1 = new AimSegmentQuickSort(schemaConversions).initStorage(classOf[BlockStorageMEMLZ4])
+    val conversionsDescriptor = new AimTableDescriptor(
+        AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)"),
+        1000,
+        classOf[BlockStorageMEMLZ4],
+        classOf[AimSegmentQuickSort])
+    val regionConversions1 = new AimRegion("vdna.conversions", conversionsDescriptor)
+    val sB1 = regionConversions1.newSegment
     sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
     sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
-    val regionConversions1 = new AimRegion("vdna.conversions", schemaConversions, 1000)
+
     regionConversions1.add(sB1)
     regionConversions1.compact
     regionConversions1
@@ -81,15 +92,19 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
 
   private def flags: AimRegion = {
     //USERFLAGS //TODO ttl = -1
-    val schemaUserFlags = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),flag(STRING),value(BOOL)")
-    val sC1 = new AimSegmentQuickSort(schemaUserFlags).initStorage(classOf[BlockStorageMEMLZ4])
+    val userFlagsDescriptor = new AimTableDescriptor(
+        AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),flag(STRING),value(BOOL)"),
+        1000,
+        classOf[BlockStorageMEMLZ4],
+        classOf[AimSegmentQuickSort])
+    val regionUserFlags1 = new AimRegion("vdna.flags", userFlagsDescriptor)
+    val sC1 = regionUserFlags1.newSegment
     sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "true")
     sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
-    val sC2 = new AimSegmentQuickSort(schemaUserFlags).initStorage(classOf[BlockStorageMEMLZ4])
+    val sC2 = regionUserFlags1.newSegment
     sC2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "opt_out_targetting", "true")
     sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
     sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "false")
-    val regionUserFlags1 = new AimRegion("vdna.flags", schemaUserFlags, 1000)
     regionUserFlags1.add(sC1)
     regionUserFlags1.add(sC2)
     regionUserFlags1.compact

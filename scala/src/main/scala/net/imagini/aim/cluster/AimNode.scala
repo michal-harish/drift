@@ -5,9 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
-
 import scala.collection.JavaConverters._
-
 import grizzled.slf4j.Logger
 import net.imagini.aim.region.AimRegion
 import net.imagini.aim.region.QueryParser
@@ -16,6 +14,7 @@ import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorage
 import net.imagini.aim.utils.BlockStorageMEMLZ4
+import net.imagini.aim.types.AimTableDescriptor
 
 class AimNode(val id: Int, val address: String, val manager: DriftManager) {
 
@@ -124,11 +123,8 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
       manager.watch("/keyspaces/" + k, (tables: Map[String, String]) ⇒ {
         keyspaceRefs.get(k).asScala.keys.filter(!tables.contains(_)).map(keyspaceRefs.get(k).remove(_))
         tables.filter(t ⇒ !keyspaceRefs.get(k).containsKey(t._1)).map(t ⇒ {
-          val tableDescriptor = t._2.split("\n")
-          val schema = AimSchema.fromString(tableDescriptor(0))
-          val segmentSize = java.lang.Integer.valueOf(tableDescriptor(1))
-          val storageType = Class.forName(tableDescriptor(2)).asInstanceOf[Class[BlockStorage]]
-          keyspaceRefs.get(k).put(t._1, new AimRegion(nodeId+"-"+k+"-"+t._1, schema, segmentSize, storageType))
+          val descriptor = new AimTableDescriptor(t._2)
+          keyspaceRefs.get(k).put(t._1, new AimRegion(nodeId+"-"+k+"-"+t._1, descriptor))
           log.debug(id + ": " + k + "." + t._1 + " " + keyspaceRefs.get(k).get(t._1).toString)
         })
       })

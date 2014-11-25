@@ -26,6 +26,9 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
         case Protocol.LOADER_INTERNAL ⇒ loadPartitionedStream
         case _                        ⇒ throw new AimQueryException("Invalid loader protocol " + pipe.protocol);
       }
+    } catch {
+      case e:EOFException => {}
+      case e:Throwable => log.error(e)
     } finally {
       region.add(localSegment)
       region.compact
@@ -39,12 +42,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
   private def loadPartitionedStream = {
     val in = pipe.getInputStream
     while (!node.isSuspended) {
-      val record = new Array[Array[Byte]](schema.size)
-      var c = 0; while (c < schema.size) {
-        record(c) = StreamUtils.read(in, schema.dataType(c))
-        c += 1
-      }
-      localSegment = region.appendRecord(localSegment, record)
+      localSegment = region.loadRecord(localSegment, in)
       count += 1
     }
   }
