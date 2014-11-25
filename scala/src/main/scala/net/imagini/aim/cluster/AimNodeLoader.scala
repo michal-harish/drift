@@ -20,14 +20,15 @@ import scala.collection.mutable.Queue
 import net.imagini.aim.utils.CSVStreamParser
 import net.imagini.aim.utils.ByteUtils
 import java.util.concurrent.locks.ReentrantLock
+import net.imagini.aim.types.AimTableDescriptor
 
 class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: String) {
   val log = Logger[this.type]
   val totalNodes = manager.expectedNumNodes
   val descriptor = manager.getDescriptor(keyspace, table)
   val workers = manager.getNodeConnectors.map(c ⇒ c._1 -> new AimNodeLoaderWorker(c._1, keyspace, table, c._2)).toMap
-  //val executor = Executors.newFixedThreadPool(workers.size)
-  //workers.values.foreach(executor.submit(_))
+  val executor = Executors.newFixedThreadPool(workers.size)
+  workers.values.foreach(executor.submit(_))
 
   def loadUnparsedStream(in: InputStream, separator: Char): Long = {
     try {
@@ -76,12 +77,12 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
     val targetNode = descriptor.keyType.partition(record(0), totalNodes) + 1
     workers(targetNode).process(record)
   }
-
   def finish: Long = {
     try {
-      //      executor.shutdown
-      val totalLoadedCount = workers.values.map(_.finish).fold(0L)(_ + _)
-      //      executor.awaitTermination(10, TimeUnit.SECONDS)
+      workers.values.map(_.finish)
+      executor.shutdown
+      executor.awaitTermination(100, TimeUnit.SECONDS)
+      val totalLoadedCount = workers.values.map(_.ackLoadedCount).fold(0L)(_ + _)
       totalLoadedCount
     } catch {
       case e: Throwable ⇒ {
@@ -98,10 +99,10 @@ class AimNodeLoaderWorker(
   val keyspace: String,
   val table: String,
   val nodeURI: URI) extends Runnable {
-  private var incomingBuffer = new Array[Byte](65535)
+  private var incomingBuffer = new Array[Byte](32767)
   private var incomingBufferPosition = 0
-  //  private var outgoingBuffer: Array[Byte] = new Array[Byte](65535)
-  //  private var outgoingBufferLimit = 0
+  private var outgoingBuffer: Array[Byte] = new Array[Byte](incomingBuffer.length)
+  private var outgoingBufferLimit = 0
   val socket = new Socket(InetAddress.getByName(nodeURI.getHost), nodeURI.getPort)
   val pipe = Pipe.newLZ4Pipe(socket, Protocol.LOADER_INTERNAL)
   //handshake with the loader session handler
@@ -110,84 +111,61 @@ class AimNodeLoaderWorker(
   pipe.writeHeader("N/A")
   val schemaDeclaration = pipe.readHeader
   val schema = AimSchema.fromString(schemaDeclaration)
-  //  val lock = new ReentrantLock
-  @volatile private var finished = false
-
-  private def sendBuffer(buffer: Array[Byte], limit: Int) {
-    pipe.getOutputStream.write(buffer, 0, limit)
-  }
 
   def process(record: Array[View]) = {
     var c = 0; while (c < record.length) {
       val view = record(c)
       val len = view.limit - view.offset + 1
       if (incomingBufferPosition + len >= incomingBuffer.length) {
-        //        swapBuffers
-        sendBuffer(incomingBuffer, incomingBufferPosition)
-        incomingBufferPosition = 0
+        swapBuffers(false)
+      }
+      if (len > incomingBuffer.length) {
+        throw new NotImplementedError("Value larger than loader buffer not allowed by this implementation")
       }
       ByteUtils.copy(view.array, view.offset, incomingBuffer, incomingBufferPosition, len)
       incomingBufferPosition += len
       c += 1
     }
-
   }
 
-  def finish: Long = {
-    //    lock.lock
-    //    try {
-    //      finished = true
-    //      swapBuffers
-    //      flushOutgoingBuffer
-    //      pipe.flush
-    //      pipe.finishOutput
-    //    } finally {
-    //      lock.unlock
-    //    }
-    sendBuffer(incomingBuffer, incomingBufferPosition)
-    pipe.flush
-    pipe.finishOutput
-    val loadedCount: Int = pipe.readInt
-    pipe.close
-    loadedCount
+  def finish = swapBuffers(true)
+
+  private def swapBuffers(finished: Boolean) = {
+    synchronized {
+      while (outgoingBufferLimit > 0) {
+        wait
+      }
+      val swapBuffer = outgoingBuffer
+      outgoingBuffer = incomingBuffer
+      outgoingBufferLimit = incomingBufferPosition
+      incomingBuffer = if (finished) null else swapBuffer
+      incomingBufferPosition = if (finished) -1 else 0
+      notify
+    }
   }
-
-  //  private def flushOutgoingBuffer = {
-  //    lock.lock
-  //    try {
-  //      if (outgoingBufferLimit > 0) {
-  //        pipe.getOutputStream.write(outgoingBuffer, 0, outgoingBufferLimit)
-  //        outgoingBufferLimit = 0
-  //      }
-  //    } finally {
-  //      lock.unlock
-  //    }
-  //  }
-
-  //  private def swapBuffers = {
-  //    lock.lock
-  //    try {
-  //      val swapBuffer = outgoingBuffer
-  //      outgoingBuffer = incomingBuffer
-  //      outgoingBufferLimit = incomingBufferPosition
-  //      incomingBuffer = swapBuffer
-  //      incomingBufferPosition = 0
-  //      lock.synchronized {
-  //        lock.notify
-  //      }
-  //    } finally {
-  //      lock.unlock
-  //    }
-  //  }
 
   override def run = {
-    //    while (!finished) {
-    //      if (outgoingBufferLimit > 0) {
-    //        flushOutgoingBuffer
-    //      } else lock.synchronized {
-    //        lock.wait
-    //      }
-    //    }
+    do {
+      synchronized {
+        if (outgoingBufferLimit > 0) {
+          pipe.getOutputStream.write(outgoingBuffer, 0, outgoingBufferLimit)
+          outgoingBufferLimit = 0
+          notify
+        } else {
+          wait
+        }
+      }
+    } while (incomingBufferPosition >= 0 || outgoingBufferLimit > 0)
+
+    pipe.flush
+    pipe.finishOutput
+  }
+
+  def ackLoadedCount: Long = {
+    val loadedCount: Int = pipe.readInt
+    //    System.err.println("ack " + loadedCount)
+    pipe.close
+    loadedCount
   }
 
 }
