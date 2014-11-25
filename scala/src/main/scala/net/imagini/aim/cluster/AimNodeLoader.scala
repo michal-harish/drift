@@ -24,8 +24,7 @@ import java.util.concurrent.locks.ReentrantLock
 class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: String) {
   val log = Logger[this.type]
   val totalNodes = manager.expectedNumNodes
-  val schema = manager.getSchema(keyspace, table)
-  val keyType = schema.get(0)
+  val descriptor = manager.getDescriptor(keyspace, table)
   val workers = manager.getNodeConnectors.map(c ⇒ c._1 -> new AimNodeLoaderWorker(c._1, keyspace, table, c._2)).toMap
   //val executor = Executors.newFixedThreadPool(workers.size)
   //workers.values.foreach(executor.submit(_))
@@ -33,11 +32,11 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
   def loadUnparsedStream(in: InputStream, separator: Char): Long = {
     try {
       val csv = new CSVStreamParser(in, separator)
-      val values: Array[String] = new Array[String](schema.size)
+      val values: Array[String] = new Array[String](descriptor.schema.size)
       val totalNodes = manager.expectedNumNodes
       while (!manager.clusterIsSuspended) {
         var f = 0;
-        while (f < schema.size) {
+        while (f < descriptor.schema.size) {
           values(f) = csv.nextValue
           f += 1
         }
@@ -61,12 +60,12 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
   def insert(record: String*) {
     try {
       var f = 0
-      val recordView = new Array[View](schema.size)
-      while (f < schema.size) {
-        recordView(f) = new View(schema.get(f).convert(record(f)))
+      val recordView = new Array[View](descriptor.schema.size)
+      while (f < descriptor.schema.size) {
+        recordView(f) = new View(descriptor.schema.get(f).convert(record(f)))
         f += 1
       }
-      val targetNode = keyType.partition(recordView(0), totalNodes) + 1
+      val targetNode = descriptor.keyType.partition(recordView(0), totalNodes) + 1
       workers(targetNode).process(recordView)
     } catch {
       case e: NumberFormatException ⇒ log.warn(e)
@@ -74,7 +73,7 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
   }
 
   def insert(record: Array[View]) {
-    val targetNode = keyType.partition(record(0), totalNodes) + 1
+    val targetNode = descriptor.keyType.partition(record(0), totalNodes) + 1
     workers(targetNode).process(record)
   }
 
