@@ -60,9 +60,9 @@ class AimRegion(
   }
 
   def loadRecord(segment: AimSegment, in: InputStream): AimSegment = {
-//    val theSegment = checkSegment(segment, 0)
-//    theSegment.loadRecord(in)
-//    return theSegment
+    //    val theSegment = checkSegment(segment, 0)
+    //    theSegment.loadRecord(in)
+    //    return theSegment
     val record = new Array[Array[Byte]](schema.size)
     var c = 0; while (c < schema.size) {
       record(c) = StreamUtils.read(in, schema.dataType(c))
@@ -79,28 +79,25 @@ class AimRegion(
         segment.close
         if (segment.getCompressedSize > 0) {
           val index = numSegments.getAndIncrement
-          segments += segment
+          compactionLock.synchronized {
+            segments += segment
+          }
           Some(index)
         } else {
           None
         }
       }
     }
-    compactionLock.lock
-    try {
+    compactionLock.synchronized {
       compactionQueue.enqueue(compactionExecutor.submit(callable))
-    } finally {
-      compactionLock.unlock
     }
   }
 
   def compact = {
-    compactionLock.lock
-    try {
-      compactionQueue.take(compactionQueue.size).foreach(future ⇒ future.get) //TODO log.debug compatction info
-    } finally {
-      compactionLock.unlock
-    }
+    compactionQueue.take(compactionQueue.size).foreach(future ⇒ {
+      val segmentIndex = future.get
+      //TODO log.debug compatction info
+    })
   }
 
   def appendRecord(segment: AimSegment, record: Array[Array[Byte]]): AimSegment = {
