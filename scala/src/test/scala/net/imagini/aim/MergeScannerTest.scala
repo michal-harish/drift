@@ -30,6 +30,7 @@ class MergeScannerTest extends FlatSpec with Matchers {
     s2.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.music.com}")
 
     region.add(s1)
+    region.compact
     region.add(s2)
     region.compact
 
