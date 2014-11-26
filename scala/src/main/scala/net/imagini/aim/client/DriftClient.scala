@@ -84,11 +84,11 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
       reconnect
     }
     try {
-        pipe.write(query).flush
-        prepareResponse(pipe)
-        schema
+      pipe.write(query).flush
+      prepareResponse(pipe)
+      schema
     } catch {
-      case e: IOException => {
+      case e: IOException ⇒ {
         close
         throw e
       }
@@ -125,7 +125,7 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
     if (schema == None) {
       throw new IllegalStateException
     } else {
-      next = Some(schema.get.fields.map(field ⇒ pipe.read(field.getDataType)))
+      next = Some(schema.get.fields.map(field ⇒ pipe.read(field)))
     }
   }
 
@@ -154,7 +154,7 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
   }
 
   def printResult = {
-    val len: Array[Int] = resultSchema.names.map(n ⇒ (math.max(n.length, resultSchema.dataType(n).getLen) / 4 + 1) * 4 + 1).toArray
+    val len: Array[Int] = resultSchema.names.map(n ⇒ (math.max(n.length, resultSchema.field(n).getLen) / 4 + 1) * 4 + 1).toArray
     var printedHeader = false
     while (hasNext) {
       val line = (0 to len.length - 1, fetchRecordStrings).zipped.map((i, v) ⇒ {
@@ -178,8 +178,12 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
     if (schema == None) {
       throw new EOFException
     } else {
-      (schema.get.fields, fetchRecord).zipped.map((t, a) ⇒ t.convert(a))
+      (schema.get.fields, fetchRecord).zipped.map((t, a) ⇒ {
+        System.err.println(t)
+        t.convert(a)
+      })
     }
+
   }
 
   def fetchRecord: Array[Array[Byte]] = {
@@ -208,9 +212,9 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
       case "ERROR" ⇒ {
         throw new AimQueryException(pipe.read)
       }
-      case any:String ⇒ {
+      case any: String ⇒ {
         reconnect
-        throw new IOException("Session stream is curroupt, closing.. `" + any + "`" )
+        throw new IOException("Session stream is curroupt, closing.. `" + any + "`")
       }
     }
   }

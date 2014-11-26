@@ -14,7 +14,7 @@ class MergeScannerTest extends FlatSpec with Matchers {
 
   "ScannerMerge " should "produce same result as stream merge" in {
     val descriptor = new AimTableDescriptor(
-        AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),column(STRING),value(STRING)"),
+        AimSchema.fromString("user_uid(UUID),column(STRING),value(STRING)"),
         1000,
         classOf[BlockStorageMEMLZ4],
         classOf[AimSegmentQuickSort])

@@ -14,9 +14,9 @@ import net.imagini.aim.types.AimTableDescriptor
 class Usecase2KeyspaceImport extends FlatSpec with Matchers {
   "Usecase2-keyspace import " should "be possible to do by scan transformation" in {
 
-    val schemaATPageviews = AimSchema.fromString("at_id(STRING), url(STRING), timestamp(TIME:LONG)")
-    val schemaATSyncs = AimSchema.fromString("at_id(STRING), user_uid(UUID:BYTEARRAY[16])")
-    val schemaVDNAPageviews = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
+    val schemaATPageviews = AimSchema.fromString("at_id(STRING), url(STRING), timestamp(TIME)")
+    val schemaATSyncs = AimSchema.fromString("at_id(STRING), user_uid(UUID)")
+    val schemaVDNAPageviews = AimSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)")
     val pageviews = new AimTableDescriptor(schemaVDNAPageviews, 1000, classOf[BlockStorageMEMLZ4], classOf[AimSegmentQuickSort])
     val syncs = new AimTableDescriptor(schemaATSyncs, 1000, classOf[BlockStorageMEMLZ4], classOf[AimSegmentQuickSort])
     val view = new AimTableDescriptor(schemaATPageviews, 1000, classOf[BlockStorageMEMLZ4], classOf[AimSegmentQuickSort])

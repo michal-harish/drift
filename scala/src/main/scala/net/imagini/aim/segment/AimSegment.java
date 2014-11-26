@@ -137,7 +137,7 @@ abstract public class AimSegment {
                             record[col].array,
                             record[col].offset,
                             record[col].offset
-                                    + schema.get(col).getDataType()
+                                    + schema.get(col)
                                             .sizeOf(record[col]));
         }
         return appendRecord(byteRecord);

@@ -5,7 +5,7 @@ import java.util.LinkedHashMap
 import scala.Array.canBuildFrom
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.immutable.ListMap
-import net.imagini.aim.tools.AbstractScanner
+import net.imagini.aim.segment.AbstractScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimType
 import net.imagini.aim.types.SortOrder
@@ -23,7 +23,6 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
   override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](
     ListMap((leftSelect ++ rightSelect): _*).asJava))
   override val keyType: AimType = left.keyType
-  val keyDataType = keyType.getDataType
   private val leftColumnIndex = schema.names.map(f ⇒ if (left.schema.has(f)) left.schema.get(f) else -1)
   private val rightColumnIndex = schema.names.map(f ⇒ if (right.schema.has(f)) right.schema.get(f) else -1)
   private val sortOrder = SortOrder.ASC
@@ -55,7 +54,7 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
     }
 
     if (rightHasData && leftHasData) {
-      currentLeft = TypeUtils.compare(left.selectKey, right.selectKey, keyDataType) > 0 ^ sortOrder.equals(SortOrder.ASC)
+      currentLeft = TypeUtils.compare(left.selectKey, right.selectKey, keyType) > 0 ^ sortOrder.equals(SortOrder.ASC)
     } else if (rightHasData ^ leftHasData) {
       currentLeft = leftHasData
     } else {

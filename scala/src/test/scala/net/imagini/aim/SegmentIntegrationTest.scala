@@ -13,13 +13,13 @@ import net.imagini.aim.region.AimRegion
 import net.imagini.aim.cluster.StreamUtils
 import net.imagini.aim.cluster.ScannerInputStream
 import net.imagini.aim.segment.MergeScanner
-import net.imagini.aim.tools.CountScanner
+import net.imagini.aim.segment.CountScanner
 import net.imagini.aim.types.AimTableDescriptor
 
 class SegmentIntegration extends FlatSpec with Matchers {
 
   "Unsorted segemnt select" should "give an input stream with the same order of records" in {
-    val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
+    val schema = AimSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
     val d = new AimTableDescriptor(schema, 10000, classOf[BlockStorageMEMLZ4], classOf[AimSegmentUnsorted])
     val p1 = new AimRegion("vdna.events", d)
     val s1 = p1.newSegment
@@ -34,9 +34,9 @@ class SegmentIntegration extends FlatSpec with Matchers {
 
     val merge = new MergeScanner("*", "column='a'", p1.segments)
     val in: InputStream = new ScannerInputStream(merge)
-    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
-    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
-    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
+    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
+    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
+    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
     in.close
 
     val mergeCount = new MergeScanner("*", "column='a'", p1.segments)
@@ -44,7 +44,7 @@ class SegmentIntegration extends FlatSpec with Matchers {
   }
 
   "QuickSorted ASC segemnt select" should "give an input stream with the correct order" in {
-    val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
+    val schema = AimSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
     val d = new AimTableDescriptor(schema, 10000, classOf[BlockStorageMEMLZ4], classOf[AimSegmentQuickSort])
     val p1 = new AimRegion("vdna.events", d)
     val s1 = p1.newSegment
@@ -57,9 +57,9 @@ class SegmentIntegration extends FlatSpec with Matchers {
     count.count should be(3)
     val merge = new MergeScanner("*", "column='a'", p1.segments)
     val in: InputStream = new ScannerInputStream(merge)
-    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
-    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
-    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t.getDataType))).foldLeft("")(_ + _) should be("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
+    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
+    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
+    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
     in.close
 
     val mergeCount = new MergeScanner("*", "column='a'", p1.segments)
@@ -68,7 +68,7 @@ class SegmentIntegration extends FlatSpec with Matchers {
   }
 
   //  "QuickSorted DESC  segemnt select" should "give an input stream with the correct order" in {
-  //    val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),timestamp(LONG),column(STRING),value(STRING)")
+  //    val schema = AimSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
   //    val s1 = new AimSegmentQuickSort(schema, "user_uid", SortOrder.DESC, classOf[BlockStorageMEMLZ4])
   //    s1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103","1413143748041","a","6571796330792743131")
   //    s1.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103","1413143748042","a","6571796330792743131")

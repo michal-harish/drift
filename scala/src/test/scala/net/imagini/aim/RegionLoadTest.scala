@@ -47,7 +47,7 @@ class RegionLoadTest extends FlatSpec with Matchers {
   }
 
   private def runLoadTestUnsorted(numSegments: Int, storageType: Class[_ <: BlockStorage]) {
-    val schema = AimSchema.fromString("uid(UUID:BYTEARRAY[16]),i(INT),s(STRING)")
+    val schema = AimSchema.fromString("uid(UUID),i(INT),s(STRING)")
     val recordSize = 16 + 4 + 14
     val recordsPerSegment = 3000
     val segmentSize = recordSize * recordsPerSegment
@@ -92,7 +92,7 @@ class RegionLoadTest extends FlatSpec with Matchers {
   }
 
   private def runLoadTestQuickSorted(numSegments: Int, storageType: Class[_ <: BlockStorage]) {
-    val schema = AimSchema.fromString("uid(UUID:BYTEARRAY[16]),i(INT),s(STRING)")
+    val schema = AimSchema.fromString("uid(UUID),i(INT),s(STRING)")
     val recordSize = 16 + 4 + 14
     val recordsPerSegment = 3000
     val segmentSize = recordSize * recordsPerSegment

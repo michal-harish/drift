@@ -50,7 +50,7 @@ class QueryParserTest extends FlatSpec with Matchers {
 
   private def pageviews: AimRegion = {
     val pageviewsDescriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)"),
+      AimSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)"),
       10000,
       classOf[BlockStorageMEMLZ4],
       classOf[AimSegmentQuickSort])
@@ -73,7 +73,7 @@ class QueryParserTest extends FlatSpec with Matchers {
   private def conversions: AimRegion = {
     //CONVERSIONS //TODO ttl = 10
     val conversionsDescriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)"),
+      AimSchema.fromString("user_uid(UUID),conversion(STRING),url(STRING),timestamp(TIME)"),
       1000,
       classOf[BlockStorageMEMLZ4],
       classOf[AimSegmentQuickSort])
@@ -89,7 +89,7 @@ class QueryParserTest extends FlatSpec with Matchers {
   private def flags: AimRegion = {
     //USERFLAGS //TODO ttl = -1
     val userFlagsDescriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),flag(STRING),value(BOOL)"),
+      AimSchema.fromString("user_uid(UUID),flag(STRING),value(BOOL)"),
       1000,
       classOf[BlockStorageMEMLZ4],
       classOf[AimSegmentQuickSort])

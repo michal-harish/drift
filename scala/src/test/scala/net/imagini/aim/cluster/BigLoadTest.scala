@@ -115,7 +115,7 @@ class BigLoadTest extends FlatSpec with Matchers {
     val streamScanner = new ScannerInputStream(mergeScanner)
     try {
       while (true) {
-        val next: String = mergeScanner.schema.fields.map(field ⇒ field.convert(StreamUtils.read(streamScanner, field.getDataType))).mkString(" ")
+        val next: String = mergeScanner.schema.fields.map(field ⇒ field.convert(StreamUtils.read(streamScanner, field))).mkString(" ")
         filtered += 1
       }
     } catch {

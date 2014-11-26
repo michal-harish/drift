@@ -1,78 +1,74 @@
 package net.imagini.aim.types;
 
-import java.util.Arrays;
-import java.util.UUID;
-
 import net.imagini.aim.utils.ByteUtils;
 import net.imagini.aim.utils.View;
 
-public class AimTypeUUID extends AimTypeAbstract {
+public class AimTypeUUID extends AimTypeBYTEARRAY {
 
-    private AimDataType dataType;
-    public AimTypeUUID(AimDataType dataType) {
-        if (!dataType.equals(Aim.BYTEARRAY(16))) {
-            throw new IllegalArgumentException("Unsupported data type `"+dataType+"` for type AimTypeUUID");
-        }
-        this.dataType = dataType;
+    public AimTypeUUID() {
+        super(16);
     }
-    @Override public String toString() { return "UUID:"+dataType.toString(); }
-    @Override public AimDataType getDataType() {
-        return dataType;
+
+    @Override public String toString() { 
+        return "UUID"; 
     }
 
     @Override
     public int convert(String value,  byte[] dest, int destOffset) {
-        try {
-            UUID uuid = UUID.fromString(value);
-            ByteUtils.putLongValue(uuid.getMostSignificantBits(), dest, destOffset);
-            ByteUtils.putLongValue(uuid.getLeastSignificantBits(), dest, destOffset + 8);
-            return 16;
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e);
-        }
-
+        String[] components = value.split("-");
+        if (components.length != 5)
+            throw new IllegalArgumentException("Invalid UUID string: "+value);
+        for (int i=0; i<5; i++)
+            components[i] = "0x"+components[i];
+        long mostSigBits = Long.decode(components[0]).longValue();
+        mostSigBits <<= 16;
+        mostSigBits |= Long.decode(components[1]).longValue();
+        mostSigBits <<= 16;
+        mostSigBits |= Long.decode(components[2]).longValue();
+        long leastSigBits = Long.decode(components[3]).longValue();
+        leastSigBits <<= 48;
+        leastSigBits |= Long.decode(components[4]).longValue();
+        ByteUtils.putLongValue(mostSigBits, dest, destOffset);
+        ByteUtils.putLongValue(leastSigBits, dest, destOffset + 8);
+        return 16;
     }
 
     @Override public byte[] convert(String value) {
-        try {
-            String[] components = value.split("-");
-            if (components.length != 5)
-                throw new IllegalArgumentException("Invalid UUID string: "+value);
-            for (int i=0; i<5; i++)
-                components[i] = "0x"+components[i];
-            long mostSigBits = Long.decode(components[0]).longValue();
-            mostSigBits <<= 16;
-            mostSigBits |= Long.decode(components[1]).longValue();
-            mostSigBits <<= 16;
-            mostSigBits |= Long.decode(components[2]).longValue();
-            long leastSigBits = Long.decode(components[3]).longValue();
-            leastSigBits <<= 48;
-            leastSigBits |= Long.decode(components[4]).longValue();
-            byte[] b = new byte[16];
-            ByteUtils.putLongValue(mostSigBits, b, 0);
-            ByteUtils.putLongValue(leastSigBits, b, 8);
-            return b;
-        } catch (Exception e) {
-            byte[] result = new byte[16];
-            Arrays.fill(result, (byte)0);
-            return result;
-        }
-
+        byte[] b = new byte[16];
+        convert(value, b, 0);
+        return b;
     }
 
     @Override public String convert(byte[] value) {
-        return new UUID(ByteUtils.asLongValue(value,0) , ByteUtils.asLongValue(value,8)).toString();
+        long mostSigBits = ByteUtils.asLongValue(value,0);
+        long leastSigBits = ByteUtils.asLongValue(value,8);
+        return UUIDToString(mostSigBits, leastSigBits);
     }
 
     @Override public String asString(View view) {
-        return new UUID(ByteUtils.asLongValue(view.array, view.offset) , ByteUtils.asLongValue(view.array, view.offset+8)).toString();
+        return UUIDToString(ByteUtils.asLongValue(view.array, view.offset) , ByteUtils.asLongValue(view.array, view.offset+8));
     }
+
     @Override public String escape(String value) {
         return "'"+value+"'";
     }
+
     @Override public int partition(View view, int numPartitions) {
         long hilo = ByteUtils.asLongValue(view.array, view.offset) ^ ByteUtils.asLongValue(view.array, view.offset+8);
         int hash = ((int)(hilo >> 32)) ^ (int) hilo;
         return (hash == Integer.MIN_VALUE ? Integer.MAX_VALUE : Math.abs(hash)) % numPartitions;
     }
+
+    private static String UUIDToString(long mostSigBits, long leastSigBits) {
+        return (digits(mostSigBits >> 32, 8) + "-" +
+                digits(mostSigBits >> 16, 4) + "-" +
+                digits(mostSigBits, 4) + "-" +
+                digits(leastSigBits >> 48, 4) + "-" +
+                digits(leastSigBits, 12));
+    }
+    private static String digits(long val, int digits) {
+        long hi = 1L << (digits * 4);
+        return Long.toHexString(hi | (val & (hi - 1))).substring(1);
+    }
+
 }

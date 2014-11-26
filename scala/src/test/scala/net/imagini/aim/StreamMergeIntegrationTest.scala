@@ -20,10 +20,10 @@ import net.imagini.aim.types.AimTableDescriptor
 class StreamMergeIntegrationTest extends FlatSpec with Matchers {
 
   private def readRecord(schema: AimSchema, stream: InputStream) = {
-    schema.fields.map(t ⇒ { t.convert(StreamUtils.read(stream, t.getDataType)) }).foldLeft("")(_ + _ + " ")
+    schema.fields.map(t ⇒ { t.convert(StreamUtils.read(stream, t)) }).foldLeft("")(_ + _ + " ")
   }
   "2 sorted segments" should "yield correct groups when merge-sorted" in {
-    val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),column(STRING),value(STRING)")
+    val schema = AimSchema.fromString("user_uid(UUID),column(STRING),value(STRING)")
     val d = new AimTableDescriptor(schema, 10000, classOf[BlockStorageMEMLZ4], classOf[AimSegmentQuickSort])
     val p1 = new AimRegion("vdna.events", d)
     val s1 = p1.newSegment

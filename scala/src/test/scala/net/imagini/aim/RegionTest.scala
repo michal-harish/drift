@@ -13,7 +13,7 @@ import net.imagini.aim.types.AimTableDescriptor
 class RegionTest extends FlatSpec with Matchers {
   "Stat region " should " behave as a normal table" in {
     val descriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),column(STRING),value(STRING)"),
+      AimSchema.fromString("user_uid(UUID),column(STRING),value(STRING)"),
       1000,
       classOf[BlockStorageMEMLZ4],
       classOf[AimSegmentQuickSort])
@@ -33,7 +33,7 @@ class RegionTest extends FlatSpec with Matchers {
 
     //USERFLAGS //TODO ttl = -1
     val userFlags = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),flag(STRING),value(BOOL)"),
+      AimSchema.fromString("user_uid(UUID),flag(STRING),value(BOOL)"),
       1000,
       classOf[BlockStorageMEMLZ4],
       classOf[AimSegmentQuickSort])

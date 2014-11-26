@@ -6,7 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.types.AimType;
 import net.imagini.aim.utils.ByteUtils;
 import net.imagini.aim.utils.View;
 
@@ -37,7 +37,7 @@ public class StreamUtils {
         return size;
     }
 
-    public static int write(AimDataType type, ByteBuffer value, OutputStream out)
+    public static int write(AimType type, ByteBuffer value, OutputStream out)
             throws IOException {
         // System.err.println("WRITE TYPE FROM BUFFER " + type + " " +
         // type.asString(value));
@@ -51,7 +51,7 @@ public class StreamUtils {
         return size;
     }
 
-    public static int write(AimDataType type, byte[] value, OutputStream out)
+    public static int write(AimType type, byte[] value, OutputStream out)
             throws IOException {
         int size = type.getLen();
         if (size == -1) {
@@ -85,7 +85,7 @@ public class StreamUtils {
 
     }
 
-    static public int readSize(InputStream in, AimDataType type)
+    static public int readSize(InputStream in, AimType type)
             throws IOException {
         int size = type.getLen();
         if (size == -1) {
@@ -95,7 +95,7 @@ public class StreamUtils {
         }
     }
 
-    static public byte[] read(InputStream in, AimDataType type)
+    static public byte[] read(InputStream in, AimType type)
             throws IOException {
         int size = readSize(in, type);
         byte[] result;
@@ -112,7 +112,7 @@ public class StreamUtils {
         return result;
     }
 
-    static public int read(InputStream in, AimDataType type, ByteBuffer buf)
+    static public int read(InputStream in, AimType type, ByteBuffer buf)
             throws IOException {
         // System.err.println("READ TYPE INTO Buffer " + type);
         int size = type.getLen();
@@ -124,7 +124,7 @@ public class StreamUtils {
         return size;
     }
 
-    static public int read(InputStream in, AimDataType type, View view)
+    static public int read(InputStream in, AimType type, View view)
             throws IOException {
         // System.err.println("READ TYPE INTO Buffer " + type);
         int size = type.getLen();
@@ -141,7 +141,7 @@ public class StreamUtils {
             return size;
         }
     }
-    static public long skip(InputStream in, AimDataType type)
+    static public long skip(InputStream in, AimType type)
             throws IOException {
         // System.err.println("SKIP TYPE " + type);
         int skipLen = readSize(in, type);

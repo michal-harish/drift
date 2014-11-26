@@ -2,7 +2,7 @@ package net.imagini.aim.cluster
 
 import java.io.InputStream
 import java.util.concurrent.atomic.AtomicInteger
-import net.imagini.aim.tools.AbstractScanner
+import net.imagini.aim.segment.AbstractScanner
 import net.imagini.aim.utils.View
 
 /**
@@ -52,7 +52,7 @@ final class ScannerInputStream(val scanner: AbstractScanner) extends InputStream
     } else {
       column = row(col)
       offset = 0
-      length = scanner.schema.get(col).getDataType.sizeOf(column)
+      length = scanner.schema.get(col).sizeOf(column)
       true
     }
   }

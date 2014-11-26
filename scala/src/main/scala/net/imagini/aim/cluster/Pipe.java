@@ -9,7 +9,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import net.imagini.aim.types.Aim;
-import net.imagini.aim.types.AimDataType;
+import net.imagini.aim.types.AimType;
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
 import net.jpountz.lz4.LZ4Factory;
@@ -124,7 +124,7 @@ public class Pipe {
         if (inputPipe != null)
             throw new IllegalStateException();
         String value = Aim.STRING.convert(StreamUtils.read(
-                socket.getInputStream(), (Aim.STRING)));
+                socket.getInputStream(), Aim.STRING));
         return value;
     }
 
@@ -159,19 +159,19 @@ public class Pipe {
         return this;
     }
 
-    public int write(AimDataType type, ByteBuffer value) throws IOException {
+    public int write(AimType type, ByteBuffer value) throws IOException {
         if (outputPipe == null)
             outputPipe = createOutputPipe(socket.getOutputStream(), compression);
         return StreamUtils.write(type, value, outputPipe);
     }
 
-    public int write(AimDataType type, byte[] value) throws IOException {
+    public int write(AimType type, byte[] value) throws IOException {
         if (outputPipe == null)
             outputPipe = createOutputPipe(socket.getOutputStream(), compression);
         return StreamUtils.write(type, value, outputPipe);
     }
 
-    public int readInto(AimDataType type, ByteBuffer buf) throws IOException {
+    public int readInto(AimType type, ByteBuffer buf) throws IOException {
         if (inputPipe == null)
             inputPipe = createInputPipe(socket.getInputStream(), compression);
         return StreamUtils.read(inputPipe, type, buf);
@@ -189,13 +189,13 @@ public class Pipe {
         return StreamUtils.readInt(inputPipe);
     }
 
-    public byte[] read(AimDataType type) throws IOException {
+    public byte[] read(AimType type) throws IOException {
         if (inputPipe == null)
             inputPipe = createInputPipe(socket.getInputStream(), compression);
         return StreamUtils.read(inputPipe, type);
     }
 
-    public void skip(AimDataType type) throws IOException {
+    public void skip(AimType type) throws IOException {
         if (inputPipe == null)
             inputPipe = createInputPipe(socket.getInputStream(), compression);
         StreamUtils.skip(inputPipe, type);

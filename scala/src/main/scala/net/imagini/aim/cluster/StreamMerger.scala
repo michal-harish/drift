@@ -65,7 +65,7 @@ class StreamMerger(val schema: AimSchema, val queueSize: Int, val inputStreams: 
     if (!fetcher.closed) fetcher.take match {
       case None ⇒ {}
       case Some(record) ⇒ {
-        val byteKey = new ByteKey(record(0), 0, TypeUtils.sizeOf(schema.dataType(0), record(0)), f)
+        val byteKey = new ByteKey(record(0), 0, TypeUtils.sizeOf(schema.get(0), record(0)), f)
         /**
          * FIXME assuming that the first field of schema is always the key - e.g. whatever provides
          * the underlying input stream must provide or transform the first field as the key
@@ -101,7 +101,6 @@ class StreamMerger(val schema: AimSchema, val queueSize: Int, val inputStreams: 
 }
 
 class Fetcher(val schema: AimSchema, val in: InputStream, val executor: ExecutorService, val queueSize: Int) extends Runnable {
-  val keyDataType = schema.dataType(0)
   @volatile private var hasMoreData = true
   def closed: Boolean = !hasMoreData && ready.size == 0
   private val ready = new LinkedBlockingQueue[Option[Array[Array[Byte]]]](queueSize)
@@ -110,7 +109,7 @@ class Fetcher(val schema: AimSchema, val in: InputStream, val executor: Executor
   override def run = {
     while (hasMoreData) try {
       //TODO optimise as buffered read instead of byte allocation for each read 
-      val record = schema.fields.map(t ⇒ StreamUtils.read(in, t.getDataType))
+      val record = schema.fields.map(t ⇒ StreamUtils.read(in, t))
       ready.put(Some(record))
     } catch {
       case e: EOFException ⇒ hasMoreData = false; ready.offer(None)

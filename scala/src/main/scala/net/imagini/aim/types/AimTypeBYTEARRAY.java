@@ -5,13 +5,21 @@ import java.util.Arrays;
 import net.imagini.aim.utils.ByteUtils;
 import net.imagini.aim.utils.View;
 
-public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
+public class AimTypeBYTEARRAY extends AimType {
     final public int size;
     public AimTypeBYTEARRAY(int size) {  this.size = size; }
-    @Override public int getLen() { return size; }
-    @Override public int sizeOf(View view) { return size; }
-    @Override public String toString() { return "BYTEARRAY["+size+"]"; }
-    @Override public String escape(String value) { return "'" + value +"'"; }
+    @Override public int getLen() { 
+        return size; 
+    }
+    @Override public int sizeOf(View view) { 
+        return size; 
+    }
+    @Override public String toString() { 
+        return "BYTEARRAY["+size+"]"; 
+    }
+    @Override public String escape(String value) { 
+        return "'" + value +"'"; 
+    }
 
     @Override public boolean equals(Object object) {
         return object instanceof AimTypeBYTEARRAY && this.size == ((AimTypeBYTEARRAY)object).getLen();
@@ -40,10 +48,6 @@ public class AimTypeBYTEARRAY extends AimTypeAbstract implements AimDataType {
 
     @Override public String convert(byte[] value) {
         return new String(value,0,size);
-    }
-
-    @Override final public AimDataType getDataType() {
-        return this;
     }
 
 }

@@ -1,6 +1,5 @@
 package net.imagini.aim.segment
 
-import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.View
 import net.imagini.aim.types.AimType
@@ -23,7 +22,6 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
   private var scanViews = scanColumnIndex.map(c ⇒ segment.getBlockStorage(c).toView).toArray
   private val scanKeyColumnIndex: Int = scanSchema.get(keyField)
   override val keyType: AimType = scanSchema.get(scanKeyColumnIndex)
-  private val keyDataType = scanSchema.dataType(scanKeyColumnIndex)
   rowFilter.updateFormula(scanSchema.names)
   var eof = false
   var initialized = false
@@ -52,7 +50,7 @@ class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, 
         if (initialized) {
           view.skip
         }
-        if (!view.available(scanSchema.dataType(i).getLen)) {
+        if (!view.available(scanSchema.get(i).getLen)) {
           eof = true
         }
         i += 1

@@ -6,7 +6,7 @@ import net.imagini.aim.types.AimType
 import scala.collection.JavaConverters._
 import scala.collection.immutable.ListMap
 import net.imagini.aim.utils.ByteUtils
-import net.imagini.aim.tools.AbstractScanner
+import net.imagini.aim.segment.AbstractScanner
 import java.io.EOFException
 import net.imagini.aim.utils.ByteUtils
 import net.imagini.aim.utils.View
@@ -19,7 +19,6 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
   override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](
     ListMap((leftSelect ++ rightSelect): _*).asJava))
   override val keyType: AimType = left.keyType
-  val keyDataType = keyType.getDataType
 
   private var selectedKey: View = null
   private val selectBuffer: Array[View] = new Array[View](schema.size)
@@ -39,13 +38,13 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
     if (currentLeft) eof = !left.next else eof = !right.next
     if (!eof) {
       if (currentKey != None) {
-        if (currentLeft && !TypeUtils.equals(left.selectKey, currentKey.get, keyDataType)) currentLeft = false
-        if (!currentLeft && !TypeUtils.equals(right.selectKey, currentKey.get, keyDataType)) currentKey = None
+        if (currentLeft && !TypeUtils.equals(left.selectKey, currentKey.get, keyType)) currentLeft = false
+        if (!currentLeft && !TypeUtils.equals(right.selectKey, currentKey.get, keyType)) currentKey = None
       }
       if (currentKey == None) {
         var cmp: Int = -1
         do {
-          cmp = TypeUtils.compare(left.selectKey, right.selectKey, keyDataType)
+          cmp = TypeUtils.compare(left.selectKey, right.selectKey, keyType)
           if (cmp < 0) eof = !left.next
           else if (cmp > 0) eof = !right.next
         } while (!eof && cmp != 0)

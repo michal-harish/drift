@@ -1,4 +1,4 @@
-package net.imagini.aim.tools
+package net.imagini.aim.segment
 
 import scala.Array.canBuildFrom
 import net.imagini.aim.types.AimSchema

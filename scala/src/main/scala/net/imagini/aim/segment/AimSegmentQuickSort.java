@@ -9,8 +9,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import net.imagini.aim.types.AimDataType;
 import net.imagini.aim.types.AimSchema;
+import net.imagini.aim.types.AimType;
 import net.imagini.aim.types.SortOrder;
 import net.imagini.aim.types.TypeUtils;
 import net.imagini.aim.utils.ByteKey;
@@ -26,21 +26,21 @@ public class AimSegmentQuickSort extends AimSegment {
     final private int sortColumn;
     private Map<ByteKey, List<byte[][]>> sortMap = new HashMap<>();
     private SortOrder sortOrder;
-    private AimDataType sortDataType;
+    private AimType sortType;
     private int recordedSize = 0;
 
     public AimSegmentQuickSort(AimSchema schema) {
         super(schema);
         this.sortColumn = 0;
         this.sortOrder = SortOrder.ASC;
-        this.sortDataType = schema.dataType(sortColumn);
+        this.sortType = schema.get(sortColumn);
     }
 
     @Override
     public AimSegment appendRecord(byte[][] record) throws IOException {
         try {
             checkWritable(true);
-            ByteKey sortValue = new ByteKey(record[0], 0, TypeUtils.sizeOf(sortDataType, record[0]), 0);
+            ByteKey sortValue = new ByteKey(record[0], 0, TypeUtils.sizeOf(sortType, record[0]), 0);
             if (sortValue != null) {
                 if (!sortMap.containsKey(sortValue)) {
                     sortMap.put(sortValue, new LinkedList<byte[][]>());

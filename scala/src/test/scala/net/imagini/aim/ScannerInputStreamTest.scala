@@ -17,10 +17,10 @@ import net.imagini.aim.utils.BlockStorageMEMLZ4
 
 class ScannerInputStreamTest extends FlatSpec with Matchers {
 
-  val schema = AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)")
+  val schema = AimSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)")
 
   private def readLine(in: InputStream) = {
-    schema.get(0).convert(StreamUtils.read(in, schema.get(0).getDataType)) + " " + schema.get(1).convert(StreamUtils.read(in, schema.get(1).getDataType))
+    schema.get(0).convert(StreamUtils.read(in, schema.get(0))) + " " + schema.get(1).convert(StreamUtils.read(in, schema.get(1)))
   }
 
   "Region select " should " use ScannerInputStream correctly" in {
@@ -44,7 +44,7 @@ class ScannerInputStreamTest extends FlatSpec with Matchers {
 
   "ScannerInputStream " should "be able to read can read MergeScanner byte by byte" in {
 
-    val schemaATSyncs = AimSchema.fromString("at_id(STRING), user_uid(UUID:BYTEARRAY[16])")
+    val schemaATSyncs = AimSchema.fromString("at_id(STRING), user_uid(UUID)")
     val dAtSyncs = new AimTableDescriptor(schemaATSyncs, 1000, classOf[BlockStorageMEMLZ4], classOf[AimSegmentQuickSort])
     val AS1 = new AimRegion("addthis.syncs", dAtSyncs)
     AS1.add(AS1.newSegment
@@ -63,7 +63,7 @@ class ScannerInputStreamTest extends FlatSpec with Matchers {
 
     val scanner2 = new MergeScanner("at_id", "*", AS1.segments)
 
-    val t = schemaATSyncs.field("at_id").getDataType
+    val t = schemaATSyncs.field("at_id")
     val scannerStream = new ScannerInputStream(scanner2)
     t.convert(StreamUtils.read(scannerStream, t)) should be("AT1234")
     t.convert(StreamUtils.read(scannerStream, t)) should be("AT5656")

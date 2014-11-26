@@ -15,7 +15,7 @@ import net.imagini.aim.types.AimTableDescriptor
 class EquiJoinScannerTest extends FlatSpec with Matchers {
   "Usecase2-keyspace import" should "should filter one region by co-partition from another table supllying flags" in {
     val AS = new AimTableDescriptor(
-        AimSchema.fromString("at_id(STRING), user_uid(UUID:BYTEARRAY[16])"), 
+        AimSchema.fromString("at_id(STRING), user_uid(UUID)"), 
         1000, 
         classOf[BlockStorageMEMLZ4], 
         classOf[AimSegmentQuickSort])
@@ -28,7 +28,7 @@ class EquiJoinScannerTest extends FlatSpec with Matchers {
     AS1.compact
 
     val AP = new AimTableDescriptor(
-        AimSchema.fromString("at_id(STRING), url(STRING), timestamp(TIME:LONG)"), 
+        AimSchema.fromString("at_id(STRING), url(STRING), timestamp(TIME)"), 
         1000, 
         classOf[BlockStorageMEMLZ4], 
         classOf[AimSegmentQuickSort])

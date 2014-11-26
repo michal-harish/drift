@@ -3,8 +3,8 @@ package net.imagini.aim.cluster
 import java.io.EOFException
 import java.io.IOException
 import java.net.SocketException
-import net.imagini.aim.tools.AbstractScanner
-import net.imagini.aim.tools.CountScanner
+import net.imagini.aim.segment.AbstractScanner
+import net.imagini.aim.segment.CountScanner
 import net.imagini.aim.types.Aim
 import net.imagini.aim.utils.Tokenizer
 import net.imagini.aim.types.AimQueryException

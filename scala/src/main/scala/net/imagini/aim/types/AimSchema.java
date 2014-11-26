@@ -19,20 +19,15 @@ public class AimSchema {
         LinkedHashMap<String, AimType> result = new LinkedHashMap<String, AimType>();
         for (int f = 0; f < dec.length; f++) {
             String name = String.valueOf(f + 1);
-            String function = null;
-            Integer length = null;
+            Integer arg = null;
             String type = dec[f].trim();
             if (type.contains("(")) {
                 name = type.substring(0, type.indexOf("("));
                 type = type.substring(type.indexOf("(") + 1, type.indexOf(")"));
             }
             type = type.toUpperCase();
-            if (type.contains(":")) {
-                function = type.split(":")[0];
-                type = type.split(":")[1];
-            }
             if (type.contains("[")) {
-                length = Integer.valueOf(type.substring(type.indexOf("[") + 1,
+                arg = Integer.valueOf(type.substring(type.indexOf("[") + 1,
                         type.indexOf("]")));
                 type = type.substring(0, type.indexOf("["));
             }
@@ -50,28 +45,22 @@ public class AimSchema {
                 result.put(name, Aim.LONG);
                 break;
             case "BYTEARRAY":
-                result.put(name, Aim.BYTEARRAY(length));
+                result.put(name, Aim.BYTEARRAY(arg));
                 break;
             case "STRING":
                 result.put(name, Aim.STRING);
                 break;
+            case "UUID":
+                result.put(name, Aim.UUID);
+                break;
+            case "IPV4":
+                result.put(name, Aim.IPV4);
+                break;
+            case "TIME":
+                result.put(name, Aim.TIME);
+                break;
             default:
                 throw new IllegalArgumentException("Unknown data type " + type);
-            }
-            if (function != null) {
-                switch (function) {
-                case "UUID":
-                    result.put(name, Aim.UUID(result.get(name).getDataType()));
-                    break;
-                case "IPV4":
-                    result.put(name, Aim.IPV4(result.get(name).getDataType()));
-                    break;
-                case "TIME":
-                    result.put(name, Aim.TIME(result.get(name).getDataType()));
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unknown type " + type);
-                }
             }
         }
         return new AimSchema(result);
@@ -109,7 +98,7 @@ public class AimSchema {
         String result ="";
         for(AimType t: def) {
             result +=t.asString(view);
-            view.offset += t.getDataType().sizeOf(view);
+            view.offset += t.sizeOf(view);
             if (t != def.get(size()-1)) result += separator;
         }
         view.offset = mark;
@@ -130,14 +119,6 @@ public class AimSchema {
 
     public AimType[] fields() {
         return def.toArray(new AimType[def.size()]);
-    }
-
-    public AimDataType dataType(int col) {
-        return def.get(col).getDataType();
-    }
-
-    public AimDataType dataType(String colName) {
-        return def.get(colIndex.get(colName)).getDataType();
     }
 
     public boolean has(String colName) {

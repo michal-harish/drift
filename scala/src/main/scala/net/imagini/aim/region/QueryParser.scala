@@ -2,11 +2,11 @@ package net.imagini.aim.region
 
 import scala.collection.mutable.Queue
 import net.imagini.aim.segment.MergeScanner
-import net.imagini.aim.tools.AbstractScanner
+import net.imagini.aim.segment.AbstractScanner
 import net.imagini.aim.segment.RowFilter
 import net.imagini.aim.utils.Tokenizer
 import net.imagini.aim.types.AimQueryException
-import net.imagini.aim.tools.CountScanner
+import net.imagini.aim.segment.CountScanner
 
 abstract class PFrame
 case class PCount(frame: PDataFrame) extends PFrame

@@ -7,7 +7,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import scala.collection.mutable.SynchronizedQueue
-import net.imagini.aim.tools.AbstractScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.types.SortOrder.ASC
@@ -32,7 +31,6 @@ class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, va
   private val scanColumnIndex: Array[Int] = schema.names.map(n ⇒ scanSchema.get(n))
   private val scanKeyColumnIndex: Int = scanSchema.get(keyField)
   override val keyType = scanSchema.get(scanKeyColumnIndex)
-  val keyDataType = keyType.getDataType
   rowFilter.updateFormula(scanSchema.names)
 
   private val sortOrder = SortOrder.ASC

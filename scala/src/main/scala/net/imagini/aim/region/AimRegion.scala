@@ -11,7 +11,7 @@ import net.imagini.aim.cluster.StreamMerger
 import net.imagini.aim.segment.AimSegment
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.segment.MergeScanner
-import net.imagini.aim.tools.CountScanner
+import net.imagini.aim.segment.CountScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorage
 import net.imagini.aim.utils.BlockStorageMEMLZ4
@@ -65,7 +65,7 @@ class AimRegion(
     //    return theSegment
     val record = new Array[Array[Byte]](schema.size)
     var c = 0; while (c < schema.size) {
-      record(c) = StreamUtils.read(in, schema.dataType(c))
+      record(c) = StreamUtils.read(in, schema.get(c))
       c += 1
     }
     return appendRecord(segment, record)

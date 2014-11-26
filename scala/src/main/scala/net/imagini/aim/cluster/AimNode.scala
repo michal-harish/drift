@@ -10,7 +10,7 @@ import grizzled.slf4j.Logger
 import net.imagini.aim.region.AimRegion
 import net.imagini.aim.region.QueryParser
 import net.imagini.aim.region.StatScanner
-import net.imagini.aim.tools.AbstractScanner
+import net.imagini.aim.segment.AbstractScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorage
 import net.imagini.aim.utils.BlockStorageMEMLZ4

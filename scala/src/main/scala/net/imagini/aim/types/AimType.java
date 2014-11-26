@@ -3,29 +3,46 @@ package net.imagini.aim.types;
 import net.imagini.aim.utils.View;
 
 
+abstract public class AimType {
 
-/**
- * AimType is any primitive or complex type while AimDataType is how it is represented
- * on a storage level. Therefore data types are fixed primitves whil types can be
- * constructed out of them and other types.
- * 
- * @author mharis
- *
- */
-public interface AimType {
+    abstract public int getLen();
 
-    public AimDataType getDataType();
+    abstract public int sizeOf(View value);
 
-    public String asString(View value);
+    abstract public int partition(View value, int numPartitions);
 
-    public int partition(View value, int numPartitions);
+    abstract public String asString(View value);
 
-    public String convert(byte[] value);
+//    abstract public byte[] parse(View value, byte[] dest, int destOffset);
 
-    public String escape(String value);
+    abstract public int convert(String value, byte[] dest, int destOffset); 
 
-    public byte[] convert(String value);
+    abstract public String convert(byte[] value);
 
-    public int convert(String value, byte[] dest, int destOffset); 
+    abstract public byte[] convert(String value);
 
+    private final String id;
+
+    public AimType() {
+        this.id = this.getClass().getName().substring(AimType.class.getName().length());
+    }
+
+    @Override
+    public String toString() {
+        return id;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        return object instanceof AimType && this.equals(((AimType)object));
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
+    }
+
+    public String escape(String value) {
+        return value;
+    }
 }

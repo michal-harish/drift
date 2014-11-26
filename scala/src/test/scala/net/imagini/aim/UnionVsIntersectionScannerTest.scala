@@ -17,7 +17,7 @@ class UnionVsIntersectionScannerTest extends FlatSpec with Matchers {
   "Union and Intersection Join " should "return different sets" in {
     //PAGEVIEWS
     val pageviewsDescriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),url(STRING),timestamp(TIME:LONG)"),
+      AimSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)"),
       1000,
       classOf[BlockStorageMEMLZ4],
       classOf[AimSegmentQuickSort])
@@ -36,7 +36,7 @@ class UnionVsIntersectionScannerTest extends FlatSpec with Matchers {
 
     //CONVERSIONS
     val conversionsDescriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID:BYTEARRAY[16]),conversion(STRING),url(STRING),timestamp(TIME:LONG)"),
+      AimSchema.fromString("user_uid(UUID),conversion(STRING),url(STRING),timestamp(TIME)"),
       1000,
       classOf[BlockStorageMEMLZ4],
       classOf[AimSegmentQuickSort])

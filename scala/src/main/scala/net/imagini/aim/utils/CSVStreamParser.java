@@ -8,10 +8,11 @@ public class CSVStreamParser {
 
     private InputStream input;
     private char separator;
-    private char[] charBuffer = new char[65535];
     private byte[] buffer = new byte[65535];
     private int position = -1;
     private int limit = -1;
+
+    private static final String EMPTY_STRING = "";
 
     public CSVStreamParser(InputStream input, char separator) {
         this.input = input;
@@ -19,22 +20,25 @@ public class CSVStreamParser {
     }
 
     public String nextValue() throws IOException {
-        String result = null;
         int start = -1;
         int end = -1;
         char ch;
         try {
             while (true) {
-                if (position >= limit - 1) {
+                ++position;
+                if (position >= limit ) {
                     if (start >= 0 && end >= 0) {
-                        String val = new String(buffer, start, end - start + 1);
-                        result = result == null ? val : result + val;
+                        ByteUtils.copy(buffer, start, buffer, 0, end - start + 1);
+                        position = end - start + 1;
                         start = 0;
-                        end = -1;
+                    } else {
+                        position = 0;
+                        start = -1; 
                     }
                     loadBuffer();
+                    end = position - 1;
                 }
-                ch = (char) buffer[++position];
+                ch = (char) buffer[position];
                 if (start == -1) {
                     if (ch == '\r' || ch == ' ') {
                         continue;
@@ -56,19 +60,14 @@ public class CSVStreamParser {
                 throw e;
             } 
         }
-        String val;
-        if (end >= start) {
-            val = new String(buffer, start, end - start + 1);
-        } else {
-            val = "";
-        }
-        result = result == null ? val : result + val;
-        return result;
+//        bufferView.offset = start;
+//        bufferView.limit = end;
+//        return bufferView;
+        return end >= start ? new String(buffer, start, end - start + 1) : EMPTY_STRING;
     }
 
     private void loadBuffer() throws IOException {
-        limit = input.read(buffer, 0, buffer.length);
-        position = -1;
+        limit = position + input.read(buffer, position, buffer.length - position);
         if (limit < 0)
             throw new EOFException();
     }
