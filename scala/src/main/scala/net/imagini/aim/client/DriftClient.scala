@@ -179,7 +179,6 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
       throw new EOFException
     } else {
       (schema.get.fields, fetchRecord).zipped.map((t, a) ⇒ {
-        System.err.println(t)
         t.convert(a)
       })
     }

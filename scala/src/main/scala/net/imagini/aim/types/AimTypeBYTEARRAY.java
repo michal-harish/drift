@@ -11,6 +11,11 @@ public class AimTypeBYTEARRAY extends AimType {
     @Override public int getLen() { 
         return size; 
     }
+    @Override
+    public int parse(View value, byte[] dest, int destOffset) {
+        ByteUtils.copy(value.array, value.offset, dest, destOffset, size);
+        return size;
+    }
     @Override public int sizeOf(View view) { 
         return size; 
     }

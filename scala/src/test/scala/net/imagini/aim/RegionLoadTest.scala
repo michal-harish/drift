@@ -17,6 +17,7 @@ import net.imagini.aim.utils.BlockStorage
 import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.segment.SegmentScanner
 import net.imagini.aim.types.AimTableDescriptor
+import net.imagini.aim.segment.CountScanner
 
 class RegionLoadTest extends FlatSpec with Matchers {
   //unsorted
@@ -120,14 +121,14 @@ class RegionLoadTest extends FlatSpec with Matchers {
     }
     region.add(segment)
     region.compact
-    //TODO scan count region.getCount should equal(numRecords)
+    val counter = new MergeScanner("*", "*", region.segments) with CountScanner
+    counter.count should equal(numRecords)
     region.getNumSegments should equal(numRecords * (16 + 4 + 14) / segmentSize)
 
     for (s ← (0 to region.segments.length - 1)) {
       val scanner = new SegmentScanner("*", "*", region.segments(s))
       for (r ← (1 to recordsPerSegment)) {
         val expectedId = ids(if (r <= recordsPerSegment / 2) 0 else 1)
-        //System.err.println(s + ": " + r + " expecting " + expectedId)
         scanner.next should equal(true)
         val row = scanner.selectRow
         schema.get(0).asString(row(0)) should equal(expectedId)

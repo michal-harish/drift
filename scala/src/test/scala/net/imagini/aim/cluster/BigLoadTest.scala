@@ -81,9 +81,6 @@ class BigLoadTest extends FlatSpec with Matchers {
     while (segmentScanner.next) {
       filtered += 1
       val line = segmentScanner.selectLine(" ")
-      if (!line.contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets")) {
-        System.err.println(line)
-      }
       line.contains("http://www.toysrus.co.uk/Toys-R-Us/Toys/Cars-and-Trains/Cars-and-Playsets") should be(true)
     }
     filtered should be(158)

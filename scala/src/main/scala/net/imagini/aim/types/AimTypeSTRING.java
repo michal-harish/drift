@@ -11,6 +11,14 @@ public class AimTypeSTRING extends AimType {
     }
 
     @Override
+    public int parse(View value, byte[] dest, int destOffset) {
+        int len = value.limit - value.offset + 1;
+        ByteUtils.putIntValue(len, dest, destOffset);
+        ByteUtils.copy(value.array, value.offset, dest, destOffset + 4, len);
+        return len + 4;
+    }
+
+    @Override
     public int partition(View value, int numPartitions) {
         return Math.abs(ByteUtils.crc32(value.array, value.offset + 4,
                 ByteUtils.asIntValue(value.array, value.offset)))

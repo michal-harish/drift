@@ -13,7 +13,7 @@ abstract public class AimType {
 
     abstract public String asString(View value);
 
-//    abstract public byte[] parse(View value, byte[] dest, int destOffset);
+    abstract public int parse(View value, byte[] dest, int destOffset);
 
     abstract public int convert(String value, byte[] dest, int destOffset); 
 

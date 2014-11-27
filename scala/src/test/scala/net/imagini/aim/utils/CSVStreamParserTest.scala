@@ -27,11 +27,10 @@ class CSVStreamParserTest extends FlatSpec with Matchers {
       var c = 0
       while (true) {
         c += 1
-        val uuidString = parser.nextValue
-        val uuid = UUID.fromString(uuidString)
-        val timestamp = java.lang.Long.parseLong(parser.nextValue)
-        val column = parser.nextValue
-        val value = parser.nextValue
+        val uuid = UUID.fromString(parser.nextValueAsString)
+        val timestamp = java.lang.Long.parseLong(parser.nextValueAsString)
+        val column = parser.nextValueAsString
+        val value = parser.nextValueAsString
       }
       c should be(139)
     } catch {

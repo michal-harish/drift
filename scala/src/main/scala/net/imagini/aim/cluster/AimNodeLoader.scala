@@ -33,19 +33,25 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
   def loadUnparsedStream(in: InputStream, separator: Char): Long = {
     try {
       val csv = new CSVStreamParser(in, separator)
-      val values: Array[String] = new Array[String](descriptor.schema.size)
+      val parseBuffer = new Array[Byte](65535)
+      val record:Array[View] = descriptor.schema.fields.map(field => new View(parseBuffer))
       val totalNodes = manager.expectedNumNodes
       while (!manager.clusterIsSuspended) {
-        var f = 0;
+        var f = 0
+        var o = 0
         while (f < descriptor.schema.size) {
-          values(f) = csv.nextValue
+          val field = descriptor.schema.get(f)
+          record(f).offset = o
+          val l = field.parse(csv.nextValue, parseBuffer, o)
+          record(f).limit = o + l
+          o += l
           f += 1
         }
         try {
-          insert(values: _*)
+          insert(record)
         } catch {
           case e: Exception ⇒ {
-            log.error(values.mkString(","), e);
+            log.error(e)
             throw e
           }
         }
@@ -58,20 +64,20 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
     0L
   }
 
-  def insert(record: String*) {
-    try {
-      var f = 0
-      val recordView = new Array[View](descriptor.schema.size)
-      while (f < descriptor.schema.size) {
-        recordView(f) = new View(descriptor.schema.get(f).convert(record(f)))
-        f += 1
-      }
-      val targetNode = descriptor.keyType.partition(recordView(0), totalNodes) + 1
-      workers(targetNode).process(recordView)
-    } catch {
-      case e: NumberFormatException ⇒ log.warn(e)
-    }
-  }
+//  def insert(record: String*) {
+//    try {
+//      var f = 0
+//      val recordView = new Array[View](descriptor.schema.size)
+//      while (f < descriptor.schema.size) {
+//        recordView(f) = new View(descriptor.schema.get(f).convert(record(f)))
+//        f += 1
+//      }
+//      val targetNode = descriptor.keyType.partition(recordView(0), totalNodes) + 1
+//      workers(targetNode).process(recordView)
+//    } catch {
+//      case e: NumberFormatException ⇒ log.warn(e)
+//    }
+//  }
 
   def insert(record: Array[View]) {
     val targetNode = descriptor.keyType.partition(record(0), totalNodes) + 1

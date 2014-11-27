@@ -9,17 +9,20 @@ public class CSVStreamParser {
     private InputStream input;
     private char separator;
     private byte[] buffer = new byte[65535];
+    private View bufferView = new View(buffer);
     private int position = -1;
     private int limit = -1;
-
-    private static final String EMPTY_STRING = "";
 
     public CSVStreamParser(InputStream input, char separator) {
         this.input = input;
         this.separator = separator;
     }
 
-    public String nextValue() throws IOException {
+    public String nextValueAsString() throws IOException {
+        View view = nextValue();
+        return new String(view.array, view.offset, view.offset - view.limit + 1);
+    }
+    public View nextValue() throws IOException {
         int start = -1;
         int end = -1;
         char ch;
@@ -60,10 +63,9 @@ public class CSVStreamParser {
                 throw e;
             } 
         }
-//        bufferView.offset = start;
-//        bufferView.limit = end;
-//        return bufferView;
-        return end >= start ? new String(buffer, start, end - start + 1) : EMPTY_STRING;
+        bufferView.offset = start;
+        bufferView.limit = end;
+        return bufferView;
     }
 
     private void loadBuffer() throws IOException {

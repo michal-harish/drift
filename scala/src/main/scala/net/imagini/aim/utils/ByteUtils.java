@@ -11,9 +11,52 @@ import java.nio.ByteOrder;
  */
 public class ByteUtils {
 
-    /**
-     * byte array utils
-     */
+    public static int parseIntRadix10(byte[] array, int offset, int limit) {
+        int result = 0;
+        boolean negative = false; 
+        if (array[offset] == '-' ) {
+            negative = true;
+            offset++;
+        }
+        for(int i = offset; i<= limit; i++) {
+            if (array[i] < 48 || array[i] > 57) {
+                throw new IllegalArgumentException("Invalid numeric character " +  (char)array[i]);
+            }
+            result *= 10;
+            result += (array[i] - 48) ;
+        }
+        return negative ? -result : result;
+    }
+
+    public static long parseLongRadix10(byte[] array, int offset, int limit) {
+        long result = 0;
+        for(int i = offset; i<= limit; i++) {
+            if (array[i] < 48 || array[i] > 57) {
+                throw new IllegalArgumentException("Invalid numeric character " +  (char)array[i]);
+            }
+            result *= 10;
+            result += (array[i] - 48) ;
+        }
+        return result;
+    }
+
+
+    public static long parseLongRadix16(byte[] array, int offset, int limit) {
+        long result = 0;
+        for(int i = offset; i<= limit; i++) {
+            result *= 16;
+            if (array[i] >= 48 && array[i] <= 57) {
+                result += (array[i] - 48) ;
+            } else if (array[i] >= 'A' && array[i] <= 'F') {
+                result += (array[i] - 55) ;
+            } else if (array[i] >= 97 && array[i] <= 102) {
+                result += (array[i] - 87) ;
+            } else {
+                throw new IllegalArgumentException("Invalid numeric character " +  (char)array[i]);
+            }
+        }
+        return result;
+    }
 
     public static int copy(byte[] src, int srcOffset, byte[]dest, int destOffset, int len) {
         for(int i = 0; i< len; i++) {
@@ -24,6 +67,10 @@ public class ByteUtils {
 
     static public int asIntValue(byte[] value) {
         return asIntValue(value, 0);
+    }
+
+    static public long asLongValue(byte[] value) {
+        return asLongValue(value, 0);
     }
 
     static public int asIntValue(byte[] value, int offset) {
@@ -158,31 +205,6 @@ public class ByteUtils {
     static public long asLongValue(final ByteBuffer value, final int ofs) {
         return asLongValue(value.array(), value.position() + ofs);
     }
-
-//    final public static boolean equals(ByteBuffer left, ByteBuffer right,
-//            int len) {
-//        return compare(left, right, len) == 0;
-//    }
-
-//    /**
-//     * Compares the current buffer position if treated as given type with the
-//     * given value but does not advance
-//     */
-//    final public static int compare(ByteBuffer left, ByteBuffer right, int len) {
-//        return compare(
-//            left.array(), left.position(),
-//            right.array(), right.position(),
-//            len
-//        );
-//    }
-
-//    final public static boolean contains(ByteBuffer container, ByteBuffer value, int len) {
-//        return contains(
-//            container.array(), container.position(),
-//            value.array(), value.position(),
-//            len
-//        );
-//    }
 
     public static int crc32(byte[] array, int offset, int size) {
         int crc = 0xFFFF;

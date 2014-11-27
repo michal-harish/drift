@@ -10,6 +10,16 @@ public class AimTypeBOOL extends AimType {
     }
 
     @Override
+    public int parse(View value, byte[] dest, int destOffset) {
+        int len = value.limit - value.offset + 1;
+        // assume '0' or '1' or 'true' or 'false'
+        boolean yes = len == 4 ? true
+                : (len == 1 ? value.array[value.offset] != '0' : false);
+        dest[destOffset] = (byte) (yes ? 1 : 0);
+        return 1;
+    }
+
+    @Override
     public int partition(View value, int numPartitions) {
         return value.array[value.offset] % numPartitions;
     }
@@ -21,8 +31,8 @@ public class AimTypeBOOL extends AimType {
 
     @Override
     public int convert(String value, byte[] dest, int destOffset) {
-        dest[destOffset] = (byte)(Boolean.valueOf(value) ? 1 : 0);
-        return 1; 
+        dest[destOffset] = (byte) (Boolean.valueOf(value) ? 1 : 0);
+        return 1;
     }
 
     @Override
@@ -38,7 +48,7 @@ public class AimTypeBOOL extends AimType {
     @Override
     public byte[] convert(String value) {
         byte[] b = new byte[1];
-        b[0] = (byte)(Boolean.valueOf(value) ? 1 : 0);
+        b[0] = (byte) (Boolean.valueOf(value) ? 1 : 0);
         return b;
     }
 

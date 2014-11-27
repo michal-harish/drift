@@ -9,6 +9,21 @@ public class AimTypeUUID extends AimTypeBYTEARRAY {
         super(16);
     }
 
+    @Override
+    public int parse(View value, byte[] dest, int destOffset) {
+        long mostSigBits = ByteUtils.parseLongRadix16(value.array, value.offset, value.offset + 7);
+        mostSigBits <<= 16;
+        mostSigBits |= ByteUtils.parseLongRadix16(value.array, value.offset+9, value.offset + 12);
+        mostSigBits <<= 16;
+        mostSigBits |= ByteUtils.parseLongRadix16(value.array, value.offset+14, value.offset + 17);
+        long leastSigBits = ByteUtils.parseLongRadix16(value.array, value.offset+19, value.offset + 22);
+        leastSigBits <<= 48;
+        leastSigBits |= ByteUtils.parseLongRadix16(value.array, value.offset+24, value.offset + 35);
+        ByteUtils.putLongValue(mostSigBits, dest, destOffset);
+        ByteUtils.putLongValue(leastSigBits, dest, destOffset + 8);
+        return 16;
+    }
+
     @Override public String toString() { 
         return "UUID"; 
     }

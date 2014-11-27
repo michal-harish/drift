@@ -11,6 +11,13 @@ public class AimTypeINT extends AimType {
     }
 
     @Override
+    public int parse(View value, byte[] dest, int destOffset) {
+        int result = ByteUtils.parseIntRadix10(value.array, value.offset, value.limit);
+        ByteUtils.putIntValue(result, dest, destOffset);
+        return 4;
+    }
+
+    @Override
     public int partition(View value, int numPartitions) {
         return ByteUtils.asIntValue(value.array, value.offset) % numPartitions;
     }
