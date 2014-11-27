@@ -51,7 +51,7 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
           } catch {
             case e: IllegalArgumentException ⇒ {
               recordWithIllegalArgument = true
-              log.warn(field + " " + new String(valueToParse.array, valueToParse.offset, valueToParse.limit - valueToParse.offset + 1), e)
+              log.warn(field + " " + new String(valueToParse.array, valueToParse.offset, valueToParse.limit - valueToParse.offset + 1) + " " + e)
             }
           }
           f += 1

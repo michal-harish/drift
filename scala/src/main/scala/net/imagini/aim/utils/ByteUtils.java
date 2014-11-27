@@ -59,8 +59,9 @@ public class ByteUtils {
     }
 
     public static int copy(byte[] src, int srcOffset, byte[]dest, int destOffset, int len) {
-        for(int i = 0; i< len; i++) {
-            dest[i+destOffset] = src[i+srcOffset];
+        int srcLimit = srcOffset + len;
+        for(int i = srcOffset, j = destOffset; i< srcLimit; i++, j++) {
+            dest[j] = src[i];
         }
         return len;
     }
