@@ -18,10 +18,6 @@ public class CSVStreamParser {
         this.separator = separator;
     }
 
-    public String nextValueAsString() throws IOException {
-        View view = nextValue();
-        return new String(view.array, view.offset, view.offset - view.limit + 1);
-    }
     public View nextValue() throws IOException {
         int start = -1;
         int end = -1;
@@ -29,14 +25,16 @@ public class CSVStreamParser {
         try {
             while (true) {
                 ++position;
-                if (position >= limit ) {
+                if (position >= limit) {
                     if (start >= 0 && end >= 0) {
-                        ByteUtils.copy(buffer, start, buffer, 0, end - start + 1);
+                        ByteUtils.copy(buffer, start, buffer, 0, end - start
+                                + 1);
                         position = end - start + 1;
+                        limit = position;
                         start = 0;
                     } else {
                         position = 0;
-                        start = -1; 
+                        start = -1;
                     }
                     loadBuffer();
                     end = position - 1;
@@ -61,16 +59,19 @@ public class CSVStreamParser {
             if (start == -1) {
                 input.close();
                 throw e;
-            } 
+            }
         }
+        if (start < 0) start = 0;
+        if (end < start) end = start -1; 
         bufferView.offset = start;
         bufferView.limit = end;
         return bufferView;
     }
 
     private void loadBuffer() throws IOException {
-        limit = position + input.read(buffer, position, buffer.length - position);
-        if (limit < 0)
+        int read = input.read(buffer, position, buffer.length - position);
+        if (read < 0)
             throw new EOFException();
+        limit = position + read;
     }
 }

@@ -31,12 +31,6 @@ public class AimTypeBYTE extends AimType {
     }
 
     @Override
-    public int convert(String value, byte[] dest, int destOffset) {
-        dest[destOffset] = Byte.valueOf(value);
-        return 1; 
-    }
-
-    @Override
     public String convert(byte[] value) {
         return String.valueOf(value[0]);
     }
@@ -44,13 +38,6 @@ public class AimTypeBYTE extends AimType {
     @Override
     public String escape(String value) {
         return value;
-    }
-
-    @Override
-    public byte[] convert(String value) {
-        byte[] b = new byte[1];
-        b[0] = Byte.valueOf(value);
-        return b;
     }
 
     @Override

@@ -35,16 +35,6 @@ public class AimTypeSTRING extends AimType {
     }
 
     @Override
-    public int convert(String value, byte[] dest, int destOffset) {
-        int len = value.length() + 4;
-        ByteUtils.putIntValue(value.length(), dest, destOffset);
-        value.getBytes(0, value.length(), dest, destOffset + 4);
-        // TODO this deprecated method is a reminder of UTF-8 and other chars
-        // larger than byte
-        return len;
-    }
-
-    @Override
     public String convert(byte[] value) {
         return new String(value, 4, ByteUtils.asIntValue(value));
     }
@@ -52,16 +42,6 @@ public class AimTypeSTRING extends AimType {
     @Override
     public String escape(String value) {
         return "'" + value + "'";
-    }
-
-    @Override
-    public byte[] convert(String value) {
-        byte[] b = new byte[value.length() + 4];
-        ByteUtils.putIntValue(value.length(), b, 0);
-        value.getBytes(0, value.length(), b, 4);
-        // TODO this deprecated method is a reminder of UTF-8 and other chars
-        // larger than byte
-        return b;
     }
 
     @Override

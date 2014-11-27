@@ -28,7 +28,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
       }
     } catch {
       case e:EOFException => {}
-      case e:Throwable => log.error(e)
+      case e:Throwable => log.error("!", e)
     } finally {
       region.add(localSegment)
       region.compact

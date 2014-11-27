@@ -1,5 +1,7 @@
 package net.imagini.aim.types;
 
+import java.util.Arrays;
+
 import net.imagini.aim.utils.View;
 
 
@@ -15,11 +17,8 @@ abstract public class AimType {
 
     abstract public int parse(View value, byte[] dest, int destOffset);
 
-    abstract public int convert(String value, byte[] dest, int destOffset); 
-
+    @Deprecated
     abstract public String convert(byte[] value);
-
-    abstract public byte[] convert(String value);
 
     private final String id;
 
@@ -44,5 +43,24 @@ abstract public class AimType {
 
     public String escape(String value) {
         return value;
+    }
+
+    final public byte[] convert(String value) {
+        int len = getLen();
+        if (len == -1) len = value.length() + 4;
+        byte[] result = new byte[len];
+        convert(value, result, 0);
+        return result;
+    }
+
+    final public int convert(String value, byte[] dest, int destOffset) {
+        int len = getLen();
+        if (value == null || value.isEmpty()) {
+            if (len == -1 ) len = 4;
+            Arrays.fill(dest, destOffset, destOffset + len, (byte)0);
+            return len;
+        } else {
+            return parse(new View(value.getBytes()), dest, destOffset);
+        }
     }
 }

@@ -38,13 +38,14 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
       val totalNodes = manager.expectedNumNodes
       while (!manager.clusterIsSuspended) {
         var f = 0
-        var o = 0
+        var parserBufferPosition = 0
         while (f < descriptor.schema.size) {
           val field = descriptor.schema.get(f)
-          record(f).offset = o
-          val l = field.parse(csv.nextValue, parseBuffer, o)
-          record(f).limit = o + l
-          o += l
+          record(f).offset = parserBufferPosition
+          val valueToParse = csv.nextValue
+          val parsedLength = field.parse(valueToParse, parseBuffer, parserBufferPosition)
+          record(f).limit = parserBufferPosition + parsedLength - 1
+          parserBufferPosition += parsedLength
           f += 1
         }
         try {
@@ -63,21 +64,6 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
     }
     0L
   }
-
-//  def insert(record: String*) {
-//    try {
-//      var f = 0
-//      val recordView = new Array[View](descriptor.schema.size)
-//      while (f < descriptor.schema.size) {
-//        recordView(f) = new View(descriptor.schema.get(f).convert(record(f)))
-//        f += 1
-//      }
-//      val targetNode = descriptor.keyType.partition(recordView(0), totalNodes) + 1
-//      workers(targetNode).process(recordView)
-//    } catch {
-//      case e: NumberFormatException ⇒ log.warn(e)
-//    }
-//  }
 
   def insert(record: Array[View]) {
     val targetNode = descriptor.keyType.partition(record(0), totalNodes) + 1
@@ -169,7 +155,6 @@ class AimNodeLoaderWorker(
 
   def ackLoadedCount: Long = {
     val loadedCount: Int = pipe.readInt
-    //    System.err.println("ack " + loadedCount)
     pipe.close
     loadedCount
   }

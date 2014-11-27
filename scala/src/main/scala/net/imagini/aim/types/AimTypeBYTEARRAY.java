@@ -1,7 +1,5 @@
 package net.imagini.aim.types;
 
-import java.util.Arrays;
-
 import net.imagini.aim.utils.ByteUtils;
 import net.imagini.aim.utils.View;
 
@@ -13,7 +11,7 @@ public class AimTypeBYTEARRAY extends AimType {
     }
     @Override
     public int parse(View value, byte[] dest, int destOffset) {
-        ByteUtils.copy(value.array, value.offset, dest, destOffset, size);
+        ByteUtils.copy(value.array, value.offset, dest, destOffset, size); //TODO Math.min(size, val.length) Arrays.fill(bytes, (byte)0);
         return size;
     }
     @Override public int sizeOf(View view) { 
@@ -36,19 +34,6 @@ public class AimTypeBYTEARRAY extends AimType {
 
     @Override public int partition(View view, int numPartitions) {
         return ByteUtils.sum(view.array, view.offset, size)  % numPartitions;
-    }
-
-    @Override
-    public int convert(String value,  byte[] dest, int destOffset) {
-        return ByteUtils.copy(value.getBytes(), 0, dest, destOffset, size);
-    }
-
-    @Override public byte[] convert(String value) {
-        byte[] bytes = new byte[size];
-        Arrays.fill(bytes, (byte)0);
-        byte[] val = value.getBytes();
-        Arrays.copyOfRange(val, 0, Math.min(size, val.length));
-        return bytes;
     }
 
     @Override public String convert(byte[] value) {

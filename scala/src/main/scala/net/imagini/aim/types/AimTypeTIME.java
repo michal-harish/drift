@@ -1,7 +1,5 @@
 package net.imagini.aim.types;
 
-import java.util.Arrays;
-
 import net.imagini.aim.utils.ByteUtils;
 import net.imagini.aim.utils.View;
 
@@ -34,33 +32,20 @@ public class AimTypeTIME extends AimTypeLONG  {
     }
 
     @Override
-    public int convert(String value, byte[] dest, int destOffset) {
-        if (value == null || value.isEmpty()) {
-            Arrays.fill(dest, destOffset, destOffset + 7, (byte)0);
-            return 8;
-        } else {
-            return parse(new View(value.getBytes()), dest, destOffset);
-        }
-    }
-
-    @Override
-    public byte[] convert(String value) {
-        byte[] result = new byte[8];
-        convert(value, result, 0);
-        return result;
-    }
-
-    @Override
     public String convert(byte[] value) {
         MutableDateTime d = yoda.get();
-        d.setDate(ByteUtils.asLongValue(value));
+        long t = ByteUtils.asLongValue(value);
+        d.setDate(t);
+        d.setTime(t);
         return d.toString(UTC_PATTERN);
     }
 
     @Override
     public String asString(View view) {
         MutableDateTime d = yoda.get();
-        d.setDate(ByteUtils.asLongValue(view.array, view.offset));
+        long t = ByteUtils.asLongValue(view.array, view.offset);
+        d.setDate(t);
+        d.setTime(t);
         return d.toString(UTC_PATTERN);
     }
 }

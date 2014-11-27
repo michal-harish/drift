@@ -148,7 +148,6 @@ abstract public class AimSegment {
             checkWritable(true);
             for (int col = 0; col < record.length; col++) {
                 ByteBuffer block = writers.get(col);
-                //System.err.println("COMMIT RECORD " + block.position()  + " " + record[col].length); 
                 if (block.position() + record[col].length > block.capacity()) {
                     commitBlock(col);
                 }

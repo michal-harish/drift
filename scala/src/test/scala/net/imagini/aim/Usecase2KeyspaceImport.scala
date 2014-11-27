@@ -63,8 +63,8 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
     vdnaPageviewScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.cafe.com\t2014-10-10 10:59:01")
     vdnaPageviewScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.travel.com\t2014-10-10 16:00:01")
     vdnaPageviewScan.nextLine should be("37b22cfb-a29e-42c3-a3d9-12d32850e103\twww.bank.com\t2014-10-10 18:00:01")
-    vdnaPageviewScan.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e234\twww.work.com\t2014-10-10 8:59:01")
-    vdnaPageviewScan.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e234\twww.work2.com\t2014-10-10 8:59:01")
+    vdnaPageviewScan.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e234\twww.work.com\t2014-10-10 08:59:01")
+    vdnaPageviewScan.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e234\twww.work2.com\t2014-10-10 08:59:01")
     vdnaPageviewScan.nextLine should be("a7b22cfb-a29e-42c3-a3d9-12d32850e234\twww.marvel.com\t2014-10-10 17:00:01")
     an[EOFException] must be thrownBy vdnaPageviewScan.nextLine
 

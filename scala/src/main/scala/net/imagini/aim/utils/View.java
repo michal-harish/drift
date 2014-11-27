@@ -58,7 +58,7 @@ public class View implements Comparable<View> {
 
     @Override
     public String toString() {
-        return offset + ":" + size + " " + this.getClass().getSimpleName();
+        return offset + ":" + limit + "/" + size + " " + this.getClass().getSimpleName();
     }
 
     @Override

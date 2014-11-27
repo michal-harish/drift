@@ -28,32 +28,6 @@ public class AimTypeUUID extends AimTypeBYTEARRAY {
         return "UUID"; 
     }
 
-    @Override
-    public int convert(String value,  byte[] dest, int destOffset) {
-        String[] components = value.split("-");
-        if (components.length != 5)
-            throw new IllegalArgumentException("Invalid UUID string: "+value);
-        for (int i=0; i<5; i++)
-            components[i] = "0x"+components[i];
-        long mostSigBits = Long.decode(components[0]).longValue();
-        mostSigBits <<= 16;
-        mostSigBits |= Long.decode(components[1]).longValue();
-        mostSigBits <<= 16;
-        mostSigBits |= Long.decode(components[2]).longValue();
-        long leastSigBits = Long.decode(components[3]).longValue();
-        leastSigBits <<= 48;
-        leastSigBits |= Long.decode(components[4]).longValue();
-        ByteUtils.putLongValue(mostSigBits, dest, destOffset);
-        ByteUtils.putLongValue(leastSigBits, dest, destOffset + 8);
-        return 16;
-    }
-
-    @Override public byte[] convert(String value) {
-        byte[] b = new byte[16];
-        convert(value, b, 0);
-        return b;
-    }
-
     @Override public String convert(byte[] value) {
         long mostSigBits = ByteUtils.asLongValue(value,0);
         long leastSigBits = ByteUtils.asLongValue(value,8);

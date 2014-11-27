@@ -28,12 +28,6 @@ public class AimTypeINT extends AimType {
     }
 
     @Override
-    public int convert(String value, byte[] dest, int destOffset) {
-        ByteUtils.putIntValue(Integer.valueOf(value), dest, destOffset);
-        return 4; 
-    }
-
-    @Override
     public String convert(byte[] value) {
         return String.valueOf(ByteUtils.asIntValue(value));
     }
@@ -41,13 +35,6 @@ public class AimTypeINT extends AimType {
     @Override
     public String escape(String value) {
         return value;
-    }
-
-    @Override
-    public byte[] convert(String value) {
-        byte[] b = new byte[4];
-        ByteUtils.putIntValue(Integer.valueOf(value), b, 0);
-        return b;
     }
 
     @Override
