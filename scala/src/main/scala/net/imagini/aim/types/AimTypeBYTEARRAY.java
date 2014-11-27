@@ -28,16 +28,12 @@ public class AimTypeBYTEARRAY extends AimType {
         return object instanceof AimTypeBYTEARRAY && this.size == ((AimTypeBYTEARRAY)object).getLen();
     }
 
-    @Override public String asString(View view) {
-        return new String(view.array, view.offset, size);
+    @Override public String asString(byte[] src, int offset) {
+        return new String(src, offset, offset + size - 1);
     }
 
     @Override public int partition(View view, int numPartitions) {
         return ByteUtils.sum(view.array, view.offset, size)  % numPartitions;
-    }
-
-    @Override public String convert(byte[] value) {
-        return new String(value,0,size);
     }
 
 }

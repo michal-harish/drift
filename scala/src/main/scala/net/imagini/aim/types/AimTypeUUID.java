@@ -28,14 +28,8 @@ public class AimTypeUUID extends AimTypeBYTEARRAY {
         return "UUID"; 
     }
 
-    @Override public String convert(byte[] value) {
-        long mostSigBits = ByteUtils.asLongValue(value,0);
-        long leastSigBits = ByteUtils.asLongValue(value,8);
-        return UUIDToString(mostSigBits, leastSigBits);
-    }
-
-    @Override public String asString(View view) {
-        return UUIDToString(ByteUtils.asLongValue(view.array, view.offset) , ByteUtils.asLongValue(view.array, view.offset+8));
+    @Override public String asString(byte[] src, int offset) {
+        return UUIDToString(ByteUtils.asLongValue(src, offset) , ByteUtils.asLongValue(src, offset+8));
     }
 
     @Override public String escape(String value) {

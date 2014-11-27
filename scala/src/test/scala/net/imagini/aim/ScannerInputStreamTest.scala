@@ -2,10 +2,8 @@ package net.imagini.aim
 
 import java.io.EOFException
 import java.io.InputStream
-
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-
 import net.imagini.aim.cluster.ScannerInputStream
 import net.imagini.aim.cluster.StreamUtils
 import net.imagini.aim.region.AimRegion
@@ -14,13 +12,14 @@ import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.types.AimTableDescriptor
 import net.imagini.aim.utils.BlockStorageMEMLZ4
+import net.imagini.aim.utils.View
 
 class ScannerInputStreamTest extends FlatSpec with Matchers {
 
   val schema = AimSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)")
 
   private def readLine(in: InputStream) = {
-    schema.get(0).convert(StreamUtils.read(in, schema.get(0))) + " " + schema.get(1).convert(StreamUtils.read(in, schema.get(1)))
+    schema.get(0).asString(StreamUtils.read(in, schema.get(0))) + " " + schema.get(1).asString(StreamUtils.read(in, schema.get(1)))
   }
 
   "Region select " should " use ScannerInputStream correctly" in {
@@ -65,9 +64,9 @@ class ScannerInputStreamTest extends FlatSpec with Matchers {
 
     val t = schemaATSyncs.field("at_id")
     val scannerStream = new ScannerInputStream(scanner2)
-    t.convert(StreamUtils.read(scannerStream, t)) should be("AT1234")
-    t.convert(StreamUtils.read(scannerStream, t)) should be("AT5656")
-    t.convert(StreamUtils.read(scannerStream, t)) should be("AT7888")
+    t.asString(StreamUtils.read(scannerStream, t)) should be("AT1234")
+    t.asString(StreamUtils.read(scannerStream, t)) should be("AT5656")
+    t.asString(StreamUtils.read(scannerStream, t)) should be("AT7888")
     scannerStream.read should be(-1)
     an[EOFException] must be thrownBy StreamUtils.read(scannerStream, t)
 

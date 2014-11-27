@@ -25,19 +25,8 @@ public class AimTypeBOOL extends AimType {
     }
 
     @Override
-    public String asString(View value) {
-        return String.valueOf(value.array[value.offset] > 0);
-    }
-
-
-    @Override
-    public String convert(byte[] value) {
-        return String.valueOf(value[0] > 0);
-    }
-
-    @Override
-    public String escape(String value) {
-        return value;
+    public String asString(byte[] src, int offset) {
+        return String.valueOf(src[offset] > 0);
     }
 
     @Override

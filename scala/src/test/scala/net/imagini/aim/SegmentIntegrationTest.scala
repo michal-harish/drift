@@ -15,6 +15,7 @@ import net.imagini.aim.cluster.ScannerInputStream
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.segment.CountScanner
 import net.imagini.aim.types.AimTableDescriptor
+import net.imagini.aim.utils.View
 
 class SegmentIntegration extends FlatSpec with Matchers {
 
@@ -34,9 +35,9 @@ class SegmentIntegration extends FlatSpec with Matchers {
 
     val merge = new MergeScanner("*", "column='a'", p1.segments)
     val in: InputStream = new ScannerInputStream(merge)
-    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
-    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
-    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
+    schema.fields.map(t ⇒ t.asString(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
+    schema.fields.map(t ⇒ t.asString(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
+    schema.fields.map(t ⇒ t.asString(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
     in.close
 
     val mergeCount = new MergeScanner("*", "column='a'", p1.segments)
@@ -57,9 +58,9 @@ class SegmentIntegration extends FlatSpec with Matchers {
     count.count should be(3)
     val merge = new MergeScanner("*", "column='a'", p1.segments)
     val in: InputStream = new ScannerInputStream(merge)
-    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
-    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
-    schema.fields.map(t ⇒ t.convert(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
+    schema.fields.map(t ⇒ t.asString(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("17b22cfb-a29e-42c3-a3d9-12d32850e1031413143748042a6571796330792743131")
+    schema.fields.map(t ⇒ t.asString(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("37b22cfb-a29e-42c3-a3d9-12d32850e1031413143748041a6571796330792743131")
+    schema.fields.map(t ⇒ t.asString(StreamUtils.read(in, t))).foldLeft("")(_ + _) should be("a7b22cfb-a29e-42c3-a3d9-12d32850e1031413143748043a6571796330792743131")
     in.close
 
     val mergeCount = new MergeScanner("*", "column='a'", p1.segments)

@@ -123,7 +123,7 @@ public class Pipe {
     public String readHeader() throws IOException {
         if (inputPipe != null)
             throw new IllegalStateException();
-        String value = Aim.STRING.convert(StreamUtils.read(
+        String value = Aim.STRING.asString(StreamUtils.read(
                 socket.getInputStream(), Aim.STRING));
         return value;
     }
@@ -180,7 +180,7 @@ public class Pipe {
     public String read() throws IOException {
         if (inputPipe == null)
             inputPipe = createInputPipe(socket.getInputStream(), compression);
-        return Aim.STRING.convert(read(Aim.STRING));
+        return Aim.STRING.asString(read(Aim.STRING));
     }
 
     public int readInt() throws IOException {

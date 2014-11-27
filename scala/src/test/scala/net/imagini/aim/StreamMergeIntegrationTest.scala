@@ -16,11 +16,12 @@ import net.imagini.aim.cluster.ScannerInputStream
 import net.imagini.aim.segment.MergeScanner
 import java.io.InputStream
 import net.imagini.aim.types.AimTableDescriptor
+import net.imagini.aim.utils.View
 
 class StreamMergeIntegrationTest extends FlatSpec with Matchers {
 
   private def readRecord(schema: AimSchema, stream: InputStream) = {
-    schema.fields.map(t ⇒ { t.convert(StreamUtils.read(stream, t)) }).foldLeft("")(_ + _ + " ")
+    schema.fields.map(t ⇒ { t.asString(StreamUtils.read(stream, t)) }).foldLeft("")(_ + _ + " ")
   }
   "2 sorted segments" should "yield correct groups when merge-sorted" in {
     val schema = AimSchema.fromString("user_uid(UUID),column(STRING),value(STRING)")

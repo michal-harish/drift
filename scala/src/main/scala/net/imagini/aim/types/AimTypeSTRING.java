@@ -26,17 +26,12 @@ public class AimTypeSTRING extends AimType {
     }
 
     @Override
-    public String asString(View value) {
-        if (value == null) {
+    public String asString(byte[] src, int offset) {
+        if (src == null) {
             return Aim.EMPTY;
         } else {
-            return new String(value.array, value.offset + 4, ByteUtils.asIntValue(value.array, value.offset));
+            return new String(src, offset + 4, ByteUtils.asIntValue(src, offset));
         }
-    }
-
-    @Override
-    public String convert(byte[] value) {
-        return new String(value, 4, ByteUtils.asIntValue(value));
     }
 
     @Override

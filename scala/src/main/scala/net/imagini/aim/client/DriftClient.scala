@@ -14,6 +14,7 @@ import net.imagini.aim.types.Aim
 import net.imagini.aim.utils.ByteUtils
 import java.nio.ByteBuffer
 import net.imagini.aim.cluster.AimNode
+import net.imagini.aim.utils.View
 
 object DriftClient extends App {
 
@@ -179,7 +180,7 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
       throw new EOFException
     } else {
       (schema.get.fields, fetchRecord).zipped.map((t, a) ⇒ {
-        t.convert(a)
+        t.asString(a)
       })
     }
 

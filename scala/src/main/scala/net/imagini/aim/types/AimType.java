@@ -13,12 +13,9 @@ abstract public class AimType {
 
     abstract public int partition(View value, int numPartitions);
 
-    abstract public String asString(View value);
+    abstract public String asString(byte[] src, int offset);
 
     abstract public int parse(View value, byte[] dest, int destOffset);
-
-    @Deprecated
-    abstract public String convert(byte[] value);
 
     private final String id;
 
@@ -43,6 +40,21 @@ abstract public class AimType {
 
     public String escape(String value) {
         return value;
+    }
+
+    final public String asString(byte[] src) {
+        if (src == null) {
+            return Aim.EMPTY;
+        } else {
+            return asString(src, 0);
+        }
+    }
+    final public String asString(View value) {
+        if (value == null) { //TODO remove this check and make sure that View can never be null
+            return Aim.EMPTY;
+        } else {
+            return asString(value.array, value.offset);
+        }
     }
 
     final public byte[] convert(String value) {

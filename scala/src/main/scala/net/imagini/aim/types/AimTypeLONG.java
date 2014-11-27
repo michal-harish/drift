@@ -23,18 +23,8 @@ public class AimTypeLONG extends AimType {
     }
 
     @Override
-    public String asString(View value) {
-        return String.valueOf(ByteUtils.asLongValue(value.array, value.offset));
-    }
-
-    @Override
-    public String convert(byte[] value) {
-        return String.valueOf(ByteUtils.asLongValue(value, 0));
-    }
-
-    @Override
-    public String escape(String value) {
-        return value;
+    public String asString(byte[] src, int offset) {
+        return String.valueOf(ByteUtils.asLongValue(src, offset));
     }
 
     @Override

@@ -72,9 +72,9 @@ class TypeTests extends FlatSpec with Matchers {
   "AimTypeSTRING" should "have a correct custom parser" in {
     val out = new Array[Byte](100)
     Aim.STRING.parse(new View("Hello World".getBytes()), out, 0)
-    Aim.STRING.convert(out) should be("Hello World")
+    Aim.STRING.asString(out) should be("Hello World")
     Aim.STRING.parse(new View("".getBytes()), out, 0)
-    Aim.STRING.convert(out) should be("")
+    Aim.STRING.asString(out) should be("")
   }
 
   "AimTypeIPV4" should "have a correct custom parser" in {
@@ -90,7 +90,7 @@ class TypeTests extends FlatSpec with Matchers {
   "AimTypeUUID" should "have a correct custom parser" in {
     val out = new Array[Byte](16)
     Aim.UUID.parse(new View("37b22cfb-a29e-42c3-a3d9-12d32850e103".getBytes()), out, 0)
-    Aim.UUID.convert(out) should be("37b22cfb-a29e-42c3-a3d9-12d32850e103")
+    Aim.UUID.asString(out) should be("37b22cfb-a29e-42c3-a3d9-12d32850e103")
   }
 
   "AimTypeTIME" should "have a correct custom parser" in {
@@ -98,12 +98,12 @@ class TypeTests extends FlatSpec with Matchers {
     val out = new Array[Byte](8)
     Aim.TIME.parse(new View("1970-01-01 00:00:01".getBytes()), out, 0)
     ByteUtils.asLongValue(out) should be(1000);
-    Aim.TIME.convert(out) should be("1970-01-01 00:00:01")
+    Aim.TIME.asString(out) should be("1970-01-01 00:00:01")
     Aim.TIME.parse(new View("2018-12-31 23:59:59".getBytes()), out, 0)
-    Aim.TIME.convert(out) should be("2018-12-31 23:59:59")
+    Aim.TIME.asString(out) should be("2018-12-31 23:59:59")
 
     Aim.TIME.parse(new View("2014-10-10 16:00:01".getBytes()), out, 0)
-    Aim.TIME.convert(out) should be("2014-10-10 16:00:01")
+    Aim.TIME.asString(out) should be("2014-10-10 16:00:01")
 
   }
 

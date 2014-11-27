@@ -26,18 +26,8 @@ public class AimTypeBYTE extends AimType {
     }
 
     @Override
-    public String asString(View value) {
-        return String.valueOf(value.array[value.offset]);
-    }
-
-    @Override
-    public String convert(byte[] value) {
-        return String.valueOf(value[0]);
-    }
-
-    @Override
-    public String escape(String value) {
-        return value;
+    public String asString(byte[] src, int offset) {
+        return String.valueOf(src[offset]);
     }
 
     @Override

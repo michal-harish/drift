@@ -32,24 +32,18 @@ public class AimTypeIPV4 extends AimTypeINT {
     }
 
     @Override
-    public String asString(View view) {
+    public String asString(byte[] src, int offset) {
         try {
             return InetAddress
                     .getByAddress(
-                            Arrays.copyOfRange(view.array, view.offset,
-                                    view.offset + 4)).getHostAddress();
+                            Arrays.copyOfRange(src, offset, offset + 4)).getHostAddress();
         } catch (UnknownHostException e) {
             return null;
         }
     }
 
-    @Override
-    public String convert(byte[] value) {
-        try {
-            return InetAddress.getByAddress(value).getHostAddress();
-        } catch (UnknownHostException e) {
-            return null;
-        }
+    @Override public String escape(String value) { 
+        return "'" + value +"'"; 
     }
 
 }

@@ -23,18 +23,8 @@ public class AimTypeINT extends AimType {
     }
 
     @Override
-    public String asString(View value) {
-        return String.valueOf(ByteUtils.asIntValue(value.array, value.offset));
-    }
-
-    @Override
-    public String convert(byte[] value) {
-        return String.valueOf(ByteUtils.asIntValue(value));
-    }
-
-    @Override
-    public String escape(String value) {
-        return value;
+    public String asString(byte[] src, int offset) {
+        return String.valueOf(ByteUtils.asIntValue(src, offset));
     }
 
     @Override

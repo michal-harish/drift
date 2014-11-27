@@ -32,18 +32,9 @@ public class AimTypeTIME extends AimTypeLONG  {
     }
 
     @Override
-    public String convert(byte[] value) {
+    public String asString(byte[] src, int offset) {
         MutableDateTime d = yoda.get();
-        long t = ByteUtils.asLongValue(value);
-        d.setDate(t);
-        d.setTime(t);
-        return d.toString(UTC_PATTERN);
-    }
-
-    @Override
-    public String asString(View view) {
-        MutableDateTime d = yoda.get();
-        long t = ByteUtils.asLongValue(view.array, view.offset);
+        long t = ByteUtils.asLongValue(src, offset);
         d.setDate(t);
         d.setTime(t);
         return d.toString(UTC_PATTERN);
