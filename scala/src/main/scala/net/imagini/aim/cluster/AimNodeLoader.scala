@@ -34,21 +34,29 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
     try {
       val csv = new CSVStreamParser(in, separator)
       val parseBuffer = new Array[Byte](65535)
-      val record:Array[View] = descriptor.schema.fields.map(field => new View(parseBuffer))
+      val record: Array[View] = descriptor.schema.fields.map(field ⇒ new View(parseBuffer))
       val totalNodes = manager.expectedNumNodes
       while (!manager.clusterIsSuspended) {
         var f = 0
         var parserBufferPosition = 0
+        var recordWithIllegalArgument = false
         while (f < descriptor.schema.size) {
           val field = descriptor.schema.get(f)
           record(f).offset = parserBufferPosition
           val valueToParse = csv.nextValue
-          val parsedLength = field.parse(valueToParse, parseBuffer, parserBufferPosition)
-          record(f).limit = parserBufferPosition + parsedLength - 1
-          parserBufferPosition += parsedLength
+          try {
+            val parsedLength = field.parse(valueToParse, parseBuffer, parserBufferPosition)
+            record(f).limit = parserBufferPosition + parsedLength - 1
+            parserBufferPosition += parsedLength
+          } catch {
+            case e: IllegalArgumentException ⇒ {
+              recordWithIllegalArgument = true
+              log.warn(field + " " + new String(valueToParse.array, valueToParse.offset, valueToParse.limit - valueToParse.offset + 1), e)
+            }
+          }
           f += 1
         }
-        try {
+        if (!recordWithIllegalArgument) try {
           insert(record)
         } catch {
           case e: Exception ⇒ {
