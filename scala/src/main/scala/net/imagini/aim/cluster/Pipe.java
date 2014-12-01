@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -159,22 +158,10 @@ public class Pipe {
         return this;
     }
 
-    public int write(AimType type, ByteBuffer value) throws IOException {
-        if (outputPipe == null)
-            outputPipe = createOutputPipe(socket.getOutputStream(), compression);
-        return StreamUtils.write(type, value, outputPipe);
-    }
-
     public int write(AimType type, byte[] value) throws IOException {
         if (outputPipe == null)
             outputPipe = createOutputPipe(socket.getOutputStream(), compression);
         return StreamUtils.write(type, value, outputPipe);
-    }
-
-    public int readInto(AimType type, ByteBuffer buf) throws IOException {
-        if (inputPipe == null)
-            inputPipe = createInputPipe(socket.getInputStream(), compression);
-        return StreamUtils.read(inputPipe, type, buf);
     }
 
     public String read() throws IOException {

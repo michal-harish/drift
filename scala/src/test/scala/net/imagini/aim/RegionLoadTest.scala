@@ -11,32 +11,32 @@ import java.util.UUID
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.utils.View
 import net.imagini.aim.utils.BlockStorageMEM
-import net.imagini.aim.segment.AimSegmentUnsorted
 import net.imagini.aim.segment.AimSegment
 import net.imagini.aim.utils.BlockStorage
-import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.segment.SegmentScanner
 import net.imagini.aim.types.AimTableDescriptor
 import net.imagini.aim.segment.CountScanner
+import net.imagini.aim.types.SortType
+import scala.collection.mutable.ListBuffer
 
 class RegionLoadTest extends FlatSpec with Matchers {
-  //unsorted
-  "Single-segment region with unsorted raw storage" should "keep consistent state" in {
-    runLoadTestUnsorted(1, classOf[BlockStorageMEM])
-  }
-  "Single-segment region  with unsorted lz4 storage" should "keep consistent state" in {
-    runLoadTestUnsorted(1, classOf[BlockStorageMEMLZ4])
-  }
-  "5-segment region  with unsorted raw storage" should "keep consistent state" in {
-    runLoadTestUnsorted(5, classOf[BlockStorageMEM])
-  }
-  "5-segment region with unsorted lz4 storage" should "keep consistent state" in {
-    runLoadTestUnsorted(5, classOf[BlockStorageMEMLZ4])
-  }
-  //quick-sorted
-  "Single block segment with quick-sorted raw storage" should "keep consistent state" in {
-    runLoadTestQuickSorted(1, classOf[BlockStorageMEM])
-  }
+    //unsorted
+    "Single-segment region with unsorted raw storage" should "keep consistent state" in {
+      runLoadTestUnsorted(1, classOf[BlockStorageMEM])
+    }
+    "Single-segment region  with unsorted lz4 storage" should "keep consistent state" in {
+      runLoadTestUnsorted(1, classOf[BlockStorageMEMLZ4])
+    }
+    "5-segment region  with unsorted raw storage" should "keep consistent state" in {
+      runLoadTestUnsorted(5, classOf[BlockStorageMEM])
+    }
+    "5-segment region with unsorted lz4 storage" should "keep consistent state" in {
+      runLoadTestUnsorted(5, classOf[BlockStorageMEMLZ4])
+    }
+    //quick-sorted
+    "Single block segment with quick-sorted raw storage" should "keep consistent state" in {
+      runLoadTestQuickSorted(1, classOf[BlockStorageMEM])
+    }
   "5-segment region with with quick-sorted raw storage" should "keep consistent state" in {
     runLoadTestQuickSorted(5, classOf[BlockStorageMEM])
   }
@@ -55,27 +55,26 @@ class RegionLoadTest extends FlatSpec with Matchers {
     val numRecords = recordsPerSegment * numSegments
     val ids: Array[String] = Array("0dc56198-975d-4cf9-9b3f-a52581dee886", "32c07e66-0824-4e1c-b126-bd0a2e586bae")
 
-    val descriptor = new AimTableDescriptor(schema, segmentSize, storageType, classOf[AimSegmentUnsorted])
+    val descriptor = new AimTableDescriptor(schema, segmentSize, storageType, SortType.NO_SORT)
     val region = new AimRegion("test.data", descriptor)
 
-    var segment = region.newSegment
-    val recordView = new Array[View](schema.size)
+    var segment = new ListBuffer[Seq[String]]
     for (r ← (1 to numRecords)) {
 
-      recordView(0) = new View(schema.get(0).convert(ids(r % ids.size)))
-      schema.get(0).asString(recordView(0)) should equal(ids(r % ids.size))
-
-      recordView(1) = new View(schema.get(1).convert(r.toString))
-      schema.get(1).asString(recordView(1)) should equal(r.toString)
-      ByteUtils.asIntValue(recordView(1).array, recordView(1).offset) should equal(r)
-
       val s = r.toString.padTo(10, '0')
-      recordView(2) = new View(schema.get(2).convert(s))
-      schema.get(2).asString(recordView(2)) should equal(s)
+      val record= Array(ids(r % ids.size), r.toString, s)
+//      schema.get(0).asString(recordView(0)) should equal(ids(r % ids.size))
+//      schema.get(1).asString(recordView(1)) should equal(r.toString)
+//      ByteUtils.asIntValue(recordView(1).array, recordView(1).offset) should equal(r)
+//      schema.get(2).asString(recordView(2)) should equal(s)
 
-      segment = region.appendRecord(segment, recordView)
+      if (segment.size == recordsPerSegment) {
+        region.addTestRecords(segment:_*)
+        segment.clear
+      }
+      segment += record
     }
-    region.add(segment)
+    region.addTestRecords(segment:_*)
     region.compact
     region.getNumSegments should equal(numRecords * (16 + 4 + 14) / segmentSize)
 
@@ -100,26 +99,25 @@ class RegionLoadTest extends FlatSpec with Matchers {
     val numRecords = recordsPerSegment * numSegments
     val ids: Array[String] = Array("0dc56198-975d-4cf9-9b3f-a52581dee886", "32c07e66-0824-4e1c-b126-bd0a2e586bae")
 
-    val descriptor = new AimTableDescriptor(schema, segmentSize, storageType, classOf[AimSegmentQuickSort])
+    val descriptor = new AimTableDescriptor(schema, segmentSize, storageType, SortType.QUICK_SORT)
     val region = new AimRegion("test.data", descriptor)
 
-    var segment = region.newSegment
-    val recordView = new Array[View](schema.size)
+    var segment = new ListBuffer[Seq[String]]
     for (r ← (1 to numRecords)) {
-      recordView(0) = new View(schema.get(0).convert(ids(r % ids.size)))
-      schema.get(0).asString(recordView(0)) should equal(ids(r % ids.size))
-
-      recordView(1) = new View(schema.get(1).convert(r.toString))
-      schema.get(1).asString(recordView(1)) should equal(r.toString)
-      ByteUtils.asIntValue(recordView(1).array, recordView(1).offset) should equal(r)
-
       val s = r.toString.padTo(10, '0')
-      recordView(2) = new View(schema.get(2).convert(s))
-      schema.get(2).asString(recordView(2)) should equal(s)
+      val recordView = Array(ids(r % ids.size), r.toString, s)
+//      schema.get(0).asString(recordView(0)) should equal(ids(r % ids.size))
+//      schema.get(1).asString(recordView(1)) should equal(r.toString)
+//      ByteUtils.asIntValue(recordView(1).array, recordView(1).offset) should equal(r)
+//      schema.get(2).asString(recordView(2)) should equal(s)
 
-      segment = region.appendRecord(segment, recordView)
+      if (segment.size == recordsPerSegment) {
+        region.addTestRecords(segment:_*)
+        segment.clear
+      }
+      segment += recordView
     }
-    region.add(segment)
+    region.addTestRecords(segment:_*)
     region.compact
     val counter = new MergeScanner("*", "*", region.segments) with CountScanner
     counter.count should equal(numRecords)

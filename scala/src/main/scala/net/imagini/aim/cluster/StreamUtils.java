@@ -4,7 +4,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 
 import net.imagini.aim.types.AimType;
 import net.imagini.aim.utils.ByteUtils;
@@ -24,31 +23,6 @@ public class StreamUtils {
             }
         } while (-1 != n);
         return count;
-    }
-
-    public static int write(ByteBuffer value, OutputStream out)
-            throws IOException {
-        // System.err.println("WRITE TYPE FROM BUFFER " + type + " " +
-        // type.asString(value));
-        byte[] array = value.array();
-        int offset = value.position();
-        int size = value.limit() - offset;
-        out.write(array, offset, size);
-        return size;
-    }
-
-    public static int write(AimType type, ByteBuffer value, OutputStream out)
-            throws IOException {
-        // System.err.println("WRITE TYPE FROM BUFFER " + type + " " +
-        // type.asString(value));
-        byte[] array = value.array();
-        int offset = value.position();
-        int size = type.getLen();
-        if (size == -1) {
-            size = ByteUtils.asIntValue(array, offset) + 4;
-        }
-        out.write(array, offset, size);
-        return size;
     }
 
     public static int write(AimType type, byte[] value, OutputStream out)
@@ -112,18 +86,6 @@ public class StreamUtils {
         return result;
     }
 
-    static public int read(InputStream in, AimType type, ByteBuffer buf)
-            throws IOException {
-        // System.err.println("READ TYPE INTO Buffer " + type);
-        int size = type.getLen();
-        if (size == -1) {
-            size = StreamUtils.readInt(in);
-            buf.putInt(size);
-        }
-        read(in, buf, size);
-        return size;
-    }
-
     static public int read(InputStream in, AimType type, View view)
             throws IOException {
         // System.err.println("READ TYPE INTO Buffer " + type);
@@ -162,21 +124,6 @@ public class StreamUtils {
                 throw new EOFException();
             else
                 totalRead += read;
-        }
-    }
-
-    static public void read(InputStream in, ByteBuffer buf, int len)
-            throws IOException {
-        int totalRead = 0;
-        while (totalRead < len) {
-            int read = in.read(buf.array(), buf.position(),
-                    len - totalRead);
-            if (read < 0)
-                throw new EOFException();
-            else {
-                buf.position(buf.position() + read);
-                totalRead += read;
-            }
         }
     }
 

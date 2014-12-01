@@ -3,8 +3,7 @@ package net.imagini.aim
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.segment.AimSegmentUnsorted
-import net.imagini.aim.segment.AimSegmentQuickSort
+import net.imagini.aim.segment.AimSegment
 import net.imagini.aim.types.SortOrder
 import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.segment.RowFilter
@@ -17,6 +16,7 @@ import net.imagini.aim.segment.MergeScanner
 import java.io.InputStream
 import net.imagini.aim.types.AimTableDescriptor
 import net.imagini.aim.utils.View
+import net.imagini.aim.types.SortType
 
 class StreamMergeIntegrationTest extends FlatSpec with Matchers {
 
@@ -25,20 +25,18 @@ class StreamMergeIntegrationTest extends FlatSpec with Matchers {
   }
   "2 sorted segments" should "yield correct groups when merge-sorted" in {
     val schema = AimSchema.fromString("user_uid(UUID),column(STRING),value(STRING)")
-    val d = new AimTableDescriptor(schema, 10000, classOf[BlockStorageMEMLZ4], classOf[AimSegmentQuickSort])
+    val d = new AimTableDescriptor(schema, 10000, classOf[BlockStorageMEMLZ4], SortType.QUICK_SORT)
     val p1 = new AimRegion("vdna.events", d)
-    val s1 = p1.newSegment
-    s1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.auto.com}")
-    s1.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT1234")
-    s1.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.travel.com}")
-    p1.add(s1)
+    p1.addTestRecords(
+      Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.auto.com}"),
+      Seq("17b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT1234"),
+      Seq("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.travel.com}"))
 
     val p2 = new AimRegion("vdna.events", d)
-    val s2 = p2.newSegment
-    s2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.ebay.com}")
-    s2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT9876")
-    s2.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.music.com}")
-    p2.add(s2)
+    p2.addTestRecords(
+      Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.ebay.com}"),
+      Seq("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT9876"),
+      Seq("17b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.music.com}"))
 
     val subschema = schema.subset(Array("user_uid", "value"))
 

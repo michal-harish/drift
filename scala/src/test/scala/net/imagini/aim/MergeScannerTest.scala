@@ -4,34 +4,31 @@ import java.io.EOFException
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import net.imagini.aim.region.AimRegion
-import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.segment.MergeScanner
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.utils.BlockStorageMEMLZ4
 import net.imagini.aim.types.AimTableDescriptor
+import net.imagini.aim.types.SortType
 
 class MergeScannerTest extends FlatSpec with Matchers {
 
   "ScannerMerge " should "produce same result as stream merge" in {
     val descriptor = new AimTableDescriptor(
-        AimSchema.fromString("user_uid(UUID),column(STRING),value(STRING)"),
-        1000,
-        classOf[BlockStorageMEMLZ4],
-        classOf[AimSegmentQuickSort])
+      AimSchema.fromString("user_uid(UUID),column(STRING),value(STRING)"),
+      1000,
+      classOf[BlockStorageMEMLZ4],
+      SortType.QUICK_SORT)
     val region = new AimRegion("vdna.events", descriptor)
-    val s1 = region.newSegment
-    s1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.auto.com}")
-    s1.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT1234")
-    s1.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.travel.com}")
-
-    val s2 = region.newSegment
-    s2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.ebay.com}")
-    s2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT9876")
-    s2.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.music.com}")
-
-    region.add(s1)
+    region.addTestRecords(
+      Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.auto.com}"),
+      Seq("17b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT1234"),
+      Seq("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.travel.com}"))
     region.compact
-    region.add(s2)
+
+    region.addTestRecords(
+      Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.ebay.com}"),
+      Seq("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT9876"),
+      Seq("17b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.music.com}"))
     region.compact
 
     val scanner = new MergeScanner("user_uid,column", "*", region.segments)
@@ -46,7 +43,7 @@ class MergeScannerTest extends FlatSpec with Matchers {
     an[EOFException] must be thrownBy scanner.selectLine(",")
 
     val countScanner = new MergeScanner("user_uid,column", "*", region.segments)
-    countScanner.count should be (6L)
+    countScanner.count should be(6L)
 
     val mergeScan = new MergeScanner("user_uid,value", "column='pageview'", region.segments)
     mergeScan.nextLine should be("17b22cfb-a29e-42c3-a3d9-12d32850e103\t{www.music.com}")

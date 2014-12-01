@@ -4,7 +4,6 @@ import org.scalatest.Matchers
 import net.imagini.aim.region.QueryParser
 import net.imagini.aim.region.AimRegion
 import org.scalatest.FlatSpec
-import net.imagini.aim.segment.AimSegmentQuickSort
 import net.imagini.aim.types.AimSchema
 import net.imagini.aim.region.QueryParser
 import net.imagini.aim.region.PSelect
@@ -14,6 +13,7 @@ import net.imagini.aim.region.PEquiJoin
 import net.imagini.aim.region.PVar
 import net.imagini.aim.region.PUnionJoin
 import net.imagini.aim.types.AimTableDescriptor
+import net.imagini.aim.types.SortType
 
 class QueryParserTest extends FlatSpec with Matchers {
 
@@ -53,18 +53,19 @@ class QueryParserTest extends FlatSpec with Matchers {
       AimSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)"),
       10000,
       classOf[BlockStorageMEMLZ4],
-      classOf[AimSegmentQuickSort])
+      SortType.QUICK_SORT)
     val regionPageviews = new AimRegion("vdna.pageviews", pageviewsDescriptor)
-    val sA1 = regionPageviews.newSegment
-    sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01") //0  1
-    sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02") //16 1
-    sA1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03") //32 1
-    sA1.appendRecord("12322cfb-a29e-42c3-a3d9-12d32850e103", "www.xyz.com", "2014-10-10 12:01:02") //48 2
-    val sA2 = regionPageviews.newSegment
-    sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
-    sA2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03")
-    regionPageviews.add(sA1)
-    regionPageviews.add(sA2)
+    //segment 1
+    regionPageviews.addTestRecords(
+      Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01"),
+      Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02"),
+      Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers/holiday", "2014-10-10 12:01:03"),
+      Seq("12322cfb-a29e-42c3-a3d9-12d32850e103", "www.xyz.com", "2014-10-10 12:01:02"))
+    //segment 2
+    regionPageviews.addTestRecords(
+      Seq("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.bank.com/myaccunt", "2014-10-10 13:59:01"),
+      Seq("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 13:01:03"))
+
     regionPageviews.compact
     regionPageviews
 
@@ -76,12 +77,12 @@ class QueryParserTest extends FlatSpec with Matchers {
       AimSchema.fromString("user_uid(UUID),conversion(STRING),url(STRING),timestamp(TIME)"),
       1000,
       classOf[BlockStorageMEMLZ4],
-      classOf[AimSegmentQuickSort])
+      SortType.QUICK_SORT)
     val regionConversions1 = new AimRegion("vdna.conversions", conversionsDescriptor)
-    val sB1 = regionConversions1.newSegment
-    sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01")
-    sB1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03")
-    regionConversions1.add(sB1)
+    regionConversions1.addTestRecords(
+      Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01"),
+      Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03"))
+
     regionConversions1.compact
     regionConversions1
   }
@@ -92,17 +93,17 @@ class QueryParserTest extends FlatSpec with Matchers {
       AimSchema.fromString("user_uid(UUID),flag(STRING),value(BOOL)"),
       1000,
       classOf[BlockStorageMEMLZ4],
-      classOf[AimSegmentQuickSort])
+      SortType.QUICK_SORT)
     val regionUserFlags1 = new AimRegion("vdna.flags", userFlagsDescriptor)
-    val sC1 = regionUserFlags1.newSegment
-    sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "true")
-    sC1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
-    val sC2 = regionUserFlags1.newSegment
-    sC2.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103", "opt_out_targetting", "true")
-    sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true")
-    sC2.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "false")
-    regionUserFlags1.add(sC1)
-    regionUserFlags1.add(sC2)
+    //segment 1
+    regionUserFlags1.addTestRecords(
+      Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "true"),
+      Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true"))
+    //segment 2
+    regionUserFlags1.addTestRecords(
+      Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "opt_out_targetting", "true"),
+      Seq("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true"),
+      Seq("a7b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "false"))
     regionUserFlags1.compact
     regionUserFlags1
   }

@@ -90,16 +90,24 @@ public class AimSchema {
         }
         return result;
     }
+    public String[] asStrings(View[] view) {
+        String[] result = new String[view.length];
+        for(int i=0; i <size(); i++) {
+            AimType t= def.get(i);
+            result[i] = t.asString(view[i]);
+        }
+        return result;
+    }
     public String asString(View view) {
         return asString(view, ", ");
     }
     public String asString(View view, String separator) {
         int mark = view.offset;
         String result ="";
-        for(AimType t: def) {
-            result +=t.asString(view);
-            view.offset += t.sizeOf(view);
-            if (t != def.get(size()-1)) result += separator;
+        for(int f = 0; f<size(); f++) {
+            result += def.get(f).asString(view);
+            view.offset += def.get(f).sizeOf(view);
+            if (f <size() -1) result += separator;
         }
         view.offset = mark;
         return result;

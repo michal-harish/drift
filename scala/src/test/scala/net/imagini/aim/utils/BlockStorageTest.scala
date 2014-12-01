@@ -3,9 +3,11 @@ package net.imagini.aim.utils
 import java.io.File
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
+import net.imagini.aim.segment.AimSegment
 import net.imagini.aim.types.AimSchema
-import net.imagini.aim.segment.AimSegmentUnsorted
-import net.imagini.aim.cluster.StreamUtils
+import net.imagini.aim.types.AimTableDescriptor
+import net.imagini.aim.types.SortType
+import net.imagini.aim.region.AimRegion
 
 class BlockStorageTest extends FlatSpec with Matchers {
   "BlockStorageMEM" should "create valid input stream without memory overhead" in {
@@ -122,24 +124,25 @@ class BlockStorageTest extends FlatSpec with Matchers {
     val f2 = new File("/var/lib/drift/drift-system-test-value"); if (f2.exists()) f2.listFiles.map(file ⇒ file.delete)
 
     val schema = AimSchema.fromString("uid(UUID),value(STRING)")
-    val segment = new AimSegmentUnsorted(schema).init(classOf[BlockStorageFS], "drift-system-test")
-    segment.appendRecord("95c54c2e-2542-4f5e-8914-47e669a9578f", "Hello")
-    segment.appendRecord("95c54c2e-2542-4f5e-8914-47e669a9578f", "World")
-    segment.close
-
-    val uuidView = segment.getBlockStorage(0).toView;
-    uuidView.available(16) should be (true)
+    val descriptor = new AimTableDescriptor(schema, 10000, classOf[BlockStorageFS], SortType.NO_SORT)
+    val region = new AimRegion("drift-system-test", descriptor)
+    region.addTestRecords(
+      Seq("95c54c2e-2542-4f5e-8914-47e669a9578f", "Hello"),
+      Seq("95c54c2e-2542-4f5e-8914-47e669a9578f", "World"))
+    region.compact
+    val uuidView = region.segments(0).getBlockStorage(0).toView;
+    uuidView.available(16) should be(true)
     schema.get(0).asString(uuidView) should be("95c54c2e-2542-4f5e-8914-47e669a9578f")
-    uuidView.skip; uuidView.available(16) should be (true)
-    schema.get(0).asString(uuidView)  should be("95c54c2e-2542-4f5e-8914-47e669a9578f")
-    uuidView.skip; uuidView.available(16) should be (false)
+    uuidView.skip; uuidView.available(16) should be(true)
+    schema.get(0).asString(uuidView) should be("95c54c2e-2542-4f5e-8914-47e669a9578f")
+    uuidView.skip; uuidView.available(16) should be(false)
 
-    val valueView = segment.getBlockStorage(1).toView;
-    valueView.available(-1) should be (true)
+    val valueView = region.segments(0).getBlockStorage(1).toView;
+    valueView.available(-1) should be(true)
     schema.get(1).asString(valueView) should be("Hello")
-    valueView.skip; valueView.available(-1) should be (true)
-    schema.get(1).asString(valueView)  should be("World")
-    valueView.skip; valueView.available(-1) should be (false)
+    valueView.skip; valueView.available(-1) should be(true)
+    schema.get(1).asString(valueView) should be("World")
+    valueView.skip; valueView.available(-1) should be(false)
 
   }
 }

@@ -1,27 +1,26 @@
 package net.imagini.aim.types;
 
-import net.imagini.aim.segment.AimSegment;
-import net.imagini.aim.segment.AimSegmentQuickSort;
 import net.imagini.aim.utils.BlockStorage;
 
 public class AimTableDescriptor {
+
     public final AimSchema schema;
     public final AimType keyType;
     public final int segmentSize;
     public final Class<? extends BlockStorage> storageType;
-    public final Class<? extends AimSegment> sortType;
+    public final SortType sortType;
 
     public AimTableDescriptor(String descriptor) throws ClassNotFoundException {
         this(
                 AimSchema.fromString(descriptor.split("\n")[0]), 
                 java.lang.Integer.valueOf(descriptor.split("\n")[1]), 
                 Class.forName(descriptor.split("\n")[2]).asSubclass(BlockStorage.class),
-                AimSegmentQuickSort.class);
+                SortType.QUICK_SORT);
     }
 
     public AimTableDescriptor(AimSchema schema, int segmentSize,
             Class<? extends BlockStorage> storageType,
-            Class<? extends AimSegment> sortType) {
+            SortType sortType) {
         this.schema = schema;
         this.keyType = schema.get(0);
         this.segmentSize = segmentSize;

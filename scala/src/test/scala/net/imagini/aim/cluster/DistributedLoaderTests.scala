@@ -26,10 +26,10 @@ class DistributedLoaderTests extends FlatSpec with Matchers {
 
       val client = new DriftClient("localhost", 9997)
       client.query("STATS vdna")
-      client.hasNext should be(true); client.fetchRecordLine should be("events,1,1,1918") //,2322
-      client.hasNext should be(true); client.fetchRecordLine should be("events,3,1,1586") //,2173
-      client.hasNext should be(true); client.fetchRecordLine should be("events,4,1,2081") //,2604
-      client.hasNext should be(true); client.fetchRecordLine should be("events,2,1,905") //,1050
+      client.hasNext should be(true); client.fetchRecordLine should be("events,1,1,1918") 
+      client.hasNext should be(true); client.fetchRecordLine should be("events,3,1,1587") 
+      client.hasNext should be(true); client.fetchRecordLine should be("events,4,1,2081") 
+      client.hasNext should be(true); client.fetchRecordLine should be("events,2,1,905") 
       client.hasNext should be(false);
       an[EOFException] must be thrownBy (client.fetchRecordLine)
 
