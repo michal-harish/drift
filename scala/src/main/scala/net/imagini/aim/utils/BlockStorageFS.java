@@ -42,7 +42,7 @@ public class BlockStorageFS extends BlockStorage implements
         new File(BASE_PATH).mkdirs();
         this.file = new File(BASE_PATH + localId + ".lz");
         this.file.getParentFile().mkdirs();
-        this.compressBuffer = new byte[blockSize()];
+        this.compressBuffer = new byte[compressor.maxCompressedLength(blockSize())];
         if (file.exists()) {
             storedSize.set(file.length());
         } else {
@@ -52,7 +52,7 @@ public class BlockStorageFS extends BlockStorage implements
 
     @Override
     public int blockSize() {
-        return 65535; // 64Kb
+        return 8192; // 8Kb
     }
 
     @Override

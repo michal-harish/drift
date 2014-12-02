@@ -8,7 +8,7 @@ public class BlockStorageMEM extends BlockStorage {
     private LinkedList<byte[]> blocks = new LinkedList<byte[]>();
 
     public BlockStorageMEM() {
-        this("blockSize=65535");
+        this("blockSize=8192");
     }
 
     public BlockStorageMEM(String args) {
@@ -18,7 +18,7 @@ public class BlockStorageMEM extends BlockStorage {
 
     @Override
     public int blockSize() {
-        return 65535; // 64Kb
+        return 8192; // 8Kb
     }
 
     @Override

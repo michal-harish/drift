@@ -14,7 +14,7 @@ public class StreamUtils {
     static public long copy(InputStream in, OutputStream out) throws IOException {
         long count = 0L;
         int n = 0;
-        byte[] buffer = new byte[65535];
+        byte[] buffer = new byte[8192];
         do {
             n = in.read(buffer);
             if (-1 != n) {

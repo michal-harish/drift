@@ -69,11 +69,16 @@ class AimRegion(
     val segment = new AimSegment(schema).init(storageType, regionId)
     var r = 0; while (r < recordList.size()) {
       val record = recordList.get(r)
-      //System.err.println(schema.asString(record))
       segment.commitRecord(record)
       r += 1
     }
-
+    /**
+     * TODO compaction to start here - we'll receive ever smaller segments which will be quickly sorted
+     * by a variation of quick sort as above but instead of creating valid segment we'll flush them into 
+     * a compaction file for this region and add a handle to the compaction queue.
+     * Compaction thread of this region will do merge sorting
+     * Compaction will have to have a limit and segments of certain size will be compacted no further.
+     */
     val callable = new Callable[Option[Int]] {
       override def call: Option[Int] = {
         segment.close

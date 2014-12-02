@@ -29,7 +29,7 @@ public class BlockStorageMEMLZ4 extends BlockStorage {
     byte[] compress_buffer = new byte[compressor.maxCompressedLength(blockSize())];
 
     public BlockStorageMEMLZ4() {
-        this("blockSize=65535");
+        this("blockSize=8192");
     }
 
     public BlockStorageMEMLZ4(String args) {
@@ -39,7 +39,7 @@ public class BlockStorageMEMLZ4 extends BlockStorage {
 
     @Override
     public int blockSize() {
-        return 65535;
+        return 8192; // 8Kb
     }
 
     @Override

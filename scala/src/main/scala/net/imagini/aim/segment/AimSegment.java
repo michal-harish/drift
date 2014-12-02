@@ -119,7 +119,7 @@ final public class AimSegment {
                 commitBlock(col);
             }
         }
-        this.writers = null;
+        this.writers.clear();
         this.writable = false;
         return this;
     }
