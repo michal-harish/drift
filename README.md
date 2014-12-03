@@ -144,9 +144,16 @@ addthis.views  (102m, 4.1GB.gz)         addthis.syncs    (18m, 540Mb.gz)        
 * scp mharis@bl-yarnpoc-p01:~/addthis_views_2014-10-31.csv.gz ~/
 
 * bl-yarnpoc-p01 hive> select count(1) from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync';
-* bl-yarnpoc-p01 ~> hive -e "select partner_user_id, useruid, concat(timestamp,'000') from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync'" > addthis_syncs_2014-10-31.csv
-* bl-yarnpoc-p01 ~> gzip addthis_syncs_2014-10-31.csv
+* bl-yarnpoc-p01 ~> hive -e "select partner_user_id, useruid, concat(timestamp,'000') from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync'" | gzip --stdout > addthis_syncs_2014-10-31.csv.gz
+* bl-yarnpoc-p01 ~> 
 * scp mharis@bl-yarnpoc-p01:~/addthis_syncs_2014-10-31.csv.gz ~/
+
+Usecase 2C Benchmark
+
+* bl-yarnpoc-p01 ~> 
+hive -e "select partner_user_id, useruid, concat(timestamp,'000') from hcat_events_rc where d>='2014-09-01' and partner_id_space='at_id' and topic='datasync'" \
+| gzip --stdout > addthis_syncs.csv.gz \
+| java -Xmx1024m -jar drift-loader.jar --zookeeper bl-mharis-d02:2181 --cluster-id benchmark4B --separator '\t' --gzip --keyspace addthis --table syncs
 
 Usecase 3. Benchmark - id-linking from newly discovered information (?) 
 ---------------------------------------------------------------------------------------------------------------------------------------
