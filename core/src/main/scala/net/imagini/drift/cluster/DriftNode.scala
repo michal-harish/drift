@@ -7,16 +7,16 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.JavaConverters._
 import grizzled.slf4j.Logger
-import net.imagini.drift.region.AimRegion
+import net.imagini.drift.region.DriftRegion
 import net.imagini.drift.region.QueryParser
 import net.imagini.drift.region.StatScanner
 import net.imagini.drift.segment.AbstractScanner
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.utils.BlockStorage
 import net.imagini.drift.utils.BlockStorageMEMLZ4
-import net.imagini.drift.types.AimTableDescriptor
+import net.imagini.drift.types.DriftTableDescriptor
 
-class AimNode(val id: Int, val address: String, val manager: DriftManager) {
+class DriftNode(val id: Int, val address: String, val manager: DriftManager) {
 
   val log = Logger[this.type]
   val nodes: ConcurrentMap[Int, URI] = new ConcurrentHashMap[Int, URI]()
@@ -54,9 +54,9 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
       shutdown
     }
   }
-  private var keyspaceRefs = new ConcurrentHashMap[String, ConcurrentMap[String, AimRegion]]()
+  private var keyspaceRefs = new ConcurrentHashMap[String, ConcurrentMap[String, DriftRegion]]()
   def keyspaces = keyspaceRefs.keySet.asScala
-  def regions: Map[String, AimRegion] = keyspaceRefs.asScala.flatMap(r ⇒ {
+  def regions: Map[String, DriftRegion] = keyspaceRefs.asScala.flatMap(r ⇒ {
     val keyspace = r._1
     r._2.asScala.map(reigion ⇒ {
       val table = reigion._1
@@ -76,7 +76,7 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   def transform(srcQuery: String, destKeyspace: String, destTable: String): Long = {
     val t = System.currentTimeMillis
     val scanner = query(srcQuery)
-    val loader = new AimNodeLoader(manager, destKeyspace, destTable)
+    val loader = new DriftNodeLoader(manager, destKeyspace, destTable)
     while (scanner.next) {
       loader.insert(scanner.selectRow)
     }
@@ -85,13 +85,13 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
     transformationCount
   }
 
-  var sessions = scala.collection.mutable.ListBuffer[AimNodeSession]()
-  def session(s: AimNodeSession) = {
+  var sessions = scala.collection.mutable.ListBuffer[DriftNodeSession]()
+  def session(s: DriftNodeSession) = {
     sessions += s
     s.start
   }
 
-  val acceptor = new AimNodeAcceptor(this, new URI("drift://" + address).getPort)
+  val acceptor = new DriftNodeAcceptor(this, new URI("drift://" + address).getPort)
   log.info("Drift Node accepting connections on port " + acceptor.port)
 
   //DETECTOR FOR THIS NODE ONLINE STATUS -> SHUTDOWN
@@ -119,12 +119,12 @@ class AimNode(val id: Int, val address: String, val manager: DriftManager) {
   manager.watch("/keyspaces", (ks: Map[String, String]) ⇒ {
     keyspaceRefs.asScala.keys.filter(!ks.contains(_)).map(keyspaceRefs.remove(_))
     ks.keys.filter(!keyspaceRefs.containsKey(_)).map(k ⇒ {
-      keyspaceRefs.put(k, new ConcurrentHashMap[String, AimRegion]())
+      keyspaceRefs.put(k, new ConcurrentHashMap[String, DriftRegion]())
       manager.watch("/keyspaces/" + k, (tables: Map[String, String]) ⇒ {
         keyspaceRefs.get(k).asScala.keys.filter(!tables.contains(_)).map(keyspaceRefs.get(k).remove(_))
         tables.filter(t ⇒ !keyspaceRefs.get(k).containsKey(t._1)).map(t ⇒ {
-          val descriptor = new AimTableDescriptor(t._2)
-          keyspaceRefs.get(k).put(t._1, new AimRegion(nodeId+"-"+k+"-"+t._1, descriptor))
+          val descriptor = new DriftTableDescriptor(t._2)
+          keyspaceRefs.get(k).put(t._1, new DriftRegion(nodeId+"-"+k+"-"+t._1, descriptor))
           log.debug(id + ": " + k + "." + t._1 + " " + keyspaceRefs.get(k).get(t._1).toString)
         })
       })

@@ -3,112 +3,112 @@ package net.imagini.drift.utils
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import java.nio.ByteBuffer
-import net.imagini.drift.types.AimSchema
-import net.imagini.drift.types.Aim
+import net.imagini.drift.types.DriftSchema
+import net.imagini.drift.types.Drift
 import java.net.InetAddress
 import java.text.SimpleDateFormat
 
 class TypeTests extends FlatSpec with Matchers {
 
-  "AimTypeBOOL" should "have a correct custom parser" in {
+  "DriftTypeBOOL" should "have a correct custom parser" in {
     val out = new Array[Byte](1)
-    Aim.BOOL.parse(new View("true".getBytes()), out, 0)
+    Drift.BOOL.parse(new View("true".getBytes()), out, 0)
     out(0) should be(1)
-    Aim.BOOL.parse(new View("false".getBytes()), out, 0)
+    Drift.BOOL.parse(new View("false".getBytes()), out, 0)
     out(0) should be(0)
-    Aim.BOOL.parse(new View("0".getBytes()), out, 0)
+    Drift.BOOL.parse(new View("0".getBytes()), out, 0)
     out(0) should be(0)
-    Aim.BOOL.parse(new View("1".getBytes()), out, 0)
+    Drift.BOOL.parse(new View("1".getBytes()), out, 0)
     out(0) should be(1)
-    Aim.BOOL.parse(new View("9".getBytes()), out, 0)
+    Drift.BOOL.parse(new View("9".getBytes()), out, 0)
     out(0) should be(1)
   }
 
-  "AimTypeBYTE" should "have a correct custom parser" in {
+  "DriftTypeBYTE" should "have a correct custom parser" in {
     val out = new Array[Byte](1)
-    Aim.BYTE.parse(new View("0".getBytes()), out, 0)
+    Drift.BYTE.parse(new View("0".getBytes()), out, 0)
     out(0) should be(0)
-    Aim.BYTE.parse(new View("255".getBytes()), out, 0)
+    Drift.BYTE.parse(new View("255".getBytes()), out, 0)
     out(0) & 0xFF should be(255)
-    an[IllegalArgumentException] must be thrownBy Aim.BYTE.parse(new View("256".getBytes()), out, 0)
-    Aim.BYTE.parse(new View("99".getBytes()), out, 0)
+    an[IllegalArgumentException] must be thrownBy Drift.BYTE.parse(new View("256".getBytes()), out, 0)
+    Drift.BYTE.parse(new View("99".getBytes()), out, 0)
     out(0) should be(99)
-    an[IllegalArgumentException] must be thrownBy Aim.BYTE.parse(new View("10xyz".getBytes()), out, 0)
+    an[IllegalArgumentException] must be thrownBy Drift.BYTE.parse(new View("10xyz".getBytes()), out, 0)
   }
 
-  "AimTypeINT" should "have a correct custom parser" in {
+  "DriftTypeINT" should "have a correct custom parser" in {
     val out = new Array[Byte](4)
-    Aim.INT.parse(new View("0".getBytes()), out, 0)
+    Drift.INT.parse(new View("0".getBytes()), out, 0)
     ByteUtils.asIntValue(out) should be(0)
-    Aim.INT.parse(new View("255".getBytes()), out, 0)
+    Drift.INT.parse(new View("255".getBytes()), out, 0)
     ByteUtils.asIntValue(out) should be(255)
-    Aim.INT.parse(new View(Integer.MAX_VALUE.toString.getBytes()), out, 0)
+    Drift.INT.parse(new View(Integer.MAX_VALUE.toString.getBytes()), out, 0)
     ByteUtils.asIntValue(out) should be(Integer.MAX_VALUE)
-    Aim.INT.parse(new View("-255".getBytes()), out, 0)
+    Drift.INT.parse(new View("-255".getBytes()), out, 0)
     ByteUtils.asIntValue(out) should be(-255)
-    Aim.INT.parse(new View("-65535".getBytes()), out, 0)
+    Drift.INT.parse(new View("-65535".getBytes()), out, 0)
     ByteUtils.asIntValue(out) should be(-65535)
-    Aim.INT.parse(new View(Integer.MIN_VALUE.toString.getBytes()), out, 0)
+    Drift.INT.parse(new View(Integer.MIN_VALUE.toString.getBytes()), out, 0)
     ByteUtils.asIntValue(out) should be(Integer.MIN_VALUE)
-    an[IllegalArgumentException] must be thrownBy Aim.BYTE.parse(new View("10xyz".getBytes()), out, 0)
+    an[IllegalArgumentException] must be thrownBy Drift.BYTE.parse(new View("10xyz".getBytes()), out, 0)
   }
 
-  "AimTypeLONG" should "have a correct custom parser" in {
+  "DriftTypeLONG" should "have a correct custom parser" in {
     val out = new Array[Byte](8)
-    Aim.LONG.parse(new View("0".getBytes()), out, 0)
+    Drift.LONG.parse(new View("0".getBytes()), out, 0)
     ByteUtils.asLongValue(out) should be(0)
-    Aim.LONG.parse(new View("255".getBytes()), out, 0)
+    Drift.LONG.parse(new View("255".getBytes()), out, 0)
     ByteUtils.asLongValue(out) should be(255)
-    Aim.LONG.parse(new View(Integer.MAX_VALUE.toString.getBytes()), out, 0)
+    Drift.LONG.parse(new View(Integer.MAX_VALUE.toString.getBytes()), out, 0)
     ByteUtils.asLongValue(out) should be(Integer.MAX_VALUE)
-    Aim.LONG.parse(new View(Long.MaxValue.toString.getBytes()), out, 0)
+    Drift.LONG.parse(new View(Long.MaxValue.toString.getBytes()), out, 0)
     ByteUtils.asLongValue(out) should be(Long.MaxValue)
-    an[IllegalArgumentException] must be thrownBy Aim.LONG.parse(new View("-255".getBytes()), out, 0)
-    an[IllegalArgumentException] must be thrownBy Aim.LONG.parse(new View("-65535".getBytes()), out, 0)
-    an[IllegalArgumentException] must be thrownBy Aim.LONG.parse(new View(Integer.MIN_VALUE.toString.getBytes()), out, 0)
-    an[IllegalArgumentException] must be thrownBy Aim.LONG.parse(new View("10xyz".getBytes()), out, 0)
+    an[IllegalArgumentException] must be thrownBy Drift.LONG.parse(new View("-255".getBytes()), out, 0)
+    an[IllegalArgumentException] must be thrownBy Drift.LONG.parse(new View("-65535".getBytes()), out, 0)
+    an[IllegalArgumentException] must be thrownBy Drift.LONG.parse(new View(Integer.MIN_VALUE.toString.getBytes()), out, 0)
+    an[IllegalArgumentException] must be thrownBy Drift.LONG.parse(new View("10xyz".getBytes()), out, 0)
   }
 
-  "AimTypeSTRING" should "have a correct custom parser" in {
+  "DriftTypeSTRING" should "have a correct custom parser" in {
     val out = new Array[Byte](100)
-    Aim.STRING.parse(new View("Hello World".getBytes()), out, 0)
-    Aim.STRING.asString(out) should be("Hello World")
-    Aim.STRING.parse(new View("".getBytes()), out, 0)
-    Aim.STRING.asString(out) should be("")
+    Drift.STRING.parse(new View("Hello World".getBytes()), out, 0)
+    Drift.STRING.asString(out) should be("Hello World")
+    Drift.STRING.parse(new View("".getBytes()), out, 0)
+    Drift.STRING.asString(out) should be("")
   }
 
-  "AimTypeIPV4" should "have a correct custom parser" in {
+  "DriftTypeIPV4" should "have a correct custom parser" in {
     val out = new Array[Byte](4)
-    Aim.IPV4.parse(new View("255.255.255.255".getBytes()), out, 0)
+    Drift.IPV4.parse(new View("255.255.255.255".getBytes()), out, 0)
     InetAddress.getByAddress(out).getHostAddress() should be("255.255.255.255");
-    Aim.IPV4.parse(new View("0.0.0.0".getBytes()), out, 0)
+    Drift.IPV4.parse(new View("0.0.0.0".getBytes()), out, 0)
     InetAddress.getByAddress(out).getHostAddress() should be("0.0.0.0");
-    Aim.IPV4.parse(new View("192.99.99.99".getBytes()), out, 0)
+    Drift.IPV4.parse(new View("192.99.99.99".getBytes()), out, 0)
     InetAddress.getByAddress(out).getHostAddress() should be("192.99.99.99");
   }
 
-  "AimTypeUUID" should "have a correct custom parser" in {
+  "DriftTypeUUID" should "have a correct custom parser" in {
     val out = new Array[Byte](16)
-    Aim.UUID.parse(new View("37b22cfb-a29e-42c3-a3d9-12d32850e103".getBytes()), out, 0)
-    Aim.UUID.asString(out) should be("37b22cfb-a29e-42c3-a3d9-12d32850e103")
+    Drift.UUID.parse(new View("37b22cfb-a29e-42c3-a3d9-12d32850e103".getBytes()), out, 0)
+    Drift.UUID.asString(out) should be("37b22cfb-a29e-42c3-a3d9-12d32850e103")
   }
 
-  "AimTypeTIME" should "have a correct custom parser" in {
+  "DriftTypeTIME" should "have a correct custom parser" in {
     val formatter = new SimpleDateFormat("yyyy-MM-dd H:mm:ss");
     val out = new Array[Byte](8)
-    Aim.TIME.parse(new View("1970-01-01 00:00:01".getBytes()), out, 0)
+    Drift.TIME.parse(new View("1970-01-01 00:00:01".getBytes()), out, 0)
     ByteUtils.asLongValue(out) should be(1000);
-    Aim.TIME.asString(out) should be("1970-01-01 00:00:01")
-    Aim.TIME.parse(new View("2018-12-31 23:59:59".getBytes()), out, 0)
-    Aim.TIME.asString(out) should be("2018-12-31 23:59:59")
+    Drift.TIME.asString(out) should be("1970-01-01 00:00:01")
+    Drift.TIME.parse(new View("2018-12-31 23:59:59".getBytes()), out, 0)
+    Drift.TIME.asString(out) should be("2018-12-31 23:59:59")
 
-    Aim.TIME.parse(new View("2014-10-10 16:00:01".getBytes()), out, 0)
-    Aim.TIME.asString(out) should be("2014-10-10 16:00:01")
+    Drift.TIME.parse(new View("2014-10-10 16:00:01".getBytes()), out, 0)
+    Drift.TIME.asString(out) should be("2014-10-10 16:00:01")
 
   }
 
   "converting schema types" should "convert each data type correctly" in {
-    val schema = AimSchema.fromString("uuid(UUID),str(STRING),int(INT),bool(BOOL),long(LONG),ip(IPV4),t(TIME)")
+    val schema = DriftSchema.fromString("uuid(UUID),str(STRING),int(INT),bool(BOOL),long(LONG),ip(IPV4),t(TIME)")
     val uuid = schema.get(0)
     val str = schema.get(1)
     val i = schema.get(2)

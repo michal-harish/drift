@@ -6,17 +6,17 @@ import org.scalatest.Matchers
 import net.imagini.drift.client.DriftLoader
 import net.imagini.drift.segment.MergeScanner
 import net.imagini.drift.segment.SegmentScanner
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.utils.BlockStorageMEMLZ4
 
 class BigLoadTest extends FlatSpec with Matchers {
 
-  val schema = AimSchema.fromString("at_id(STRING), url(STRING), timestamp(LONG)")
+  val schema = DriftSchema.fromString("at_id(STRING), url(STRING), timestamp(LONG)")
 
-  private def getNode: AimNode = {
+  private def getNode: DriftNode = {
     val manager = new DriftManagerLocal(1)
     val storageType = classOf[BlockStorageMEMLZ4]
-    val node = new AimNode(1, "localhost:9998", manager)
+    val node = new DriftNode(1, "localhost:9998", manager)
     manager.createTable("addthis", "views", schema.toString, 5000000, storageType)
     new DriftLoader(manager, "addthis", "views", '\t', this.getClass.getResourceAsStream("views_big.csv"), false).streamInput should be(5730)
     val region = node.regions("addthis.views")

@@ -1,9 +1,9 @@
 package net.imagini.drift.types;
 
-public class AimQueryException extends RuntimeException {
+public class DriftQueryException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
-    public AimQueryException(String msg) {
+    public DriftQueryException(String msg) {
         super(msg);
     }
 }

@@ -4,13 +4,13 @@ import java.util.concurrent.TimeUnit
 import scala.Array.canBuildFrom
 import grizzled.slf4j.Logger
 import net.imagini.drift.client.DriftLoader
-import net.imagini.drift.segment.AimSegment
+import net.imagini.drift.segment.DriftSegment
 import net.imagini.drift.utils.View
 import java.util.concurrent.Executors
 import scala.collection.JavaConverters._
-import net.imagini.drift.region.AimRegion
+import net.imagini.drift.region.DriftRegion
 import java.net.URI
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import java.io.EOFException
 import java.io.InputStream
 import java.net.Socket
@@ -20,13 +20,13 @@ import scala.collection.mutable.Queue
 import net.imagini.drift.utils.CSVStreamParser
 import net.imagini.drift.utils.ByteUtils
 import java.util.concurrent.locks.ReentrantLock
-import net.imagini.drift.types.AimTableDescriptor
+import net.imagini.drift.types.DriftTableDescriptor
 
-class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: String) {
+class DriftNodeLoader(val manager: DriftManager, val keyspace: String, val table: String) {
   val log = Logger[this.type]
   val totalNodes = manager.expectedNumNodes
   val descriptor = manager.getDescriptor(keyspace, table)
-  val workers = manager.getNodeConnectors.map(c ⇒ c._1 -> new AimNodeLoaderWorker(c._1, keyspace, table, c._2)).toMap
+  val workers = manager.getNodeConnectors.map(c ⇒ c._1 -> new DriftNodeLoaderWorker(c._1, keyspace, table, c._2)).toMap
   val executor = Executors.newFixedThreadPool(workers.size)
   workers.values.foreach(executor.submit(_))
 
@@ -94,7 +94,7 @@ class AimNodeLoader(val manager: DriftManager, val keyspace: String, val table: 
 
 }
 
-class AimNodeLoaderWorker(
+class DriftNodeLoaderWorker(
   val workerNodeId: Int,
   val keyspace: String,
   val table: String,
@@ -110,7 +110,7 @@ class AimNodeLoaderWorker(
   pipe.writeHeader(table)
   pipe.writeHeader("N/A")
   val schemaDeclaration = pipe.readHeader
-  val schema = AimSchema.fromString(schemaDeclaration)
+  val schema = DriftSchema.fromString(schemaDeclaration)
 
   def process(record: Array[View]) = {
     var c = 0; while (c < record.length) {

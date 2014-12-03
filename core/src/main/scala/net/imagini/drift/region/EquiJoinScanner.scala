@@ -2,10 +2,10 @@ package net.imagini.drift.region
 
 import java.io.EOFException
 import scala.collection.mutable.LinkedList
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import java.util.LinkedHashMap
 import scala.collection.immutable.ListMap
-import net.imagini.drift.types.AimType
+import net.imagini.drift.types.DriftType
 import scala.collection.JavaConverters._
 import net.imagini.drift.segment.AbstractScanner
 import net.imagini.drift.utils.ByteUtils
@@ -21,8 +21,8 @@ class EquiJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ext
     left.schema.names.map(f ⇒ (f -> left.schema.field(f))) ++
     right.schema.names.filter(!left.schema.has(_)).map(f ⇒ (f -> right.schema.field(f)))): _*)
 
-  override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](selectMap.asJava))
-  override val keyType: AimType = left.keyType
+  override val schema: DriftSchema = new DriftSchema(new LinkedHashMap[String, DriftType](selectMap.asJava))
+  override val keyType: DriftType = left.keyType
   private val numFields = schema.size
   private val leftSelectIndex: Array[Int] = selectMap.keys.filter(left.schema.has(_)).map(left.schema.get(_)).toArray
   private val rightSelectIndex: Array[Int] = selectMap.keys.filter(f ⇒ (!left.schema.has(f) && right.schema.has(f))).map(right.schema.get(_)).toArray

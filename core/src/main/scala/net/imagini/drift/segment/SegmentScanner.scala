@@ -1,27 +1,27 @@
 package net.imagini.drift.segment
 
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.utils.View
-import net.imagini.drift.types.AimType
+import net.imagini.drift.types.DriftType
 import java.io.EOFException
 import net.imagini.drift.utils.BlockStorage
 import net.imagini.drift.cluster.StreamUtils
 
-class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, val segment: AimSegment) extends AbstractScanner {
+class SegmentScanner(val selectFields: Array[String], val rowFilter: RowFilter, val segment: DriftSegment) extends AbstractScanner {
 
-  def this(selectStatement: String, filterStatement: String, segment: AimSegment) =
+  def this(selectStatement: String, filterStatement: String, segment: DriftSegment) =
     this(if (selectStatement.contains("*")) segment.getSchema.names else selectStatement.split(",").map(_.trim).toArray,
       RowFilter.fromString(segment.getSchema, filterStatement),
       segment)
 
   private val keyField: String = segment.getSchema.name(0)
-  override val schema: AimSchema = segment.getSchema.subset(selectFields)
+  override val schema: DriftSchema = segment.getSchema.subset(selectFields)
   //TODO do not add filter columns and key column if already selected
-  private val scanSchema: AimSchema = segment.getSchema.subset(selectFields ++ rowFilter.getColumns.filter(!selectFields.contains(_)) :+ keyField)
+  private val scanSchema: DriftSchema = segment.getSchema.subset(selectFields ++ rowFilter.getColumns.filter(!selectFields.contains(_)) :+ keyField)
   private val scanColumnIndex: Array[Int] = scanSchema.names.map(n ⇒ segment.getSchema.get(n))
   private var scanViews = scanColumnIndex.map(c ⇒ segment.getBlockStorage(c).toView).toArray
   private val scanKeyColumnIndex: Int = scanSchema.get(keyField)
-  override val keyType: AimType = scanSchema.get(scanKeyColumnIndex)
+  override val keyType: DriftType = scanSchema.get(scanKeyColumnIndex)
   rowFilter.updateFormula(scanSchema.names)
   var eof = false
   var initialized = false

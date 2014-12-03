@@ -7,7 +7,7 @@ import java.util.Arrays;
 import net.imagini.drift.utils.ByteUtils;
 import net.imagini.drift.utils.View;
 
-public class AimTypeIPV4 extends AimTypeINT {
+public class DriftTypeIPV4 extends DriftTypeINT {
 
     @Override
     public int parse(View value, byte[] dest, int destOffset) {

@@ -6,12 +6,12 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import net.imagini.drift.client.DriftClient
 import net.imagini.drift.client.DriftLoader
-import net.imagini.drift.region.AimRegion
+import net.imagini.drift.region.DriftRegion
 import net.imagini.drift.region.QueryParser
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.utils.BlockStorageMEMLZ4
 import net.imagini.drift.segment.CountScanner
-import net.imagini.drift.types.AimTableDescriptor
+import net.imagini.drift.types.DriftTableDescriptor
 import net.imagini.drift.types.SortType
 
 class NodeIntegrationTest extends FlatSpec with Matchers {
@@ -19,9 +19,9 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
   val port = 9999
   val manager = new DriftManagerLocal(1)
 
-  def fixutreNode: AimNode = {
+  def fixutreNode: DriftNode = {
     manager.createTable("vdna", "events", "user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
-    val node = new AimNode(1, host + ":" + port, manager)
+    val node = new DriftNode(1, host + ":" + port, manager)
     node
   }
   def fixutreLoadDataSyncs = {
@@ -45,18 +45,18 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     records
   }
 
-  private val regions = Map[String, AimRegion](
+  private val regions = Map[String, DriftRegion](
     "vdna.pageviews" -> pageviews,
     "vdna.conversions" -> conversions,
     "vdna.flags" -> flags)
 
-  private def pageviews: AimRegion = {
-    val pageviewsDescriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)"),
+  private def pageviews: DriftRegion = {
+    val pageviewsDescriptor = new DriftTableDescriptor(
+      DriftSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)"),
       10000,
       classOf[BlockStorageMEMLZ4],
       SortType.QUICK_SORT)
-    val regionPageviews = new AimRegion("vdna.pageviews", pageviewsDescriptor)
+    val regionPageviews = new DriftRegion("vdna.pageviews", pageviewsDescriptor)
     regionPageviews.addTestRecords(
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01"),
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.travel.com/offers", "2014-10-10 12:01:02"),
@@ -71,14 +71,14 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
 
   }
 
-  private def conversions: AimRegion = {
+  private def conversions: DriftRegion = {
     //CONVERSIONS //TODO ttl = 10
-    val conversionsDescriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID),conversion(STRING),url(STRING),timestamp(TIME)"),
+    val conversionsDescriptor = new DriftTableDescriptor(
+      DriftSchema.fromString("user_uid(UUID),conversion(STRING),url(STRING),timestamp(TIME)"),
       1000,
       classOf[BlockStorageMEMLZ4],
       SortType.QUICK_SORT)
-    val regionConversions1 = new AimRegion("vdna.conversions", conversionsDescriptor)
+    val regionConversions1 = new DriftRegion("vdna.conversions", conversionsDescriptor)
     regionConversions1.addTestRecords(
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01"),
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03"))
@@ -86,14 +86,14 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     regionConversions1
   }
 
-  private def flags: AimRegion = {
+  private def flags: DriftRegion = {
     //USERFLAGS //TODO ttl = -1
-    val userFlagsDescriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID),flag(STRING),value(BOOL)"),
+    val userFlagsDescriptor = new DriftTableDescriptor(
+      DriftSchema.fromString("user_uid(UUID),flag(STRING),value(BOOL)"),
       1000,
       classOf[BlockStorageMEMLZ4],
       SortType.QUICK_SORT)
-    val regionUserFlags1 = new AimRegion("vdna.flags", userFlagsDescriptor)
+    val regionUserFlags1 = new DriftRegion("vdna.flags", userFlagsDescriptor)
     regionUserFlags1.addTestRecords(
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "true"),
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true"))

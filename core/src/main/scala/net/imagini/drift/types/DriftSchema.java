@@ -12,11 +12,11 @@ import net.imagini.drift.utils.View;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class AimSchema {
+public class DriftSchema {
 
-    public static AimSchema fromString(String declaration) {
+    public static DriftSchema fromString(String declaration) {
         final String[] dec = declaration.split(",");
-        LinkedHashMap<String, AimType> result = new LinkedHashMap<String, AimType>();
+        LinkedHashMap<String, DriftType> result = new LinkedHashMap<String, DriftType>();
         for (int f = 0; f < dec.length; f++) {
             String name = String.valueOf(f + 1);
             Integer arg = null;
@@ -33,45 +33,45 @@ public class AimSchema {
             }
             switch (type) {
             case "BOOL":
-                result.put(name, Aim.BOOL);
+                result.put(name, Drift.BOOL);
                 break;
             case "BYTE":
-                result.put(name, Aim.BYTE);
+                result.put(name, Drift.BYTE);
                 break;
             case "INT":
-                result.put(name, Aim.INT);
+                result.put(name, Drift.INT);
                 break;
             case "LONG":
-                result.put(name, Aim.LONG);
+                result.put(name, Drift.LONG);
                 break;
             case "BYTEARRAY":
-                result.put(name, Aim.BYTEARRAY(arg));
+                result.put(name, Drift.BYTEARRAY(arg));
                 break;
             case "STRING":
-                result.put(name, Aim.STRING);
+                result.put(name, Drift.STRING);
                 break;
             case "UUID":
-                result.put(name, Aim.UUID);
+                result.put(name, Drift.UUID);
                 break;
             case "IPV4":
-                result.put(name, Aim.IPV4);
+                result.put(name, Drift.IPV4);
                 break;
             case "TIME":
-                result.put(name, Aim.TIME);
+                result.put(name, Drift.TIME);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown data type " + type);
             }
         }
-        return new AimSchema(result);
+        return new DriftSchema(result);
     }
 
-    private final LinkedList<AimType> def = new LinkedList<>();
+    private final LinkedList<DriftType> def = new LinkedList<>();
     private final Map<String, Integer> colIndex = new LinkedHashMap<>();
     private final Map<Integer, String> nameIndex = new LinkedHashMap<>();
 
-    public AimSchema(LinkedHashMap<String, AimType> columnDefs) {
-        for (Entry<String, AimType> columnDef : columnDefs.entrySet()) {
+    public DriftSchema(LinkedHashMap<String, DriftType> columnDefs) {
+        for (Entry<String, DriftType> columnDef : columnDefs.entrySet()) {
             def.add(columnDef.getValue());
             colIndex.put(columnDef.getKey(), def.size() - 1);
             nameIndex.put(def.size() - 1, columnDef.getKey());
@@ -84,7 +84,7 @@ public class AimSchema {
     public String asString(View[] view, String separator) {
         String result ="";
         for(int i=0; i <size(); i++) {
-            AimType t= def.get(i);
+            DriftType t= def.get(i);
             result +=t.asString(view[i]);
             if (t != def.get(size()-1)) result += separator;
         }
@@ -93,7 +93,7 @@ public class AimSchema {
     public String[] asStrings(View[] view) {
         String[] result = new String[view.length];
         for(int i=0; i <size(); i++) {
-            AimType t= def.get(i);
+            DriftType t= def.get(i);
             result[i] = t.asString(view[i]);
         }
         return result;
@@ -117,16 +117,16 @@ public class AimSchema {
         return colIndex.get(colName);
     }
 
-    public AimType get(int col) {
+    public DriftType get(int col) {
         return def.get(col);
     }
 
-    public AimType field(String colName) {
+    public DriftType field(String colName) {
         return def.get(colIndex.get(colName));
     }
 
-    public AimType[] fields() {
-        return def.toArray(new AimType[def.size()]);
+    public DriftType[] fields() {
+        return def.toArray(new DriftType[def.size()]);
     }
 
     public boolean has(String colName) {
@@ -148,7 +148,7 @@ public class AimSchema {
         String result = "";
         for (Entry<String, Integer> c : colIndex.entrySet()) {
             String name = c.getKey();
-            AimType type = def.get(c.getValue());
+            DriftType type = def.get(c.getValue());
             result += (result != "" ? "," : "") + name + "(" + type.toString()
                     + ")";
         }
@@ -164,19 +164,19 @@ public class AimSchema {
         return nameIndex.get(c);
     }
 
-    public AimSchema subset(final String[] columns) {
+    public DriftSchema subset(final String[] columns) {
         return subset(Arrays.asList(columns));
     }
 
     @SuppressWarnings("serial")
-    public AimSchema subset(final List<String> columns) {
-        final AimSchema subSchema = new AimSchema(
-            new LinkedHashMap<String, AimType>() {
+    public DriftSchema subset(final List<String> columns) {
+        final DriftSchema subSchema = new DriftSchema(
+            new LinkedHashMap<String, DriftType>() {
                 {
                     for (String colName : columns)
                         if (colName != null) {
                             if (!colIndex.containsKey(colName)) {
-                                throw new AimQueryException("Unknown field " + colName);
+                                throw new DriftQueryException("Unknown field " + colName);
                             }
                             put(colName, def.get(colIndex.get(colName)));
                         }

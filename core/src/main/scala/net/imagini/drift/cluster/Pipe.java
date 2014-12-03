@@ -7,8 +7,8 @@ import java.net.Socket;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import net.imagini.drift.types.Aim;
-import net.imagini.drift.types.AimType;
+import net.imagini.drift.types.Drift;
+import net.imagini.drift.types.DriftType;
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
 import net.jpountz.lz4.LZ4Factory;
@@ -114,7 +114,7 @@ public class Pipe {
     final public void writeHeader(String value) throws IOException {
         if (outputPipe != null)
             throw new IllegalStateException();
-        StreamUtils.write(Aim.STRING, Aim.STRING.convert(value),
+        StreamUtils.write(Drift.STRING, Drift.STRING.convert(value),
                 socket.getOutputStream());
         socket.getOutputStream().flush();
     }
@@ -122,8 +122,8 @@ public class Pipe {
     public String readHeader() throws IOException {
         if (inputPipe != null)
             throw new IllegalStateException();
-        String value = Aim.STRING.asString(StreamUtils.read(
-                socket.getInputStream(), Aim.STRING));
+        String value = Drift.STRING.asString(StreamUtils.read(
+                socket.getInputStream(), Drift.STRING));
         return value;
     }
 
@@ -154,11 +154,11 @@ public class Pipe {
     final public Pipe write(String value) throws IOException {
         if (outputPipe == null)
             outputPipe = createOutputPipe(socket.getOutputStream(), compression);
-        StreamUtils.write(Aim.STRING, Aim.STRING.convert(value), outputPipe);
+        StreamUtils.write(Drift.STRING, Drift.STRING.convert(value), outputPipe);
         return this;
     }
 
-    public int write(AimType type, byte[] value) throws IOException {
+    public int write(DriftType type, byte[] value) throws IOException {
         if (outputPipe == null)
             outputPipe = createOutputPipe(socket.getOutputStream(), compression);
         return StreamUtils.write(type, value, outputPipe);
@@ -167,7 +167,7 @@ public class Pipe {
     public String read() throws IOException {
         if (inputPipe == null)
             inputPipe = createInputPipe(socket.getInputStream(), compression);
-        return Aim.STRING.asString(read(Aim.STRING));
+        return Drift.STRING.asString(read(Drift.STRING));
     }
 
     public int readInt() throws IOException {
@@ -176,13 +176,13 @@ public class Pipe {
         return StreamUtils.readInt(inputPipe);
     }
 
-    public byte[] read(AimType type) throws IOException {
+    public byte[] read(DriftType type) throws IOException {
         if (inputPipe == null)
             inputPipe = createInputPipe(socket.getInputStream(), compression);
         return StreamUtils.read(inputPipe, type);
     }
 
-    public void skip(AimType type) throws IOException {
+    public void skip(DriftType type) throws IOException {
         if (inputPipe == null)
             inputPipe = createInputPipe(socket.getInputStream(), compression);
         StreamUtils.skip(inputPipe, type);

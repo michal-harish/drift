@@ -6,8 +6,8 @@ import scala.Array.canBuildFrom
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.immutable.ListMap
 import net.imagini.drift.segment.AbstractScanner
-import net.imagini.drift.types.AimSchema
-import net.imagini.drift.types.AimType
+import net.imagini.drift.types.DriftSchema
+import net.imagini.drift.types.DriftType
 import net.imagini.drift.types.SortOrder
 import java.util.concurrent.Executors
 import java.util.concurrent.Callable
@@ -20,9 +20,9 @@ class UnionJoinScanner(val left: AbstractScanner, val right: AbstractScanner) ex
 
   private val leftSelect = left.schema.names.map(n ⇒ (n -> left.schema.field(n)))
   private val rightSelect = right.schema.names.map(n ⇒ (n -> right.schema.field(n)))
-  override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](
+  override val schema: DriftSchema = new DriftSchema(new LinkedHashMap[String, DriftType](
     ListMap((leftSelect ++ rightSelect): _*).asJava))
-  override val keyType: AimType = left.keyType
+  override val keyType: DriftType = left.keyType
   private val leftColumnIndex = schema.names.map(f ⇒ if (left.schema.has(f)) left.schema.get(f) else -1)
   private val rightColumnIndex = schema.names.map(f ⇒ if (right.schema.has(f)) right.schema.get(f) else -1)
   private val sortOrder = SortOrder.ASC

@@ -5,7 +5,7 @@ import net.imagini.drift.segment.MergeScanner
 import net.imagini.drift.segment.AbstractScanner
 import net.imagini.drift.segment.RowFilter
 import net.imagini.drift.utils.Tokenizer
-import net.imagini.drift.types.AimQueryException
+import net.imagini.drift.types.DriftQueryException
 import net.imagini.drift.segment.CountScanner
 
 abstract class PFrame
@@ -22,11 +22,11 @@ case class PIntesetionJoin(left: PDataFrame, right: PDataFrame, override val fie
 case class PEquiJoin(left: PDataFrame, right: PDataFrame, override val fields: PExp*) extends PJoin(left, right, fields: _*)
 
 abstract class PExp //[T]
-case class PVar(name: String) extends PExp //[AimType]
-case class PWildcard(dataframe: PDataFrame) extends PExp //[AimType]
+case class PVar(name: String) extends PExp //[DriftType]
+case class PWildcard(dataframe: PDataFrame) extends PExp //[DriftType]
 abstract class PBoolExp extends PExp //[Boolean]
 
-class QueryParser(val regions: Map[String, AimRegion]) extends App {
+class QueryParser(val regions: Map[String, DriftRegion]) extends App {
 
   def parse(query: String): AbstractScanner = compile(frame(query))
 
@@ -35,19 +35,19 @@ class QueryParser(val regions: Map[String, AimRegion]) extends App {
     q.front.toUpperCase match {
       case "SELECT"  ⇒ asDataFrame(q)
       case "COUNT"   ⇒ asCount(q)
-      case _: String ⇒ throw new AimQueryException("Invalid query statment")
+      case _: String ⇒ throw new DriftQueryException("Invalid query statment")
     }
   }
   def compile(frame: PFrame, asCounter: Boolean = false): AbstractScanner = {
     frame match {
       case count: PCount ⇒ compile(count.frame, true)
       case select: PSelect ⇒ {
-        val region = if (!regions.contains(select.table.region)) throw new AimQueryException("Unknown table " + select.table.region) else regions(select.table.region)
+        val region = if (!regions.contains(select.table.region)) throw new DriftQueryException("Unknown table " + select.table.region) else regions(select.table.region)
         val schema = region.schema
         val filter = RowFilter.fromString(schema, select.filter)
         val fields = compile(select.fields)
         if (region.segments.size.equals(0)) {
-          throw new AimQueryException("Table has no data: " + select.table.name)
+          throw new DriftQueryException("Table has no data: " + select.table.name)
         } else if (asCounter) {
           new MergeScanner(fields, filter, region.segments) with CountScanner
         } else {
@@ -135,11 +135,11 @@ class QueryParser(val regions: Map[String, AimRegion]) extends App {
             frame = PTable(keyspace, q.dequeue)
             return PCount(PSelect(frame.asInstanceOf[PTable], asFilter(q)))
           }
-          case q: String ⇒ throw new AimQueryException("Invalid from statement, should be <keyspace>.<table>")
+          case q: String ⇒ throw new DriftQueryException("Invalid from statement, should be <keyspace>.<table>")
         }
       }
     }
-    throw new AimQueryException("Invalid COUNT statement")
+    throw new DriftQueryException("Invalid COUNT statement")
   }
   private def asSelect(q: Queue[String]): PDataFrame = {
     var fields = scala.collection.mutable.ListBuffer[PExp]()
@@ -149,7 +149,7 @@ class QueryParser(val regions: Map[String, AimRegion]) extends App {
     while (!q.isEmpty && state != "FINISHED") state match {
       case "FIELDS" ⇒ q.dequeue match {
         case s: String if (s.toUpperCase.equals("FROM")) ⇒ state = "FROM"
-        case "," if (fields == null)                     ⇒ throw new AimQueryException("Invalid select expression")
+        case "," if (fields == null)                     ⇒ throw new DriftQueryException("Invalid select expression")
         case "," if (fields != null)                     ⇒ {}
         case "*"                                         ⇒ wildcard = true
         case field: String                               ⇒ fields :+= PVar(field)
@@ -166,12 +166,12 @@ class QueryParser(val regions: Map[String, AimRegion]) extends App {
             if (wildcard) fields :+= PWildcard(frame)
             return PSelect(frame.asInstanceOf[PTable], asFilter(q), fields: _*)
           }
-          case q: String ⇒ throw new AimQueryException("Invalid from statement, should be <keyspace>.<table>")
+          case q: String ⇒ throw new DriftQueryException("Invalid from statement, should be <keyspace>.<table>")
         }
       }
       case a ⇒ throw new IllegalStateException(a)
     }
-    throw new AimQueryException("Invalid SELECT statement")
+    throw new DriftQueryException("Invalid SELECT statement")
   }
 
   private def asFilter(q: Queue[String]): String = {

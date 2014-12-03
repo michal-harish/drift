@@ -1,5 +1,4 @@
-working name: AIM
-candidate name: DRIFT
+basic use case: grouped view on large data stream window with time-space linear complexity scans 
 the next best alternative for the basic use case: HBase
 
 Fast sequential processing of keyed data windows - a conceptual child of Cassandra, Spark and Kafka
@@ -164,7 +163,6 @@ Design thoughts dump
 * drift-client could also have merge capability - this would speed up export queries
 * atm cluster doesn't have any replication and since partitioning is critical, the cluster suspends all operations if any one of the expected nodes is missing until it reappears
 * compaction - use transformation method to do the merge sorting into larger and larger segments - e.g. start with tiny segments with quick sort and use maturing background transformations
-* 64-bit DOUBLE AimType must be added
 * Compare Memory Mapped Files on SSD vs  spinning disk storage
 * some kind of consumption status of transformers at the segment level would be nice
 * co-location of drift data and YARN container is worth exploring (e.g. giraph algo interlaced with drift data) 

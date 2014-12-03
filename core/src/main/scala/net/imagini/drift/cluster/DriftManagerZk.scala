@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.ConcurrentMap
 import scala.collection.JavaConverters._
 import grizzled.slf4j.Logger
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 
 class DriftManagerZk(val zkConnect: String, override val clusterId:String = "default") extends DriftManager {
   val zkClient = new ZkClient(zkConnect)

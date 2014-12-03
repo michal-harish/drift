@@ -2,9 +2,9 @@ package net.imagini.drift.utils
 
 import org.scalatest.Matchers
 import net.imagini.drift.region.QueryParser
-import net.imagini.drift.region.AimRegion
+import net.imagini.drift.region.DriftRegion
 import org.scalatest.FlatSpec
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.region.QueryParser
 import net.imagini.drift.region.PSelect
 import net.imagini.drift.region.PTable
@@ -12,12 +12,12 @@ import net.imagini.drift.region.PWildcard
 import net.imagini.drift.region.PEquiJoin
 import net.imagini.drift.region.PVar
 import net.imagini.drift.region.PUnionJoin
-import net.imagini.drift.types.AimTableDescriptor
+import net.imagini.drift.types.DriftTableDescriptor
 import net.imagini.drift.types.SortType
 
 class QueryParserTest extends FlatSpec with Matchers {
 
-  val regions = Map[String, AimRegion](
+  val regions = Map[String, DriftRegion](
     "vdna.pageviews" -> pageviews,
     "vdna.conversions" -> conversions,
     "vdna.flags" -> flags)
@@ -48,13 +48,13 @@ class QueryParserTest extends FlatSpec with Matchers {
         PVar("user_uid"), PVar("url"), PVar("timestamp"), PWildcard(PTable("vdna", "conversions"))),
       PVar("user_uid"), PVar("user_uid"), PVar("url"), PVar("timestamp"), PWildcard(PTable("vdna", "conversions"))))
 
-  private def pageviews: AimRegion = {
-    val pageviewsDescriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)"),
+  private def pageviews: DriftRegion = {
+    val pageviewsDescriptor = new DriftTableDescriptor(
+      DriftSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)"),
       10000,
       classOf[BlockStorageMEMLZ4],
       SortType.QUICK_SORT)
-    val regionPageviews = new AimRegion("vdna.pageviews", pageviewsDescriptor)
+    val regionPageviews = new DriftRegion("vdna.pageviews", pageviewsDescriptor)
     //segment 1
     regionPageviews.addTestRecords(
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "www.auto.com/mycar", "2014-10-10 11:59:01"),
@@ -71,14 +71,14 @@ class QueryParserTest extends FlatSpec with Matchers {
 
   }
 
-  private def conversions: AimRegion = {
+  private def conversions: DriftRegion = {
     //CONVERSIONS //TODO ttl = 10
-    val conversionsDescriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID),conversion(STRING),url(STRING),timestamp(TIME)"),
+    val conversionsDescriptor = new DriftTableDescriptor(
+      DriftSchema.fromString("user_uid(UUID),conversion(STRING),url(STRING),timestamp(TIME)"),
       1000,
       classOf[BlockStorageMEMLZ4],
       SortType.QUICK_SORT)
-    val regionConversions1 = new AimRegion("vdna.conversions", conversionsDescriptor)
+    val regionConversions1 = new DriftRegion("vdna.conversions", conversionsDescriptor)
     regionConversions1.addTestRecords(
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "check", "www.bank.com/myaccunt", "2014-10-10 13:59:01"),
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "buy", "www.travel.com/offers/holiday/book", "2014-10-10 13:01:03"))
@@ -87,14 +87,14 @@ class QueryParserTest extends FlatSpec with Matchers {
     regionConversions1
   }
 
-  private def flags: AimRegion = {
+  private def flags: DriftRegion = {
     //USERFLAGS //TODO ttl = -1
-    val userFlagsDescriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID),flag(STRING),value(BOOL)"),
+    val userFlagsDescriptor = new DriftTableDescriptor(
+      DriftSchema.fromString("user_uid(UUID),flag(STRING),value(BOOL)"),
       1000,
       classOf[BlockStorageMEMLZ4],
       SortType.QUICK_SORT)
-    val regionUserFlags1 = new AimRegion("vdna.flags", userFlagsDescriptor)
+    val regionUserFlags1 = new DriftRegion("vdna.flags", userFlagsDescriptor)
     //segment 1
     regionUserFlags1.addTestRecords(
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "true"),

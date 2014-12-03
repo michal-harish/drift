@@ -1,10 +1,10 @@
 package net.imagini.drift.region
 
 import net.imagini.drift.segment.AbstractScanner
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.segment.RowFilter
 import java.util.LinkedHashMap
-import net.imagini.drift.types.AimType
+import net.imagini.drift.types.DriftType
 import scala.collection.immutable.ListMap
 import scala.collection.JavaConverters._
 import java.io.EOFException
@@ -14,9 +14,9 @@ class SubqueryScanner(val select: Array[String], val rowFilter: RowFilter, val s
 
   rowFilter.updateFormula(scanner.schema.names)
 
-  override val schema: AimSchema = scanner.schema.subset(select)
+  override val schema: DriftSchema = scanner.schema.subset(select)
 
-  override val keyType: AimType = scanner.keyType
+  override val keyType: DriftType = scanner.keyType
 
   private val selectIndex = schema.names.map(t ⇒ scanner.schema.get(t))
 

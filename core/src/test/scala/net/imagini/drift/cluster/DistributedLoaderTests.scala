@@ -12,10 +12,10 @@ class DistributedLoaderTests extends FlatSpec with Matchers {
 
       manager.createTable("vdna", "events", "user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
       manager.createTable("addthis", "syncs", "at_id(STRING),user_uid(UUID),timestamp(LONG)")
-      val node1 = new AimNode(1, "localhost:9998", manager)
-      val node2 = new AimNode(2, "localhost:9997", manager)
-      val node3 = new AimNode(3, "localhost:9996", manager)
-      val node4 = new AimNode(4, "localhost:9995", manager)
+      val node1 = new DriftNode(1, "localhost:9998", manager)
+      val node2 = new DriftNode(2, "localhost:9997", manager)
+      val node3 = new DriftNode(3, "localhost:9996", manager)
+      val node4 = new DriftNode(4, "localhost:9995", manager)
 
       new DriftLoader(manager, "vdna", "events", '\t', this.getClass.getResourceAsStream("datasync_big.csv.gz"), true).streamInput should be(139)
       node1.query("count vdna.events").count should be(39)

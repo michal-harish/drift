@@ -2,15 +2,15 @@ package net.imagini.drift
 
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
-import net.imagini.drift.types.AimSchema
-import net.imagini.drift.region.AimRegion
+import net.imagini.drift.types.DriftSchema
+import net.imagini.drift.region.DriftRegion
 import net.imagini.drift.utils.BlockStorageMEMLZ4
 import net.imagini.drift.region.EquiJoinScanner
 import net.imagini.drift.segment.MergeScanner
 import java.io.EOFException
-import net.imagini.drift.types.AimTableDescriptor
+import net.imagini.drift.types.DriftTableDescriptor
 import net.imagini.drift.types.SortType
-import net.imagini.drift.segment.AimSegment
+import net.imagini.drift.segment.DriftSegment
 import java.util.ArrayList
 import net.imagini.drift.utils.View
 import scala.collection.mutable.ListBuffer
@@ -18,13 +18,13 @@ import scala.collection.mutable.ListBuffer
 class Usecase2KeyspaceImport extends FlatSpec with Matchers {
   "Usecase2-keyspace import " should "be possible to do by scan transformation" in {
 
-    val schemaATPageviews = AimSchema.fromString("at_id(STRING), url(STRING), timestamp(TIME)")
-    val schemaATSyncs = AimSchema.fromString("at_id(STRING), user_uid(UUID)")
-    val schemaVDNAPageviews = AimSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)")
-    val pageviews = new AimTableDescriptor(schemaVDNAPageviews, 1000, classOf[BlockStorageMEMLZ4], SortType.QUICK_SORT)
-    val syncs = new AimTableDescriptor(schemaATSyncs, 1000, classOf[BlockStorageMEMLZ4], SortType.QUICK_SORT)
-    val view = new AimTableDescriptor(schemaATPageviews, 1000, classOf[BlockStorageMEMLZ4], SortType.QUICK_SORT)
-    val regionVDNAPageviews1 = new AimRegion("vdna.pageviews", pageviews)
+    val schemaATPageviews = DriftSchema.fromString("at_id(STRING), url(STRING), timestamp(TIME)")
+    val schemaATSyncs = DriftSchema.fromString("at_id(STRING), user_uid(UUID)")
+    val schemaVDNAPageviews = DriftSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)")
+    val pageviews = new DriftTableDescriptor(schemaVDNAPageviews, 1000, classOf[BlockStorageMEMLZ4], SortType.QUICK_SORT)
+    val syncs = new DriftTableDescriptor(schemaATSyncs, 1000, classOf[BlockStorageMEMLZ4], SortType.QUICK_SORT)
+    val view = new DriftTableDescriptor(schemaATPageviews, 1000, classOf[BlockStorageMEMLZ4], SortType.QUICK_SORT)
+    val regionVDNAPageviews1 = new DriftRegion("vdna.pageviews", pageviews)
     regionVDNAPageviews1.addTestRecords(
       Seq("a7b22cfb-a29e-42c3-a3d9-12d32850e234", "www.work.com", "2014-10-10 08:59:01"),
       Seq("a7b22cfb-a29e-42c3-a3d9-12d32850e234", "www.work2.com", "2014-10-10 08:59:01"),
@@ -32,14 +32,14 @@ class Usecase2KeyspaceImport extends FlatSpec with Matchers {
     regionVDNAPageviews1.compact
 
     //Keyspace AT normal load
-    val AS1 = new AimRegion("addthis.syncs", syncs)
+    val AS1 = new DriftRegion("addthis.syncs", syncs)
     AS1.addTestRecords(
       Seq("AT1234", "37b22cfb-a29e-42c3-a3d9-12d32850e103"),
       Seq("AT5656", "a7b22cfb-a29e-42c3-a3d9-12d32850e234"),
       Seq("AT7888", "89777987-a29e-42c3-a3d9-12d32850e234"))
     AS1.compact
 
-    val AP1 = new AimRegion("addthis.views", view)
+    val AP1 = new DriftRegion("addthis.views", view)
     AP1.addTestRecords(
       Seq("AT1234", "www.tv.com", "2014-10-10 13:59:01"),
       Seq("AT5656", "www.auto.com", "2014-10-10 14:00:01"),

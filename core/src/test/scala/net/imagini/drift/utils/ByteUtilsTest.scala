@@ -1,9 +1,5 @@
 package net.imagini.drift.utils
 
-import net.imagini.drift.utils.ByteKey;
-import net.imagini.drift.utils.ByteUtils;
-import net.imagini.drift.utils.View;
-
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 

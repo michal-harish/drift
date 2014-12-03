@@ -5,7 +5,7 @@ import java.util.Arrays;
 import net.imagini.drift.utils.View;
 
 
-abstract public class AimType {
+abstract public class DriftType {
 
     abstract public int getLen();
 
@@ -19,8 +19,8 @@ abstract public class AimType {
 
     private final String id;
 
-    public AimType() {
-        this.id = this.getClass().getName().substring(AimType.class.getName().length());
+    public DriftType() {
+        this.id = this.getClass().getName().substring(DriftType.class.getName().length());
     }
 
     @Override
@@ -30,7 +30,7 @@ abstract public class AimType {
 
     @Override
     public boolean equals(Object object) {
-        return object instanceof AimType && this.equals(((AimType)object));
+        return object instanceof DriftType && this.equals(((DriftType)object));
     }
 
     @Override
@@ -44,14 +44,14 @@ abstract public class AimType {
 
     final public String asString(byte[] src) {
         if (src == null) {
-            return Aim.EMPTY;
+            return Drift.EMPTY;
         } else {
             return asString(src, 0);
         }
     }
     final public String asString(View value) {
         if (value == null) { //TODO remove this check and make sure that View can never be null
-            return Aim.EMPTY;
+            return Drift.EMPTY;
         } else {
             return asString(value.array, value.offset);
         }

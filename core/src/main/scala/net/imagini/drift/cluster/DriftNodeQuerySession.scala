@@ -5,13 +5,13 @@ import java.io.IOException
 import java.net.SocketException
 import net.imagini.drift.segment.AbstractScanner
 import net.imagini.drift.segment.CountScanner
-import net.imagini.drift.types.Aim
+import net.imagini.drift.types.Drift
 import net.imagini.drift.utils.Tokenizer
-import net.imagini.drift.types.AimQueryException
+import net.imagini.drift.types.DriftQueryException
 import net.imagini.drift.client.DriftClient
 import net.imagini.drift.cluster.Protocol._
 
-class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
+class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pipe) extends DriftNodeSession {
 
   private val peerClients: Seq[DriftClient] = if (pipe.protocol.equals(QUERY_INTERNAL)) Seq() else node.peers.map(peer ⇒ {
     new DriftClient(peer._2.getHost, peer._2.getPort, QUERY_INTERNAL)
@@ -36,7 +36,7 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
                   val localCount = node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
                   peerClients.map(peer ⇒ peer.getCount).foldLeft(0L)(_ + _) + localCount
                 }
-                case _ ⇒ throw new AimQueryException("Invalid query protocol")
+                case _ ⇒ throw new DriftQueryException("Invalid query protocol")
               }
               pipe.writeInt(transformedCount.toInt)
               pipe.flush
@@ -94,7 +94,7 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
           case QUERY_USER ⇒ {
             peerClients.map(peer ⇒ peer.getCount).foldLeft(0L)(_ + _) + localScanner.count
           }
-          case _ ⇒ throw new AimQueryException("Invalid query protocol")
+          case _ ⇒ throw new DriftQueryException("Invalid query protocol")
         }
         pipe.writeInt(count.toInt)
         pipe.flush
@@ -116,10 +116,10 @@ class AimNodeQuerySession(override val node: AimNode, override val pipe: Pipe) e
                 //TODO queue size=100 must be exposed in the keyspace/table config
               }
             } else {
-              throw new AimQueryException("Unexpected response from peers")
+              throw new DriftQueryException("Unexpected response from peers")
             }
           }
-          case _ ⇒ throw new AimQueryException("Invalid query protocol")
+          case _ ⇒ throw new DriftQueryException("Invalid query protocol")
         }
 
         try {

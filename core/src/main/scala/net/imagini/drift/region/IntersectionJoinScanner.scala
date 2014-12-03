@@ -1,8 +1,8 @@
 package net.imagini.drift.region
 
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import java.util.LinkedHashMap
-import net.imagini.drift.types.AimType
+import net.imagini.drift.types.DriftType
 import scala.collection.JavaConverters._
 import scala.collection.immutable.ListMap
 import net.imagini.drift.utils.ByteUtils
@@ -16,9 +16,9 @@ class IntersectionJoinScanner(val left: AbstractScanner, val right: AbstractScan
 
   private val leftSelect = left.schema.names.map(n ⇒ (n -> left.schema.field(n)))
   private val rightSelect = right.schema.names.map(n ⇒ (n -> right.schema.field(n)))
-  override val schema: AimSchema = new AimSchema(new LinkedHashMap[String, AimType](
+  override val schema: DriftSchema = new DriftSchema(new LinkedHashMap[String, DriftType](
     ListMap((leftSelect ++ rightSelect): _*).asJava))
-  override val keyType: AimType = left.keyType
+  override val keyType: DriftType = left.keyType
 
   private var selectedKey: View = null
   private val selectBuffer: Array[View] = new Array[View](schema.size)

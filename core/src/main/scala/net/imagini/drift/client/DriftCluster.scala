@@ -3,7 +3,7 @@ package net.imagini.drift.client
 import grizzled.slf4j.Logger
 import net.imagini.drift.utils.BlockStorageMEMLZ4
 import net.imagini.drift.utils.BlockStorage
-import net.imagini.drift.cluster.AimNode
+import net.imagini.drift.cluster.DriftNode
 import net.imagini.drift.cluster.DriftManager
 import net.imagini.drift.cluster.DriftManagerZk
 import net.imagini.drift.utils.BlockStorageMEMLZ4
@@ -41,7 +41,7 @@ object DriftCluster extends App {
   println("Number of local nodes: " + localNumNodes)
   println("Number of total nodes: " + manager.expectedNumNodes)
   println("Storage type: " + storageType.getSimpleName)
-  val localNodes = (1 to localNumNodes).map(n ⇒ new AimNode(n + firstNode - 1, host + ":" + (port + n - 1).toString, manager))
+  val localNodes = (1 to localNumNodes).map(n ⇒ new DriftNode(n + firstNode - 1, host + ":" + (port + n - 1).toString, manager))
 
   //CREATING TABLES
   //TODO querysession handle CREATE TABLE

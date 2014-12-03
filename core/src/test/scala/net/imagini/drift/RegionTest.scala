@@ -2,20 +2,20 @@ package net.imagini.drift
 
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.utils.BlockStorageMEMLZ4
-import net.imagini.drift.region.AimRegion
+import net.imagini.drift.region.DriftRegion
 import net.imagini.drift.region.StatScanner
 import java.io.EOFException
-import net.imagini.drift.types.AimTableDescriptor
+import net.imagini.drift.types.DriftTableDescriptor
 import net.imagini.drift.types.SortType
 
 class RegionTest extends FlatSpec with Matchers {
   "Stat region " should " behave as a normal table" in {
-    val descriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID),column(STRING),value(STRING)"),
+    val descriptor = new DriftTableDescriptor(
+      DriftSchema.fromString("user_uid(UUID),column(STRING),value(STRING)"),
       1000, classOf[BlockStorageMEMLZ4], SortType.QUICK_SORT)
-    val region1 = new AimRegion("vdna.events", descriptor)
+    val region1 = new DriftRegion("vdna.events", descriptor)
     region1.addTestRecords(
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.auto.com}"),
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT1234"),
@@ -28,12 +28,12 @@ class RegionTest extends FlatSpec with Matchers {
     region1.compact
 
     //USERFLAGS //TODO ttl = -1
-    val userFlags = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID),flag(STRING),value(BOOL)"),
+    val userFlags = new DriftTableDescriptor(
+      DriftSchema.fromString("user_uid(UUID),flag(STRING),value(BOOL)"),
       1000,
       classOf[BlockStorageMEMLZ4],
       SortType.QUICK_SORT)
-    val regionUserFlags1 = new AimRegion("vdna.flags", userFlags)
+    val regionUserFlags1 = new DriftRegion("vdna.flags", userFlags)
     regionUserFlags1.addTestRecords(
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "quizzed", "true"),
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "cc", "true"))

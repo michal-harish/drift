@@ -3,9 +3,9 @@ package net.imagini.drift.types;
 import net.imagini.drift.utils.ByteUtils;
 import net.imagini.drift.utils.View;
 
-public class AimTypeUUID extends AimTypeBYTEARRAY {
+public class DriftTypeUUID extends DriftTypeBYTEARRAY {
 
-    public AimTypeUUID() {
+    public DriftTypeUUID() {
         super(16);
     }
 

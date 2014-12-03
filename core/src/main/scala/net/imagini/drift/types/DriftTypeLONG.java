@@ -3,7 +3,7 @@ package net.imagini.drift.types;
 import net.imagini.drift.utils.ByteUtils;
 import net.imagini.drift.utils.View;
 
-public class AimTypeLONG extends AimType {
+public class DriftTypeLONG extends DriftType {
 
     @Override
     public int getLen() {

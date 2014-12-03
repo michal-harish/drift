@@ -1,6 +1,6 @@
 package net.imagini.drift.cluster
 
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.MultiMap

@@ -6,7 +6,7 @@ import net.imagini.drift.utils.View;
 import org.joda.time.DateTimeZone;
 import org.joda.time.MutableDateTime;
 
-public class AimTypeTIME extends AimTypeLONG  {
+public class DriftTypeTIME extends DriftTypeLONG  {
 
     private final static String UTC_PATTERN = "yyyy-MM-dd HH:mm:ss";
 

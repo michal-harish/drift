@@ -4,16 +4,16 @@ import java.io.IOException
 import java.net.InetAddress
 import java.net.Socket
 import scala.Array.canBuildFrom
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.cluster.Pipe
 import net.imagini.drift.cluster.Protocol
 import java.io.EOFException
-import net.imagini.drift.types.AimQueryException
+import net.imagini.drift.types.DriftQueryException
 import net.imagini.drift.cluster.StreamUtils
-import net.imagini.drift.types.Aim
+import net.imagini.drift.types.Drift
 import net.imagini.drift.utils.ByteUtils
 import java.nio.ByteBuffer
-import net.imagini.drift.cluster.AimNode
+import net.imagini.drift.cluster.DriftNode
 import net.imagini.drift.utils.View
 
 object DriftClient extends App {
@@ -52,12 +52,12 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
   def this(host: String, port: Int) = this(host, port, Protocol.QUERY_USER)
   private var socket: Socket = null
   private var pipe: Pipe = null
-  private var schema: Option[AimSchema] = None
+  private var schema: Option[DriftSchema] = None
   private var next: Option[Array[Array[Byte]]] = None
   private var info: Option[Seq[String]] = null
   private var numRecords: Option[Long] = null
 
-  def getSchema: Option[AimSchema] = schema
+  def getSchema: Option[DriftSchema] = schema
 
   def getInfo: Seq[String] = info match {
     case null      ⇒ Seq()
@@ -80,7 +80,7 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
     }
   }
 
-  def query(query: String): Option[AimSchema] = {
+  def query(query: String): Option[DriftSchema] = {
     if (socket == null || hasNext) {
       reconnect
     }
@@ -149,7 +149,7 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
     }
   }
 
-  def resultSchema: AimSchema = schema match {
+  def resultSchema: DriftSchema = schema match {
     case None         ⇒ throw new IllegalStateException
     case Some(schema) ⇒ schema
   }
@@ -207,10 +207,10 @@ class DriftClient(val host: String, val port: Int, val protocol: Protocol) {
       case "COUNT" ⇒ numRecords = None
       case "RESULT" ⇒ {
         numRecords = Some(0)
-        schema = Some(AimSchema.fromString(pipe.read))
+        schema = Some(DriftSchema.fromString(pipe.read))
       }
       case "ERROR" ⇒ {
-        throw new AimQueryException(pipe.read)
+        throw new DriftQueryException(pipe.read)
       }
       case any: String ⇒ {
         reconnect

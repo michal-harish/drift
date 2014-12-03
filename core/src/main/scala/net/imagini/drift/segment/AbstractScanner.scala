@@ -1,17 +1,17 @@
 package net.imagini.drift.segment
 
 import scala.Array.canBuildFrom
-import net.imagini.drift.types.AimSchema
-import net.imagini.drift.types.AimType
+import net.imagini.drift.types.DriftSchema
+import net.imagini.drift.types.DriftType
 import net.imagini.drift.utils.View
 
 trait CountScanner extends AbstractScanner {}
 
 trait AbstractScanner {
 
-  val schema: AimSchema
+  val schema: DriftSchema
 
-  def keyType: AimType
+  def keyType: DriftType
 
   def count: Long
 
@@ -29,7 +29,7 @@ trait AbstractScanner {
 
   final protected[drift] def nextLine(separator: String): String = { next; selectLine(separator) }
 
-  final def selectLine(separator: String): String = (schema.fields, selectRow).zipped.map((t, b) ⇒ t.asString(b)).mkString(separator)
+  final def selectLine(separator: String): String = (schema.fields, selectRow).zipped.map((t,b) ⇒ t.asString(b)).mkString(separator)
 
   //  val mapreduce = Executors.newFixedThreadPool(4)
   //  def reduce[T](filter: RowFilter, reducer:() => T): T= {

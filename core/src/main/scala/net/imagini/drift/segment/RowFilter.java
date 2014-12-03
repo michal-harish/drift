@@ -9,8 +9,8 @@ import java.util.Queue;
 import java.util.Set;
 
 import net.imagini.drift.cluster.Pipe;
-import net.imagini.drift.types.AimSchema;
-import net.imagini.drift.types.AimType;
+import net.imagini.drift.types.DriftSchema;
+import net.imagini.drift.types.DriftType;
 import net.imagini.drift.types.TypeUtils;
 import net.imagini.drift.utils.Tokenizer;
 import net.imagini.drift.utils.View;
@@ -35,11 +35,11 @@ import org.apache.commons.lang3.StringUtils;
 
 public class RowFilter {
 
-    public static RowFilter fromString(AimSchema schema, String declaration) {
+    public static RowFilter fromString(DriftSchema schema, String declaration) {
         return fromTokenQueue(schema, Tokenizer.tokenize(declaration, false));
     }
 
-    public static RowFilter fromTokenQueue(AimSchema schema, Queue<String> cmd) {
+    public static RowFilter fromTokenQueue(DriftSchema schema, Queue<String> cmd) {
         RowFilter rootFilter = new RowFilter(schema);
         RowFilter filter = rootFilter;
         while(cmd.size()>0) {
@@ -77,15 +77,15 @@ public class RowFilter {
         return rootFilter;
     }
 
-    protected static RowFilter proxy(RowFilter root, AimSchema schema, String expression) {
+    protected static RowFilter proxy(RowFilter root, DriftSchema schema, String expression) {
         RowFilter result = new RowFilterSimple(root, schema, expression);
         result.root = root;
         return result;
     }
 
-    private AimSchema schema;
+    private DriftSchema schema;
     protected RowFilter root;
-    protected AimType aimType;
+    protected DriftType driftType;
     protected RowFilter next;
     protected boolean isEmptyFilter = false;
     public boolean isEmptyFilter() {
@@ -93,22 +93,22 @@ public class RowFilter {
     }
 
 
-    public RowFilter(AimSchema schema) {
+    public RowFilter(DriftSchema schema) {
         this(null, null);
         this.root = this;
         this.schema = schema;
     }
 
-    public AimSchema schema() {
+    public DriftSchema schema() {
         return root.schema;
     }
 
-    protected RowFilter(RowFilter root, AimType aimType) {
-        this(root,aimType,null);
+    protected RowFilter(RowFilter root, DriftType driftType) {
+        this(root,driftType,null);
     }
 
-    protected RowFilter(RowFilter root, AimType type, RowFilter next) {
-        this.aimType = type;
+    protected RowFilter(RowFilter root, DriftType type, RowFilter next) {
+        this.driftType = type;
         this.root = root;
         this.next = next;
     }
@@ -168,12 +168,12 @@ public class RowFilter {
     }
 
     public RowFilter equals(final String value) {
-        if (aimType == null) return next.equals(value);
-        final View val = new View(aimType.convert(value));
-        return next = new RowFilter(root,aimType) {
-            @Override public String toString() { return "= " + aimType.escape(value) + super.toString(); }
+        if (driftType == null) return next.equals(value);
+        final View val = new View(driftType.convert(value));
+        return next = new RowFilter(root,driftType) {
+            @Override public String toString() { return "= " + driftType.escape(value) + super.toString(); }
             @Override protected boolean matches(View value, View[] record) {
-                boolean match = super.matches(TypeUtils.compare(value,val, aimType)==0, record);
+                boolean match = super.matches(TypeUtils.compare(value,val, driftType)==0, record);
                 return match;
             }
         };
@@ -198,7 +198,7 @@ public class RowFilter {
     }
 
     public RowFilter not() {
-        return next = new RowFilter(root, aimType, next) {
+        return next = new RowFilter(root, driftType, next) {
             @Override public String toString() { return "NOT" + super.toString(); }
             @Override protected boolean matches(boolean soFar, View[] record) {
                 return !next.matches(soFar, record);
@@ -207,50 +207,50 @@ public class RowFilter {
     }
 
     public RowFilter contains(final String value) {
-        if (aimType == null) return next.contains(value);
-        final View val = new View(aimType.convert(value));
-        return next = new RowFilter(root,aimType) {
-            @Override public String toString() { return "CONTAINS " + aimType.escape(value) + super.toString(); }
+        if (driftType == null) return next.contains(value);
+        final View val = new View(driftType.convert(value));
+        return next = new RowFilter(root,driftType) {
+            @Override public String toString() { return "CONTAINS " + driftType.escape(value) + super.toString(); }
             @Override protected boolean matches(View value,  View[] record) {
-                return super.matches(TypeUtils.contains(value, val, aimType), record);
+                return super.matches(TypeUtils.contains(value, val, driftType), record);
             }
         };
     }
 
     public RowFilter greaterThan(final String value) {
-        if (aimType == null) return next.greaterThan(value);
-        final View val = new View(aimType.convert(value));
-        return next = new RowFilter(root,aimType) {
-            @Override public String toString() { return "> " + aimType.escape(value) + super.toString(); }
+        if (driftType == null) return next.greaterThan(value);
+        final View val = new View(driftType.convert(value));
+        return next = new RowFilter(root,driftType) {
+            @Override public String toString() { return "> " + driftType.escape(value) + super.toString(); }
             @Override protected boolean matches(View value, View[] data) {
-                return super.matches(TypeUtils.compare(value, val, aimType) > 0, data);
+                return super.matches(TypeUtils.compare(value, val, driftType) > 0, data);
             }
         };
     }
 
     public RowFilter lessThan(final String value) {
-        if (aimType == null) return next.lessThan(value);
-        final View val = new View(aimType.convert(value));
-        return next = new RowFilter(root,aimType) {
-            @Override public String toString() { return "< " + aimType.escape(value) +super.toString(); }
+        if (driftType == null) return next.lessThan(value);
+        final View val = new View(driftType.convert(value));
+        return next = new RowFilter(root,driftType) {
+            @Override public String toString() { return "< " + driftType.escape(value) +super.toString(); }
             @Override protected boolean matches(View value, View[] data) {
-                return super.matches(TypeUtils.compare(value, val, aimType) < 0, data);
+                return super.matches(TypeUtils.compare(value, val, driftType) < 0, data);
             }
         };
     }
 
     public RowFilter in(final String... values) {
-        if (aimType == null) return next.in(values);
+        if (driftType == null) return next.in(values);
         final View[] vals = new View[values.length]; 
         int i = 0; for(String value:values) {
-            vals[i++] = new View(aimType.convert(value));
+            vals[i++] = new View(driftType.convert(value));
         }
-        return next = new RowFilter(root,aimType) {
+        return next = new RowFilter(root,driftType) {
             @Override public String toString() { return "IN (" + StringUtils.join(values, ",") +")" + super.toString(); }
             @Override protected boolean matches(View value, View[] data) {
                 boolean localResult = false;
                 for(View val: vals) {
-                    if (TypeUtils.compare(value, val, aimType)==0) {
+                    if (TypeUtils.compare(value, val, driftType)==0) {
                         localResult = true;
                         break;
                     }
@@ -263,7 +263,7 @@ public class RowFilter {
     public static class RowFilterSimple extends RowFilter {
         private int colIndex;
         private String colName;
-        public RowFilterSimple(RowFilter root, AimSchema schema, String field) {
+        public RowFilterSimple(RowFilter root, DriftSchema schema, String field) {
             super(root, schema.field(field));
             this.colName = field;
         }

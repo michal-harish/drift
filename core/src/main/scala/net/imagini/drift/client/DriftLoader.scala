@@ -4,7 +4,7 @@ import java.io.FileInputStream
 import java.io.InputStream
 import java.util.zip.GZIPInputStream
 
-import net.imagini.drift.cluster.AimNodeLoader
+import net.imagini.drift.cluster.DriftNodeLoader
 import net.imagini.drift.cluster.DriftManager
 import net.imagini.drift.cluster.DriftManagerZk
 
@@ -56,7 +56,7 @@ class DriftLoader(
   val in: InputStream = if (gzip) new GZIPInputStream(inputStream) else inputStream
 
   def streamInput: Long = {
-    val loader = new AimNodeLoader(manager, keyspace, table)
+    val loader = new DriftNodeLoader(manager, keyspace, table)
     val count = loader.loadUnparsedStream(in, separator)
     manager.close
     count

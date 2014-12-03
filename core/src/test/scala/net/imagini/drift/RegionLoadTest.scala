@@ -2,8 +2,8 @@ package net.imagini.drift
 
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
-import net.imagini.drift.types.AimSchema
-import net.imagini.drift.region.AimRegion
+import net.imagini.drift.types.DriftSchema
+import net.imagini.drift.region.DriftRegion
 import net.imagini.drift.utils.BlockStorageMEMLZ4
 import net.imagini.drift.types.TypeUtils
 import net.imagini.drift.utils.ByteUtils
@@ -11,10 +11,10 @@ import java.util.UUID
 import net.imagini.drift.segment.MergeScanner
 import net.imagini.drift.utils.View
 import net.imagini.drift.utils.BlockStorageMEM
-import net.imagini.drift.segment.AimSegment
+import net.imagini.drift.segment.DriftSegment
 import net.imagini.drift.utils.BlockStorage
 import net.imagini.drift.segment.SegmentScanner
-import net.imagini.drift.types.AimTableDescriptor
+import net.imagini.drift.types.DriftTableDescriptor
 import net.imagini.drift.segment.CountScanner
 import net.imagini.drift.types.SortType
 import scala.collection.mutable.ListBuffer
@@ -48,15 +48,15 @@ class RegionLoadTest extends FlatSpec with Matchers {
   }
 
   private def runLoadTestUnsorted(numSegments: Int, storageType: Class[_ <: BlockStorage]) {
-    val schema = AimSchema.fromString("uid(UUID),i(INT),s(STRING)")
+    val schema = DriftSchema.fromString("uid(UUID),i(INT),s(STRING)")
     val recordSize = 16 + 4 + 14
     val recordsPerSegment = 3000
     val segmentSize = recordSize * recordsPerSegment
     val numRecords = recordsPerSegment * numSegments
     val ids: Array[String] = Array("0dc56198-975d-4cf9-9b3f-a52581dee886", "32c07e66-0824-4e1c-b126-bd0a2e586bae")
 
-    val descriptor = new AimTableDescriptor(schema, segmentSize, storageType, SortType.NO_SORT)
-    val region = new AimRegion("test.data", descriptor)
+    val descriptor = new DriftTableDescriptor(schema, segmentSize, storageType, SortType.NO_SORT)
+    val region = new DriftRegion("test.data", descriptor)
 
     var segment = new ListBuffer[Seq[String]]
     for (r ← (1 to numRecords)) {
@@ -92,15 +92,15 @@ class RegionLoadTest extends FlatSpec with Matchers {
   }
 
   private def runLoadTestQuickSorted(numSegments: Int, storageType: Class[_ <: BlockStorage]) {
-    val schema = AimSchema.fromString("uid(UUID),i(INT),s(STRING)")
+    val schema = DriftSchema.fromString("uid(UUID),i(INT),s(STRING)")
     val recordSize = 16 + 4 + 14
     val recordsPerSegment = 3000
     val segmentSize = recordSize * recordsPerSegment
     val numRecords = recordsPerSegment * numSegments
     val ids: Array[String] = Array("0dc56198-975d-4cf9-9b3f-a52581dee886", "32c07e66-0824-4e1c-b126-bd0a2e586bae")
 
-    val descriptor = new AimTableDescriptor(schema, segmentSize, storageType, SortType.QUICK_SORT)
-    val region = new AimRegion("test.data", descriptor)
+    val descriptor = new DriftTableDescriptor(schema, segmentSize, storageType, SortType.QUICK_SORT)
+    val region = new DriftRegion("test.data", descriptor)
 
     var segment = new ListBuffer[Seq[String]]
     for (r ← (1 to numRecords)) {

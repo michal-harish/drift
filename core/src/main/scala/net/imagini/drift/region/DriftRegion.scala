@@ -10,10 +10,10 @@ import java.util.concurrent.locks.ReentrantLock
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Queue
-import net.imagini.drift.segment.AimSegment
-import net.imagini.drift.segment.AimSegment
-import net.imagini.drift.types.AimSchema
-import net.imagini.drift.types.AimTableDescriptor
+import net.imagini.drift.segment.DriftSegment
+import net.imagini.drift.segment.DriftSegment
+import net.imagini.drift.types.DriftSchema
+import net.imagini.drift.types.DriftTableDescriptor
 import net.imagini.drift.types.SortOrder
 import net.imagini.drift.types.SortType
 import net.imagini.drift.utils.BlockStorage
@@ -21,16 +21,16 @@ import net.imagini.drift.utils.View
 import net.imagini.drift.utils.BlockStorage.PersistentBlockStorage
 import net.imagini.drift.utils.ByteUtils
 
-class AimRegion(
+class DriftRegion(
   val regionId: String,
-  val descriptor: AimTableDescriptor) {
+  val descriptor: DriftTableDescriptor) {
 
   val schema = descriptor.schema
   val segmentSizeBytes = descriptor.segmentSize
   val storageType: Class[_ <: BlockStorage] = descriptor.storageType
   val sortOrder = SortOrder.ASC
 
-  val segments: ListBuffer[AimSegment] = ListBuffer()
+  val segments: ListBuffer[DriftSegment] = ListBuffer()
   val compactionExecutor = Executors.newFixedThreadPool(10)
   val compactionQueue = new Queue[Future[Option[Int]]]
   val compactionLock = new ReentrantLock
@@ -41,7 +41,7 @@ class AimRegion(
 
   def getCompressedSize: Long = segments.foldLeft(0L)(_ + _.getCompressedSize)
 
-  private val segmentConstructor = classOf[AimSegment].getConstructor(classOf[AimSchema])
+  private val segmentConstructor = classOf[DriftSegment].getConstructor(classOf[DriftSchema])
 
   val persisted = storageType.getInterfaces.contains(classOf[PersistentBlockStorage])
 
@@ -66,7 +66,7 @@ class AimRegion(
       }
       case SortType.NO_SORT | _ ⇒ {}
     }
-    val segment = new AimSegment(schema).init(storageType, regionId)
+    val segment = new DriftSegment(schema).init(storageType, regionId)
     var r = 0; while (r < recordList.size()) {
       val record = recordList.get(r)
       segment.commitRecord(record)

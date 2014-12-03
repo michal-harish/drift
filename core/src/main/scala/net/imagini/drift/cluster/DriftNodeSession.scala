@@ -2,12 +2,12 @@ package net.imagini.drift.cluster
 
 import java.io.EOFException
 import grizzled.slf4j.Logger
-import net.imagini.drift.types.AimQueryException
+import net.imagini.drift.types.DriftQueryException
 import java.io.IOException
 
-trait AimNodeSession extends Thread {
+trait DriftNodeSession extends Thread {
   val log = Logger[this.type]
-  val node: AimNode
+  val node: DriftNode
   val pipe: Pipe
 
   def accept
@@ -25,7 +25,7 @@ trait AimNodeSession extends Thread {
         try {
           accept
         } catch {
-          case e: AimQueryException ⇒ log.warn(e)
+          case e: DriftQueryException ⇒ log.warn(e)
         }
       }
     } catch {

@@ -8,7 +8,7 @@ import scala.collection.JavaConverters._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.LinkedBlockingQueue
 import net.imagini.drift.utils.ByteKey
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.types.SortOrder
 import net.imagini.drift.types.SortOrder._
 import scala.Array.canBuildFrom
@@ -26,7 +26,7 @@ import java.util.TreeMap
  *
  */
 
-class StreamMerger(val schema: AimSchema, val queueSize: Int, val inputStreams: Array[InputStream]) extends InputStream {
+class StreamMerger(val schema: DriftSchema, val queueSize: Int, val inputStreams: Array[InputStream]) extends InputStream {
 
   //TODO this must become part of the schema including key, but it must be easy to create variants of schemas with switching key columns and sort order
   val sortOrder = SortOrder.ASC
@@ -100,7 +100,7 @@ class StreamMerger(val schema: AimSchema, val queueSize: Int, val inputStreams: 
 
 }
 
-class Fetcher(val schema: AimSchema, val in: InputStream, val executor: ExecutorService, val queueSize: Int) extends Runnable {
+class Fetcher(val schema: DriftSchema, val in: InputStream, val executor: ExecutorService, val queueSize: Int) extends Runnable {
   @volatile private var hasMoreData = true
   def closed: Boolean = !hasMoreData && ready.size == 0
   private val ready = new LinkedBlockingQueue[Option[Array[Array[Byte]]]](queueSize)

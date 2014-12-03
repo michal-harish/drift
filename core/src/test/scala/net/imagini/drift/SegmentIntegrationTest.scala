@@ -2,27 +2,27 @@ package net.imagini.drift
 
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
-import net.imagini.drift.segment.AimSegment
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.segment.DriftSegment
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.utils.BlockStorageMEMLZ4
 import net.imagini.drift.segment.RowFilter
 import java.io.InputStream
 import net.imagini.drift.types.SortOrder
-import net.imagini.drift.region.AimRegion
+import net.imagini.drift.region.DriftRegion
 import net.imagini.drift.cluster.StreamUtils
 import net.imagini.drift.cluster.ScannerInputStream
 import net.imagini.drift.segment.MergeScanner
 import net.imagini.drift.segment.CountScanner
-import net.imagini.drift.types.AimTableDescriptor
+import net.imagini.drift.types.DriftTableDescriptor
 import net.imagini.drift.utils.View
 import net.imagini.drift.types.SortType
 
 class SegmentIntegration extends FlatSpec with Matchers {
 
   "Unsorted segemnt select" should "give an input stream with the same order of records" in {
-    val schema = AimSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
-    val d = new AimTableDescriptor(schema, 10000, classOf[BlockStorageMEMLZ4], SortType.NO_SORT)
-    val p1 = new AimRegion("vdna.events", d)
+    val schema = DriftSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
+    val d = new DriftTableDescriptor(schema, 10000, classOf[BlockStorageMEMLZ4], SortType.NO_SORT)
+    val p1 = new DriftRegion("vdna.events", d)
     p1.addTestRecords(
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "a", "6571796330792743131"),
       Seq("17b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748042", "a", "6571796330792743131"),
@@ -44,9 +44,9 @@ class SegmentIntegration extends FlatSpec with Matchers {
   }
 
   "QuickSorted ASC segemnt select" should "give an input stream with the correct order" in {
-    val schema = AimSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
-    val d = new AimTableDescriptor(schema, 10000, classOf[BlockStorageMEMLZ4], SortType.QUICK_SORT)
-    val p1 = new AimRegion("vdna.events", d)
+    val schema = DriftSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
+    val d = new DriftTableDescriptor(schema, 10000, classOf[BlockStorageMEMLZ4], SortType.QUICK_SORT)
+    val p1 = new DriftRegion("vdna.events", d)
     p1.addTestRecords(
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748041", "a", "6571796330792743131"),
       Seq("17b22cfb-a29e-42c3-a3d9-12d32850e103", "1413143748042", "a", "6571796330792743131"),
@@ -67,8 +67,8 @@ class SegmentIntegration extends FlatSpec with Matchers {
   }
 
   //  "QuickSorted DESC  segemnt select" should "give an input stream with the correct order" in {
-  //    val schema = AimSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
-  //    val s1 = new AimSegmentQuickSort(schema, "user_uid", SortOrder.DESC, classOf[BlockStorageMEMLZ4])
+  //    val schema = DriftSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
+  //    val s1 = new DriftSegmentQuickSort(schema, "user_uid", SortOrder.DESC, classOf[BlockStorageMEMLZ4])
   //    s1.appendRecord("37b22cfb-a29e-42c3-a3d9-12d32850e103","1413143748041","a","6571796330792743131")
   //    s1.appendRecord("17b22cfb-a29e-42c3-a3d9-12d32850e103","1413143748042","a","6571796330792743131")
   //    s1.appendRecord("a7b22cfb-a29e-42c3-a3d9-12d32850e103","1413143748043","a","6571796330792743131")

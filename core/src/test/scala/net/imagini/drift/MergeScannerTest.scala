@@ -3,22 +3,22 @@ package net.imagini.drift
 import java.io.EOFException
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-import net.imagini.drift.region.AimRegion
+import net.imagini.drift.region.DriftRegion
 import net.imagini.drift.segment.MergeScanner
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.utils.BlockStorageMEMLZ4
-import net.imagini.drift.types.AimTableDescriptor
+import net.imagini.drift.types.DriftTableDescriptor
 import net.imagini.drift.types.SortType
 
 class MergeScannerTest extends FlatSpec with Matchers {
 
   "ScannerMerge " should "produce same result as stream merge" in {
-    val descriptor = new AimTableDescriptor(
-      AimSchema.fromString("user_uid(UUID),column(STRING),value(STRING)"),
+    val descriptor = new DriftTableDescriptor(
+      DriftSchema.fromString("user_uid(UUID),column(STRING),value(STRING)"),
       1000,
       classOf[BlockStorageMEMLZ4],
       SortType.QUICK_SORT)
-    val region = new AimRegion("vdna.events", descriptor)
+    val region = new DriftRegion("vdna.events", descriptor)
     region.addTestRecords(
       Seq("37b22cfb-a29e-42c3-a3d9-12d32850e103", "pageview", "{www.auto.com}"),
       Seq("17b22cfb-a29e-42c3-a3d9-12d32850e103", "addthis_id", "AT1234"),

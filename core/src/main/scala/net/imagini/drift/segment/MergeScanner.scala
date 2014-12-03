@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import scala.collection.mutable.SynchronizedQueue
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.types.SortOrder
 import net.imagini.drift.types.SortOrder.ASC
 import net.imagini.drift.types.SortOrder.DESC
@@ -15,17 +15,17 @@ import net.imagini.drift.utils.View
 import net.imagini.drift.utils.ByteKey
 
 //TODO sourceSchema can be retrieved from any of the segments provided
-class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, val segments: Seq[AimSegment])
+class MergeScanner(val selectFields: Array[String], val rowFilter: RowFilter, val segments: Seq[DriftSegment])
   extends AbstractScanner {
-  def this(selectStatement: String, rowFilterStatement: String, segments: Seq[AimSegment]) = this(
+  def this(selectStatement: String, rowFilterStatement: String, segments: Seq[DriftSegment]) = this(
     if (selectStatement.contains("*")) segments(0).getSchema.names else selectStatement.split(",").map(_.trim),
     RowFilter.fromString(segments(0).getSchema, rowFilterStatement),
     segments)
 
-  private val sourceSchema: AimSchema = segments(0).getSchema
-  override val schema: AimSchema = sourceSchema.subset(selectFields)
+  private val sourceSchema: DriftSchema = segments(0).getSchema
+  override val schema: DriftSchema = sourceSchema.subset(selectFields)
   private val keyField: String = sourceSchema.name(0)
-  private val scanSchema: AimSchema = sourceSchema.subset(selectFields ++ rowFilter.getColumns :+ keyField)
+  private val scanSchema: DriftSchema = sourceSchema.subset(selectFields ++ rowFilter.getColumns :+ keyField)
   private val scanners: Array[SegmentScanner] = segments.map(segment ⇒ new SegmentScanner(scanSchema.names, rowFilter, segment)).toArray
 
   private val scanColumnIndex: Array[Int] = schema.names.map(n ⇒ scanSchema.get(n))

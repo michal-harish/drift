@@ -5,15 +5,11 @@ import java.io.File
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 
-import net.imagini.drift.segment.AimSegment
-import net.imagini.drift.types.AimSchema
-import net.imagini.drift.types.AimTableDescriptor
+import net.imagini.drift.segment.DriftSegment
+import net.imagini.drift.types.DriftSchema
+import net.imagini.drift.types.DriftTableDescriptor
 import net.imagini.drift.types.SortType
-import net.imagini.drift.region.AimRegion
-import net.imagini.drift.utils.BlockStorageFS;
-import net.imagini.drift.utils.BlockStorageMEM;
-import net.imagini.drift.utils.BlockStorageMEMLZ4;
-import net.imagini.drift.utils.View;
+import net.imagini.drift.region.DriftRegion
 
 import java.nio.ByteBuffer
 
@@ -131,9 +127,9 @@ class BlockStorageTest extends FlatSpec with Matchers {
     val f1 = new File("/var/lib/drift/drift-system-test-uid"); if (f1.exists()) f1.listFiles.map(file ⇒ file.delete)
     val f2 = new File("/var/lib/drift/drift-system-test-value"); if (f2.exists()) f2.listFiles.map(file ⇒ file.delete)
 
-    val schema = AimSchema.fromString("uid(UUID),value(STRING)")
-    val descriptor = new AimTableDescriptor(schema, 10000, classOf[BlockStorageFS], SortType.NO_SORT)
-    val region = new AimRegion("drift-system-test", descriptor)
+    val schema = DriftSchema.fromString("uid(UUID),value(STRING)")
+    val descriptor = new DriftTableDescriptor(schema, 10000, classOf[BlockStorageFS], SortType.NO_SORT)
+    val region = new DriftRegion("drift-system-test", descriptor)
     region.addTestRecords(
       Seq("95c54c2e-2542-4f5e-8914-47e669a9578f", "Hello"),
       Seq("95c54c2e-2542-4f5e-8914-47e669a9578f", "World"))

@@ -3,9 +3,9 @@ package net.imagini.drift.types;
 import net.imagini.drift.utils.ByteUtils;
 import net.imagini.drift.utils.View;
 
-public class AimTypeBYTEARRAY extends AimType {
+public class DriftTypeBYTEARRAY extends DriftType {
     final public int size;
-    public AimTypeBYTEARRAY(int size) {  this.size = size; }
+    public DriftTypeBYTEARRAY(int size) {  this.size = size; }
     @Override public int getLen() { 
         return size; 
     }
@@ -25,7 +25,7 @@ public class AimTypeBYTEARRAY extends AimType {
     }
 
     @Override public boolean equals(Object object) {
-        return object instanceof AimTypeBYTEARRAY && this.size == ((AimTypeBYTEARRAY)object).getLen();
+        return object instanceof DriftTypeBYTEARRAY && this.size == ((DriftTypeBYTEARRAY)object).getLen();
     }
 
     @Override public String asString(byte[] src, int offset) {

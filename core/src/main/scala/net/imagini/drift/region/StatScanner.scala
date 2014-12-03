@@ -2,19 +2,19 @@ package net.imagini.drift.region
 
 import scala.collection.immutable.SortedMap
 import net.imagini.drift.segment.AbstractScanner
-import net.imagini.drift.types.Aim
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.Drift
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.utils.ByteUtils
-import net.imagini.drift.cluster.AimNode
+import net.imagini.drift.cluster.DriftNode
 import java.io.EOFException
-import net.imagini.drift.types.AimType
+import net.imagini.drift.types.DriftType
 import net.imagini.drift.utils.View
 
-class StatScanner(val region: Int, val regions: Map[String, AimRegion]) extends AbstractScanner {
+class StatScanner(val region: Int, val regions: Map[String, DriftRegion]) extends AbstractScanner {
 
-  override val schema = AimSchema.fromString("table(STRING),region(INT),segments(LONG),compressed(LONG)")
+  override val schema = DriftSchema.fromString("table(STRING),region(INT),segments(LONG),compressed(LONG)")
 
-  override val keyType: AimType = Aim.STRING
+  override val keyType: DriftType = Drift.STRING
 
   private val data: SortedMap[String, Array[View]] = SortedMap(regions.map(r ⇒ {
     r._1 -> Array(

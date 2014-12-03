@@ -3,7 +3,7 @@ package net.imagini.drift.types;
 import net.imagini.drift.utils.ByteUtils;
 import net.imagini.drift.utils.View;
 
-public class AimTypeSTRING extends AimType {
+public class DriftTypeSTRING extends DriftType {
 
     @Override
     public int getLen() {
@@ -28,7 +28,7 @@ public class AimTypeSTRING extends AimType {
     @Override
     public String asString(byte[] src, int offset) {
         if (src == null) {
-            return Aim.EMPTY;
+            return Drift.EMPTY;
         } else {
             return new String(src, offset + 4, ByteUtils.asIntValue(src, offset));
         }

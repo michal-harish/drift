@@ -1,11 +1,11 @@
 package net.imagini.drift.cluster
 
-import net.imagini.drift.types.AimSchema
+import net.imagini.drift.types.DriftSchema
 import grizzled.slf4j.Logger
 import net.imagini.drift.utils.BlockStorage
 import net.imagini.drift.utils.BlockStorageMEMLZ4
 import java.net.URI
-import net.imagini.drift.types.AimTableDescriptor
+import net.imagini.drift.types.DriftTableDescriptor
 
 trait DriftManager {
   val log = Logger[this.type]
@@ -34,12 +34,12 @@ trait DriftManager {
     nodeConnectors
   }
 
-  final def getDescriptor(keyspace: String, table: String): AimTableDescriptor = {
-    new AimTableDescriptor(get[String]("/drift/" + clusterId +"/keyspaces/" + keyspace + "/" + table))
+  final def getDescriptor(keyspace: String, table: String): DriftTableDescriptor = {
+    new DriftTableDescriptor(get[String]("/drift/" + clusterId +"/keyspaces/" + keyspace + "/" + table))
   }
 
   final def clusterIsSuspended: Boolean = {
-    //TODO replicate behaviour from the AimNode
+    //TODO replicate behaviour from the DriftNode
     false
   }
 
@@ -71,7 +71,7 @@ trait DriftManager {
   }
 
   final def createTable(keyspace: String, name: String, schemaDeclaration: String, segmentSize: Int, storage: Class[_ <: BlockStorage]) {
-    AimSchema.fromString(schemaDeclaration)
+    DriftSchema.fromString(schemaDeclaration)
     val keyspacePath = "/drift/" + clusterId + "/keyspaces/" + keyspace
     if (!pathExists(keyspacePath)) pathCreatePersistent(keyspacePath, "")
     val tablePath = keyspacePath + "/" + name

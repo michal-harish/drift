@@ -4,13 +4,13 @@ import java.io.EOFException
 import java.io.InputStream
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.MultiMap
-import net.imagini.drift.types.AimQueryException
+import net.imagini.drift.types.DriftQueryException
 import net.imagini.drift.utils.ByteKey
 import net.imagini.drift.utils.View
 import java.util.Collections
 import net.imagini.drift.types.SortOrder
 
-class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) extends AimNodeSession {
+class DriftNodeLoaderSession(override val node: DriftNode, override val pipe: Pipe) extends DriftNodeSession {
 
   val keyspace = pipe.readHeader
   val table = pipe.readHeader
@@ -32,7 +32,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
       pipe.protocol match {
         case Protocol.LOADER_USER     ⇒ loadUnparsedStream
         case Protocol.LOADER_INTERNAL ⇒ loadPartitionedStream
-        case _                        ⇒ throw new AimQueryException("Invalid loader protocol " + pipe.protocol);
+        case _                        ⇒ throw new DriftQueryException("Invalid loader protocol " + pipe.protocol);
       }
     } catch {
       case e: EOFException ⇒ {}
@@ -47,7 +47,7 @@ class AimNodeLoaderSession(override val node: AimNode, override val pipe: Pipe) 
   }
 
   private def loadUnparsedStream = {
-    val loader = new AimNodeLoader(node.manager, keyspace, table)
+    val loader = new DriftNodeLoader(node.manager, keyspace, table)
     count = loader.loadUnparsedStream(pipe.getInputStream, separator)
   }
 

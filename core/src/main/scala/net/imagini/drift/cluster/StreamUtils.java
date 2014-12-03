@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import net.imagini.drift.types.AimType;
+import net.imagini.drift.types.DriftType;
 import net.imagini.drift.utils.ByteUtils;
 import net.imagini.drift.utils.View;
 
@@ -25,7 +25,7 @@ public class StreamUtils {
         return count;
     }
 
-    public static int write(AimType type, byte[] value, OutputStream out)
+    public static int write(DriftType type, byte[] value, OutputStream out)
             throws IOException {
         int size = type.getLen();
         if (size == -1) {
@@ -59,7 +59,7 @@ public class StreamUtils {
 
     }
 
-    static public int readSize(InputStream in, AimType type)
+    static public int readSize(InputStream in, DriftType type)
             throws IOException {
         int size = type.getLen();
         if (size == -1) {
@@ -69,7 +69,7 @@ public class StreamUtils {
         }
     }
 
-    static public byte[] read(InputStream in, AimType type)
+    static public byte[] read(InputStream in, DriftType type)
             throws IOException {
         int size = readSize(in, type);
         byte[] result;
@@ -86,7 +86,7 @@ public class StreamUtils {
         return result;
     }
 
-    static public int read(InputStream in, AimType type, View view)
+    static public int read(InputStream in, DriftType type, View view)
             throws IOException {
         // System.err.println("READ TYPE INTO Buffer " + type);
         int size = type.getLen();
@@ -103,7 +103,7 @@ public class StreamUtils {
             return size;
         }
     }
-    static public long skip(InputStream in, AimType type)
+    static public long skip(InputStream in, DriftType type)
             throws IOException {
         // System.err.println("SKIP TYPE " + type);
         int skipLen = readSize(in, type);

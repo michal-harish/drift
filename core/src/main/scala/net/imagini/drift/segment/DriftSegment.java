@@ -9,7 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.imagini.drift.types.AimSchema;
+import net.imagini.drift.types.DriftSchema;
 import net.imagini.drift.utils.BlockStorage;
 import net.imagini.drift.utils.View;
 
@@ -17,15 +17,15 @@ import net.imagini.drift.utils.View;
  * zero-copy open methods, i.e. multiple stream readers should be able to
  * operate without doubling the memory foot-print.
  */
-final public class AimSegment {
+final public class DriftSegment {
 
-    final public AimSchema schema;
+    final public DriftSchema schema;
     protected LinkedHashMap<Integer, BlockStorage> columnar = new LinkedHashMap<>();
     private boolean writable;
     private LinkedHashMap<Integer, ByteBuffer> writers = null;
     private AtomicLong size = new AtomicLong(0);
 
-    public AimSegment(AimSchema schema) {
+    public DriftSegment(DriftSchema schema) {
         this.schema = schema;
         this.writable = false;
     }
@@ -37,7 +37,7 @@ final public class AimSegment {
     }
 
 
-    final public AimSegment open(Class<? extends BlockStorage> storageType,
+    final public DriftSegment open(Class<? extends BlockStorage> storageType,
             File segmentLocation) throws InstantiationException {
         String segmentId = segmentLocation.getName();
         try {
@@ -57,13 +57,13 @@ final public class AimSegment {
         return this;
     }
 
-    final public AimSegment initStorage(
+    final public DriftSegment initStorage(
             Class<? extends BlockStorage> storageType)
             throws InstantiationException, IllegalAccessException {
         return init(storageType, "");
     }
 
-    final public AimSegment init(Class<? extends BlockStorage> storageType,
+    final public DriftSegment init(Class<? extends BlockStorage> storageType,
             String regionId) throws InstantiationException,
             IllegalAccessException {
         writers = new LinkedHashMap<>();
@@ -95,7 +95,7 @@ final public class AimSegment {
         return columnar.get(column);
     }
 
-    final public AimSchema getSchema() {
+    final public DriftSchema getSchema() {
         return schema;
     }
 
@@ -111,7 +111,7 @@ final public class AimSegment {
 
     }
 
-    public AimSegment close() throws IOException, IllegalAccessException {
+    public DriftSegment close() throws IOException, IllegalAccessException {
         checkWritable(true);
         // check open writer blocks and add them if available
         for (int col = 0; col < schema.size(); col++) {
@@ -125,7 +125,7 @@ final public class AimSegment {
         return this;
     }
 
-    final public AimSegment commitRecord(View record) throws IOException {
+    final public DriftSegment commitRecord(View record) throws IOException {
         int mark = record.offset;
         try {
             checkWritable(true);
