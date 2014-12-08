@@ -59,10 +59,20 @@ abstract public class DriftType {
 
     final public byte[] convert(String value) {
         int len = getLen();
-        if (len == -1) len = value.length() + 4;
-        byte[] result = new byte[len];
-        convert(value, result, 0);
-        return result;
+        byte[] dest;
+        if (value == null || value.isEmpty()) {
+            if (len == -1 ) len = 4;
+            dest = new byte[len];
+            Arrays.fill(dest, 0, len, (byte)0);
+        } else {
+            byte[] bytesToParse = value.getBytes();
+            if (len == -1) {
+                len = 4 + bytesToParse.length;
+            }
+            dest = new byte[len];
+            parse(new View(bytesToParse), dest, 0);
+        }
+        return dest;
     }
 
     final public int convert(String value, byte[] dest, int destOffset) {

@@ -24,14 +24,17 @@ public class TypeUtils {
         return compare(left, right, t) == 0;
     }
 
-    final public static int sizeOf(DriftType type, byte[] src) {
+    final public static int sizeOf(DriftType type, byte[] src, int ofs) {
         int len = type.getLen(); 
         if (len == -1) {
-            return ByteUtils.asIntValue(src) + 4;
+            return ByteUtils.asIntValue(src, ofs) + 4;
         } else {
             return len;
         }
     }
 
+    final public static int sizeOf(DriftType type, byte[] src) {
+        return sizeOf(type, src, 0);
+    }
 
 }

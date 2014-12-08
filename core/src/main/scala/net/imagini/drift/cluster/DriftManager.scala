@@ -28,6 +28,8 @@ trait DriftManager {
     watchPathChildren("/drift/" + clusterId + path, listener)
   }
 
+  final def getNodeConnector(node: Int): URI = getNodeConnectors(node)
+
   final def getNodeConnectors: Map[Int, URI] = {
     val nodeConnectors = list[String]("/drift/" + clusterId + "/nodes").map(p ⇒ p._1.toInt -> new URI("drift://" + p._2)).toMap
     if (nodeConnectors.size != expectedNumNodes) throw new IllegalStateException("Expecting " + expectedNumNodes + " nodes, found " + nodeConnectors.size)
