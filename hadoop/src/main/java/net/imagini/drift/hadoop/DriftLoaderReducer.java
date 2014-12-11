@@ -1,6 +1,9 @@
 package net.imagini.drift.hadoop;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import net.imagini.drift.cluster.DriftManager;
 import net.imagini.drift.cluster.DriftManagerZk;
@@ -47,9 +50,13 @@ public class DriftLoaderReducer extends
     @Override
     protected void reduce(IntWritable nodeId, Iterable<BytesWritable> records,
             Context context) throws IOException, InterruptedException {
-        int count = 0;
+        log.info("DRIFT LOADER REDUCER FOR KEYSPACE: " + keyspace);
+        log.info("DRIFT LOADER REDUCER FOR TABLE: " + table);
+        log.info("DRIFT LOADER REDUCER FOR NODE: " + nodeId.get());
         DriftNodeLoaderWorker worker = new DriftNodeLoaderWorker(nodeId.get(),
                 keyspace, table, manager.getNodeConnector(nodeId.get()));
+        ExecutorService executor = Executors.newFixedThreadPool(1);
+        executor.submit(worker);
         try {
             View[] recordView = new View[driftSchema.size()];
             for (BytesWritable record : records) {
@@ -63,12 +70,19 @@ public class DriftLoaderReducer extends
                     offset += len;
                 }
                 worker.process(recordView);
-                count += 1;
             }
-            worker.finish();
-            context.write(nodeId, new IntWritable(count));
         } finally {
-            manager.close();
+            worker.finish();
+            executor.shutdown();
+            executor.awaitTermination(100, TimeUnit.SECONDS);
+            long totalLoadedCount =  worker.ackLoadedCount();
+            context.write(nodeId, new IntWritable((int) totalLoadedCount));
         }
+    }
+
+    @Override
+    protected void cleanup(Context context)
+            throws IOException, InterruptedException {
+        manager.close();
     }
 }
