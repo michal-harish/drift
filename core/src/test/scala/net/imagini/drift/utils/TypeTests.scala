@@ -105,6 +105,9 @@ class TypeTests extends FlatSpec with Matchers {
     Drift.TIME.parse(new View("2014-10-10 16:00:01".getBytes()), out, 0)
     Drift.TIME.asString(out) should be("2014-10-10 16:00:01")
 
+    Drift.TIME.parse(new View("1414768381000".getBytes()), out, 0)
+    Drift.TIME.asString(out) should be("2014-10-31 15:13:01")
+
   }
 
   "converting schema types" should "convert each data type correctly" in {

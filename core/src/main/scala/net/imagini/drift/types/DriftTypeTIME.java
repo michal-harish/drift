@@ -31,7 +31,7 @@ public class DriftTypeTIME extends DriftTypeLONG  {
             d.setDateTime(year, month, date, hrs, min, sec, 0);
             ByteUtils.putLongValue(d.getMillis(), dest, destOffset);
         } else {
-            long d = ByteUtils.parseLongRadix10(value.array, value.offset, value.offset + 7);
+            long d = ByteUtils.parseLongRadix10(value.array, value.offset, value.limit);
             ByteUtils.putLongValue(d,  dest, destOffset);
         }
         return 8;
