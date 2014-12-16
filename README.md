@@ -83,7 +83,7 @@ addthis.views    (6m, 266Mb.gz)         addthis.syncs      (1m, 32Mb.gz)        
 
 * hive add this views  2014-10-31 15:00-16:00 (6 million records) (0.63Gb uncompressed) (0.22Gb compressed)
 * bl-yarnpoc-p01 hive> select count(1) from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;
-* bl-yarnpoc-p01 ~> hive -e "select uid, url, timestamp from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;" > addthis_views_2014-10-31_15.csv
+* bl-yarnpoc-p01 ~> hive -e "select uid, url, timestamp, ip from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;" > addthis_views_2014-10-31_15.csv
 * bl-yarnpoc-p01 ~> gzip addthis_views_2014-10-31_15.csv
 * scp mharis@bl-yarnpoc-p01:~/addthis_views_2014-10-31_15.csv.gz ~/
 
@@ -159,7 +159,7 @@ Usecase 3. Benchmark - id-linking from newly discovered information (?)
 
 Design thoughts dump
 =================================================================================================
- 
+* next quick features: CREATE statement, DESCRIBE statement, TRUNCATE statement, DROP statement, 
 * drift-client could also have merge capability - this would speed up export queries
 * atm cluster doesn't have any replication and since partitioning is critical, the cluster suspends all operations if any one of the expected nodes is missing until it reappears
 * compaction - use transformation method to do the merge sorting into larger and larger segments - e.g. start with tiny segments with quick sort and use maturing background transformations
@@ -208,7 +208,6 @@ cd scala
 mvn package
 java -jar target/drift-cluster.jar --cluster-id test1 --num-nodes 4
 java -jar target/drift-client.jar 'CLUSTER numNodes 4'
-#TODO create statment
 java -jar target/drift-client.jar 'CREATE TABLE addthis.views at_id(STRING), url(STRING), timestamp(LONG) WITH STORAGE=LZ4, SEGMENT_SIZE=50000000'
 java -jar target/drift-client.jar 'CREATE TABLE addthis.syncs at_id(STRING), vdna_user_uid(UUID), timestamp(LONG) WITH STORAGE=LZ4, SEGMENT_SIZE=200000000'
 java -jar target/drift-client.jar 'CREATE TABLE vdna.pageviews user_uid(UUID), timestamp(LONG), url(STRING) WITH STORAGE=LZ4, SEGMENT_SIZE=100000000'

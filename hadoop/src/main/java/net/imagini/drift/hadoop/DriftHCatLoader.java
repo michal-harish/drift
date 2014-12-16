@@ -24,31 +24,31 @@ public class DriftHCatLoader extends Configured implements Tool {
     }
 
     public int run(String[] args) throws Exception {
-        String zkConnect = "bl-mharis-d02";
-        String clusterId = "benchmark4B";
-        String keyspace = "addthis";
-        String table = "syncs";
-        Configuration conf = getConf();
+        String driftZkConnect = "bl-mharis-d02";
+        String driftClusterId = "benchmark4B";
+        String driftKeyspace = "addthis";
+        String driftTable = "syncs";
         String hcatTable = "hcat_events_rc";
-        String filter = "topic=\"datasync\" and d=\"2014-10-31\"";
-        conf.set("driftZkConnect", zkConnect);
-        conf.set("driftCluserId", clusterId);
-        conf.set("driftKeyspace", keyspace);
-        conf.set("driftTable", table);
-        //TODO fetch schema and number of nodes from the manager
-        DriftManager manager = new DriftManagerZk(zkConnect, clusterId);
+        String filter = "topic=\"datasync\" and d>=\"2014-09-01\" and d<\"2014-10-01\"";
+        String[] mapping = new String[] {"partner_user_id", "useruid", "timestamp"};
+        //------------------------------------------------------------------------------
+        Configuration conf = getConf();
+        conf.set("driftZkConnect", driftZkConnect);
+        conf.set("driftCluserId", driftClusterId);
+        conf.set("driftKeyspace", driftKeyspace);
+        conf.set("driftTable", driftTable);
+        DriftManager manager = new DriftManagerZk(driftZkConnect, driftClusterId);
         int numNodes = manager.getNodeConnectors().size();
-        DriftSchema schema = manager.getDescriptor(keyspace, table).schema;
-        System.out.println("DRIFT CLUSTER ZK CONNECT: " + zkConnect);
-        System.out.println("DRIFT CLUSTER ID: " + clusterId);
+        DriftSchema schema = manager.getDescriptor(driftKeyspace, driftTable).schema;
+        System.out.println("DRIFT CLUSTER ZK CONNECT: " + driftZkConnect);
+        System.out.println("DRIFT CLUSTER ID: " + driftClusterId);
         System.out.println("DRIFT CLUSTER NODES: " + numNodes);
-        System.out.println("DRIFT KEYSPACE: " + keyspace);
-        System.out.println("DRIFT TABLE: " + table);
+        System.out.println("DRIFT KEYSPACE: " + driftKeyspace);
+        System.out.println("DRIFT TABLE: " + driftTable);
         System.out.println("DRIFT SCHEMA: " + schema.toString());
         conf.set("driftSchema", schema.toString());
         conf.set("driftNumNodes", String.valueOf(numNodes));
-        //TODO provide generic way of mapping + conf.set("filter", "partner_id_space=\"at_id\"");
-        conf.setStrings("mapping", "partner_user_id", "useruid", "timestamp");
+        conf.setStrings("mapping", mapping);
 
         JobConf jobConf = new JobConf(conf);
         Job job = Job.getInstance(jobConf, "drift.loader-" + filter);

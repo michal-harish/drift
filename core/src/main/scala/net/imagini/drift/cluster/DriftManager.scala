@@ -35,6 +35,8 @@ trait DriftManager {
     if (nodeConnectors.size != expectedNumNodes) throw new IllegalStateException("Expecting " + expectedNumNodes + " nodes, found " + nodeConnectors.size)
     nodeConnectors
   }
+  
+  final def listTables(keyspace: String):Iterable[String] = list[String]("/drift/" + clusterId +"/keyspaces/" + keyspace).keys
 
   final def getDescriptor(keyspace: String, table: String): DriftTableDescriptor = {
     new DriftTableDescriptor(get[String]("/drift/" + clusterId +"/keyspaces/" + keyspace + "/" + table))

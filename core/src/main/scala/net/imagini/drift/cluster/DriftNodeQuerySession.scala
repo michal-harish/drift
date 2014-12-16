@@ -22,6 +22,7 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
       pipe.read.trim match {
         case adminQuery: String if (adminQuery.toUpperCase.startsWith("CLUSTER")) ⇒ clusterProps(adminQuery)
         case helpQuery: String if (helpQuery.toUpperCase.startsWith("HELP"))      ⇒ helpInfo()
+        case ddlQuery: String if (ddlQuery.toUpperCase.startsWith("DESCRIBE"))      ⇒  describe(ddlQuery)
         case dataQuery: String ⇒
           if (pipe.protocol == QUERY_USER) {
             peerClients.foreach(peer ⇒ peer.query(dataQuery))
@@ -62,8 +63,56 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
   private def helpInfo() = {
     pipe.write("OK")
     pipeWriteInfo(
-      "Available commands:\n", "STAT", "STAT <keyspace>", "SELECT <fields> FROM {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>] [JOIN SELECT ..] [UNION SELECT ..] [INTERSECTION SELECT ..]", "COUNT {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>]", "~SELECT ... INTO <keyspace>.<table>", "~CREATE TABLE <keyspace>.<table_name> <schema> WITH STORAGE=[MEM|MEMLZ4|FSLZ4], SEGMENT_SIZE=<int_inflated_bytes>", "CLUSTER DOWN", "CLUSTER numNodes <int_total_nodes>", "CLUSTER", "CLOSE")
+      "Available commands:\n",
+      "DESCRIBE",
+      "DESCRIBE <keyspace>",
+      "DESCRIBE <keyspace>.<table>",
+      "STAT", 
+      "STAT <keyspace>", 
+      "SELECT <fields> FROM {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>] [JOIN SELECT ..] [UNION SELECT ..] [INTERSECTION SELECT ..]", 
+      "COUNT {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>]", 
+      "CLUSTER DOWN", 
+      "CLUSTER numNodes <int_total_nodes>", 
+      "CLUSTER", 
+      "CLOSE",
+      "~SELECT ... INTO <keyspace>.<table>", 
+      "~CREATE TABLE <keyspace>.<table_name> <schema> WITH STORAGE=[MEM|MEMLZ4|FSLZ4], SEGMENT_SIZE=<int_inflated_bytes>", 
+      "~DROP <keyspace>.<table>",
+      "~TRUNCATE <keyspace>.<table>"
+    )
   }
+
+  private def describe(ddlQuery: String) = {
+  val cmd = Tokenizer.tokenize(ddlQuery, true)
+    cmd.poll
+    pipe.write("OK")
+    if (cmd.isEmpty) {
+      //describe cluster
+      pipeWriteInfo(
+      "cluster id=" + node.manager.clusterId,
+      "cluster numNodes=" + node.manager.expectedNumNodes,
+      "cluster avialble nodes=" + (node.peers.size + 1),
+      "cluster defined keyspaces: " + node.keyspaces.mkString(", "))
+    } else {
+       val keyspace = cmd.poll
+       if (cmd.isEmpty()) {
+          //describe keyspace
+         pipeWriteInfo(
+             "keyspace: " + keyspace, 
+             "tables: " + node.manager.listTables(keyspace).mkString(", "))
+       } else {
+         //describe table
+         cmd.poll
+         val table = cmd.poll
+         val descriptor = node.manager.getDescriptor(keyspace, table)
+         pipeWriteInfo(
+             "keyspace: " + keyspace,
+             "table: " + table,
+             "sechema: " + descriptor.schema.toString)
+       }
+    }
+  }
+
   private def clusterProps(command: String) = {
     val cmd = Tokenizer.tokenize(command, true)
     cmd.poll
@@ -73,6 +122,7 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
     }
     pipe.write("OK")
     pipeWriteInfo(
+      "cluster id=" + node.manager.clusterId,
       "cluster numNodes=" + node.manager.expectedNumNodes,
       "cluster avialble nodes=" + (node.peers.size + 1),
       "cluster defined keyspaces: " + node.keyspaces.mkString(", "))
