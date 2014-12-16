@@ -159,7 +159,7 @@ Usecase 3. Benchmark - id-linking from newly discovered information (?)
 
 Design thoughts dump
 =================================================================================================
-* next quick features: CREATE statement, DESCRIBE statement, TRUNCATE statement, DROP statement, 
+* next quick features: CREATE statement, TRUNCATE statement, DROP statement, 
 * drift-client could also have merge capability - this would speed up export queries
 * atm cluster doesn't have any replication and since partitioning is critical, the cluster suspends all operations if any one of the expected nodes is missing until it reappears
 * compaction - use transformation method to do the merge sorting into larger and larger segments - e.g. start with tiny segments with quick sort and use maturing background transformations
