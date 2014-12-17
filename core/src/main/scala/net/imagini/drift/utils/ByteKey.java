@@ -42,10 +42,8 @@ public class ByteKey implements Comparable<ByteKey> {
     public int compareTo(ByteKey val) {
         int i = offset;
         int j = val.offset;
-        while (i<limit) {
-            if (size < val.size) {
-                return -1;
-            } else if (size > val.size) {
+        while (i < limit) {
+            if (j > val.limit) {
                 return 1;
             } else if ((bytes[i] & 0xFF) < (val.bytes[j] & 0xFF)) {
                 return -1;
@@ -54,6 +52,9 @@ public class ByteKey implements Comparable<ByteKey> {
             }
             i++;
             j++;
+        }
+        if (j < val.limit) {
+            return -1;
         }
         return classifier == val.classifier ? 0 : (classifier > val.classifier ? 1 : -1);
     }
