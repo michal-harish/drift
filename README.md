@@ -83,14 +83,13 @@ addthis.views    (6m, 266Mb.gz)         addthis.syncs      (1m, 32Mb.gz)        
 
 * hive add this views  2014-10-31 15:00-16:00 (6 million records) (0.63Gb uncompressed) (0.22Gb compressed)
 * bl-yarnpoc-p01 hive> select count(1) from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;
-* bl-yarnpoc-p01 ~> hive -e "select uid, url, timestamp, ip from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;" > addthis_views_2014-10-31_15.csv
-* bl-yarnpoc-p01 ~> gzip addthis_views_2014-10-31_15.csv
+* bl-yarnpoc-p01 ~> hive -e "select uid, url, timestamp, useragent from hcat_addthis_raw_view_gb where d='2014-10-31' and timestamp>=1414767600000 and timestamp<1414771200000;" | gzip --stdout > addthis_views_2014-10-31_15.csv.gz
 * scp mharis@bl-yarnpoc-p01:~/addthis_views_2014-10-31_15.csv.gz ~/
 
 hive add this syncs  2014-10-31 15:00-16:00
 * bl-yarnpoc-p01 hive> select count(1) from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync' and timestamp>=1414767600 and timestamp<1414771200;
-* bl-yarnpoc-p01 ~> hive -e "select partner_user_id, useruid, concat(timestamp,'000') from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync' and timestamp>=1414767600 and timestamp<1414771200" > addthis_syncs_2014-10-31_15.csv
-* bl-yarnpoc-p01 ~> gzip addthis_syncs_2014-10-31_15.csv
+* bl-yarnpoc-p01 ~> hive -e "select partner_user_id, useruid, concat(timestamp,'000') from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync' and timestamp>=1414767600 and timestamp<1414771200" | gzip --stdout > addthis_syncs_2014-10-31_15.csv.gz
+* bl-yarnpoc-p01 ~> hive -e "select useruid, concat(timestamp,'000'), url, client_ip, useragent from hcat_events_rc where d='2014-10-31' and topic='pageviews' and timestamp>=1414767600 and timestamp<1414771200" | gzip --stdout > vdna_pageviews_2014-10-31_15.csv.gz
 * scp mharis@bl-yarnpoc-p01:~/addthis_syncs_2014-10-31_15.csv.gz ~/
 
 Usecase 2B. Benchmark - combining datasets from id-spaces - two tables from different Keyspaces, with StreamJoin and key transformation (!) 
@@ -208,9 +207,9 @@ cd scala
 mvn package
 java -jar target/drift-cluster.jar --cluster-id test1 --num-nodes 4
 java -jar target/drift-client.jar 'CLUSTER numNodes 4'
-java -jar target/drift-client.jar 'CREATE TABLE addthis.views at_id(STRING), url(STRING), timestamp(LONG) WITH STORAGE=LZ4, SEGMENT_SIZE=50000000'
+java -jar target/drift-client.jar 'CREATE TABLE addthis.views at_id(STRING), url(STRING), timestamp(LONG), useragent(STRING) WITH STORAGE=LZ4, SEGMENT_SIZE=50000000'
 java -jar target/drift-client.jar 'CREATE TABLE addthis.syncs at_id(STRING), vdna_user_uid(UUID), timestamp(LONG) WITH STORAGE=LZ4, SEGMENT_SIZE=200000000'
-java -jar target/drift-client.jar 'CREATE TABLE vdna.pageviews user_uid(UUID), timestamp(LONG), url(STRING) WITH STORAGE=LZ4, SEGMENT_SIZE=100000000'
+java -jar target/drift-client.jar 'CREATE TABLE vdna.pageviews user_uid(UUID), timestamp(LONG), url(STRING), ip(IPV4), useragent(STRING) WITH STORAGE=LZ4, SEGMENT_SIZE=100000000'
 time cat ~/addthis_syncs_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table syncs
 time cat ~/addthis_views_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table views
 

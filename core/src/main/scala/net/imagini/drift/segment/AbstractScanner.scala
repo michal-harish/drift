@@ -7,6 +7,16 @@ import net.imagini.drift.utils.View
 
 trait CountScanner extends AbstractScanner {}
 
+trait TransformScanner extends CountScanner {
+  var intoKeyspace:String = null
+  var intoTable:String = null
+  def into(keyspace: String, table: String): TransformScanner = {
+    intoKeyspace = keyspace
+    intoTable = table
+    this
+  }
+}
+
 trait AbstractScanner {
 
   val schema: DriftSchema

@@ -14,6 +14,7 @@ import net.imagini.drift.region.PVar
 import net.imagini.drift.region.PUnionJoin
 import net.imagini.drift.types.DriftTableDescriptor
 import net.imagini.drift.types.SortType
+import net.imagini.drift.region.PSelectInto
 
 class QueryParserTest extends FlatSpec with Matchers {
 
@@ -22,6 +23,15 @@ class QueryParserTest extends FlatSpec with Matchers {
     "vdna.conversions" -> conversions,
     "vdna.flags" -> flags)
   val parser = new QueryParser(regions)
+
+  parser.frame("select * from vdna.pageviews union select user_uid,url,timestamp from vdna.conversions into vdna.events") should be
+    PSelectInto(
+        PUnionJoin(
+            PSelect(PTable("vdna", "pageviews"), "*",  PWildcard(PTable("vdna", "pageviews"))),
+            PSelect(PTable("vdna", "conversions"), "*",  PVar("user_uid"), PVar("url"), PVar("timestamp"))
+        ),
+        PTable("vdna", "events")
+    )
 
   parser.frame("select * from vdna.pageviews where url contains 'travel'") should be(
     PSelect(PTable("vdna", "pageviews"), "url contains 'travel'", PWildcard(PTable("vdna", "pageviews"))))
@@ -85,6 +95,15 @@ class QueryParserTest extends FlatSpec with Matchers {
 
     regionConversions1.compact
     regionConversions1
+  }
+
+  private def events: DriftRegion = {
+     val eventsDescriptor = new DriftTableDescriptor(
+      DriftSchema.fromString("user_uid(UUID),url(STRING),timestamp(TIME)"),
+      1000,
+      classOf[BlockStorageMEMLZ4],
+      SortType.QUICK_SORT)
+     new DriftRegion("vdna.events", eventsDescriptor)
   }
 
   private def flags: DriftRegion = {

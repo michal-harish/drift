@@ -15,12 +15,13 @@ import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.utils.BlockStorage
 import net.imagini.drift.utils.BlockStorageMEMLZ4
 import net.imagini.drift.types.DriftTableDescriptor
+import net.imagini.drift.segment.TransformScanner
 
 class DriftNode(val id: Int, val address: String, val manager: DriftManager) {
 
   val log = Logger[this.type]
   val nodes: ConcurrentMap[Int, URI] = new ConcurrentHashMap[Int, URI]()
-  val nodeId = manager.clusterId+"-"+id
+  val nodeId = manager.clusterId + "-" + id
   def peers: Map[Int, URI] = nodes.asScala.filter(n ⇒ n._1 != id).toMap
 
   private var suspended = new AtomicBoolean(true)
@@ -73,15 +74,14 @@ class DriftNode(val id: Int, val address: String, val manager: DriftManager) {
   }
   def query(query: String): AbstractScanner = new QueryParser(regions).parse(query)
 
-  def transform(srcQuery: String, destKeyspace: String, destTable: String): Long = {
+  def transform(scanner: TransformScanner) = {
     val t = System.currentTimeMillis
-    val scanner = query(srcQuery)
-    val loader = new DriftNodeLoader(manager, destKeyspace, destTable)
+    val loader = new DriftNodeLoader(manager, scanner.intoKeyspace, scanner.intoTable)
     while (scanner.next) {
       loader.insert(scanner.selectRow)
     }
     val transformationCount = loader.finish
-    log.info("TRANSFORM INTO " + destKeyspace + "." + destTable + " in " + (System.currentTimeMillis - t))
+    log.info("SELECT INTO " + scanner.intoKeyspace + "." + scanner.intoTable + " in " + (System.currentTimeMillis - t))
     transformationCount
   }
 
@@ -98,7 +98,7 @@ class DriftNode(val id: Int, val address: String, val manager: DriftManager) {
   manager.registerNode(id, address)
   manager.watchData("/nodes/" + id.toString, (data: Option[String]) ⇒ data match {
     case Some(address) ⇒ {} //TODO check if address is this address
-    case None          ⇒ doShutdown
+    case None ⇒ doShutdown
   })
 
   //DETECTOR FOR CLUSTER TOAL NUM NODES CHANGE 
@@ -112,7 +112,7 @@ class DriftNode(val id: Int, val address: String, val manager: DriftManager) {
   //DETECTOR FOR PEER NODES ONLINE STATUS
   manager.watchData("/nodes", (num: Option[String]) ⇒ num match {
     case Some(n) ⇒ { manager.expectedNumNodes = Integer.valueOf(n); rebalance }
-    case None    ⇒ { manager.expectedNumNodes = -1; rebalance }
+    case None ⇒ { manager.expectedNumNodes = -1; rebalance }
   })
 
   //DETECTOR FOR CREATED AND MODIFIED TABLES
@@ -124,7 +124,7 @@ class DriftNode(val id: Int, val address: String, val manager: DriftManager) {
         keyspaceRefs.get(k).asScala.keys.filter(!tables.contains(_)).map(keyspaceRefs.get(k).remove(_))
         tables.filter(t ⇒ !keyspaceRefs.get(k).containsKey(t._1)).map(t ⇒ {
           val descriptor = new DriftTableDescriptor(t._2)
-          keyspaceRefs.get(k).put(t._1, new DriftRegion(nodeId+"-"+k+"-"+t._1, descriptor))
+          keyspaceRefs.get(k).put(t._1, new DriftRegion(nodeId + "-" + k + "-" + t._1, descriptor))
           log.debug(id + ": " + k + "." + t._1 + " " + keyspaceRefs.get(k).get(t._1).toString)
         })
       })

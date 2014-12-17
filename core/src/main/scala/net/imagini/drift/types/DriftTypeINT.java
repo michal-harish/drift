@@ -19,7 +19,7 @@ public class DriftTypeINT extends DriftType {
 
     @Override
     public int partition(View value, int numPartitions) {
-        return ByteUtils.asIntValue(value.array, value.offset) % numPartitions;
+        return Math.abs(ByteUtils.asIntValue(value.array, value.offset)) % numPartitions;
     }
 
     @Override

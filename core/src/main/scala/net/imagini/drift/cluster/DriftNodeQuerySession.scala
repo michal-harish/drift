@@ -10,6 +10,7 @@ import net.imagini.drift.utils.Tokenizer
 import net.imagini.drift.types.DriftQueryException
 import net.imagini.drift.client.DriftClient
 import net.imagini.drift.cluster.Protocol._
+import net.imagini.drift.segment.TransformScanner
 
 class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pipe) extends DriftNodeSession {
 
@@ -21,28 +22,13 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
     try {
       pipe.read.trim match {
         case adminQuery: String if (adminQuery.toUpperCase.startsWith("CLUSTER")) ⇒ clusterProps(adminQuery)
-        case helpQuery: String if (helpQuery.toUpperCase.startsWith("HELP"))      ⇒ helpInfo()
-        case ddlQuery: String if (ddlQuery.toUpperCase.startsWith("DESCRIBE"))      ⇒  describe(ddlQuery)
+        case helpQuery: String if (helpQuery.toUpperCase.startsWith("HELP")) ⇒ helpInfo()
+        case ddlQuery: String if (ddlQuery.toUpperCase.startsWith("DESCRIBE")) ⇒ describe(ddlQuery)
         case dataQuery: String ⇒
           if (pipe.protocol == QUERY_USER) {
             peerClients.foreach(peer ⇒ peer.query(dataQuery))
           }
           dataQuery match {
-            case command: String if (command.toUpperCase.startsWith("TRANSFORM")) ⇒ {
-              pipe.write("COUNT")
-              pipe.flush
-              val transformedCount: Long = pipe.protocol match {
-                case QUERY_INTERNAL ⇒ node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
-                case QUERY_USER ⇒ {
-                  val localCount = node.transform("select vdna_user_uid from addthis.syncs join select timestamp,url from addthis.views", "vdna", "pageviews")
-                  peerClients.map(peer ⇒ peer.getCount).foldLeft(0L)(_ + _) + localCount
-                }
-                case _ ⇒ throw new DriftQueryException("Invalid query protocol")
-              }
-              pipe.writeInt(transformedCount.toInt)
-              pipe.flush
-
-            }
             case command: String if (command.toUpperCase.startsWith("CLOSE")) ⇒ close
             case query: String if (query.toUpperCase.startsWith("STAT")) ⇒ handleSelectStream(node.stats(dataQuery.substring(5).trim))
             case query: String ⇒ handleSelectStream(node.query(query))
@@ -67,49 +53,48 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
       "DESCRIBE",
       "DESCRIBE <keyspace>",
       "DESCRIBE <keyspace>.<table>",
-      "STAT", 
-      "STAT <keyspace>", 
-      "SELECT <fields> FROM {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>] [JOIN SELECT ..] [UNION SELECT ..] [INTERSECTION SELECT ..]", 
-      "COUNT {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>]", 
-      "CLUSTER DOWN", 
-      "CLUSTER numNodes <int_total_nodes>", 
-      "CLUSTER", 
+      "STAT",
+      "STAT <keyspace>",
+      "SELECT <fields> FROM {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>] [JOIN SELECT ..] [UNION SELECT ..] [INTERSECTION SELECT ..]",
+      "COUNT {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>]",
+      "CLUSTER DOWN",
+      "CLUSTER numNodes <int_total_nodes>",
+      "CLUSTER",
       "CLOSE",
-      "~SELECT ... INTO <keyspace>.<table>", 
-      "~CREATE TABLE <keyspace>.<table_name> <schema> WITH STORAGE=[MEM|MEMLZ4|FSLZ4], SEGMENT_SIZE=<int_inflated_bytes>", 
+      "~SELECT ... INTO <keyspace>.<table>",
+      "~CREATE TABLE <keyspace>.<table_name> <schema> WITH STORAGE=[MEM|MEMLZ4|FSLZ4], SEGMENT_SIZE=<int_inflated_bytes>",
       "~DROP <keyspace>.<table>",
-      "~TRUNCATE <keyspace>.<table>"
-    )
+      "~TRUNCATE <keyspace>.<table>")
   }
 
   private def describe(ddlQuery: String) = {
-  val cmd = Tokenizer.tokenize(ddlQuery, true)
+    val cmd = Tokenizer.tokenize(ddlQuery, true)
     cmd.poll
     pipe.write("OK")
     if (cmd.isEmpty) {
       //describe cluster
       pipeWriteInfo(
-      "cluster id=" + node.manager.clusterId,
-      "cluster numNodes=" + node.manager.expectedNumNodes,
-      "cluster avialble nodes=" + (node.peers.size + 1),
-      "cluster defined keyspaces: " + node.keyspaces.mkString(", "))
+        "cluster id=" + node.manager.clusterId,
+        "cluster numNodes=" + node.manager.expectedNumNodes,
+        "cluster avialble nodes=" + (node.peers.size + 1),
+        "cluster defined keyspaces: " + node.keyspaces.mkString(", "))
     } else {
-       val keyspace = cmd.poll
-       if (cmd.isEmpty()) {
-          //describe keyspace
-         pipeWriteInfo(
-             "keyspace: " + keyspace, 
-             "tables: " + node.manager.listTables(keyspace).mkString(", "))
-       } else {
-         //describe table
-         cmd.poll
-         val table = cmd.poll
-         val descriptor = node.manager.getDescriptor(keyspace, table)
-         pipeWriteInfo(
-             "keyspace: " + keyspace,
-             "table: " + table,
-             "sechema: " + descriptor.schema.toString)
-       }
+      val keyspace = cmd.poll
+      if (cmd.isEmpty()) {
+        //describe keyspace
+        pipeWriteInfo(
+          "keyspace: " + keyspace,
+          "tables: " + node.manager.listTables(keyspace).mkString(", "))
+      } else {
+        //describe table
+        cmd.poll
+        val table = cmd.poll
+        val descriptor = node.manager.getDescriptor(keyspace, table)
+        pipeWriteInfo(
+          "keyspace: " + keyspace,
+          "table: " + table,
+          "sechema: " + descriptor.schema.toString)
+      }
     }
   }
 
@@ -117,7 +102,7 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
     val cmd = Tokenizer.tokenize(command, true)
     cmd.poll
     while (!cmd.isEmpty) cmd.poll.toUpperCase match {
-      case "DOWN"     ⇒ node.manager.down
+      case "DOWN" ⇒ node.manager.down
       case "NUMNODES" ⇒ node.manager.setNumNodes(cmd.poll.toInt)
     }
     pipe.write("OK")
@@ -136,6 +121,20 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
   private def handleSelectStream(localScanner: AbstractScanner) = {
 
     localScanner match {
+      case localScanner: TransformScanner => {
+        pipe.write("COUNT")
+        pipe.flush
+        val transformedCount: Long = pipe.protocol match {
+          case QUERY_INTERNAL ⇒ node.transform(localScanner)
+          case QUERY_USER ⇒ {
+            val localCount = node.transform(localScanner)
+            peerClients.map(peer ⇒ peer.getCount).foldLeft(0L)(_ + _) + localCount
+          }
+          case _ ⇒ throw new DriftQueryException("Invalid query protocol")
+        }
+        pipe.writeInt(transformedCount.toInt)
+        pipe.flush
+      }
       case localScanner: CountScanner ⇒ {
         pipe.write("COUNT")
         pipe.flush
@@ -163,7 +162,7 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
               } else {
                 val streams = peerClients.map(peer ⇒ peer.getInputStream).toArray ++ Array(new ScannerInputStream(localScanner))
                 new StreamMerger(localScanner.schema, 10, streams)
-                //TODO queue size=100 must be exposed in the keyspace/table config
+                //TODO queue size=10 must be exposed in the keyspace/table config
               }
             } else {
               throw new DriftQueryException("Unexpected response from peers")
