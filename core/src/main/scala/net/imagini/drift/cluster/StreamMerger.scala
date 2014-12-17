@@ -65,7 +65,9 @@ class StreamMerger(val schema: DriftSchema, val queueSize: Int, val inputStreams
     if (!fetcher.closed) fetcher.take match {
       case None ⇒ {}
       case Some(record) ⇒ {
-        val byteKey = new ByteKey(record(0), 0, TypeUtils.sizeOf(schema.get(0), record(0)), f)
+        val len = if (schema.get(0).getLen() == -1) TypeUtils.sizeOf(schema.get(0), record(0))-4 else schema.get(0).getLen()
+        val ofs = if (schema.get(0).getLen() == -1) 4 else 0
+        val byteKey = new ByteKey(record(0), ofs, len, f)
         /**
          * FIXME assuming that the first field of schema is always the key - e.g. whatever provides
          * the underlying input stream must provide or transform the first field as the key
