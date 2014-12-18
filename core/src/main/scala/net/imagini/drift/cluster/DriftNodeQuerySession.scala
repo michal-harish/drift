@@ -122,7 +122,11 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
         pipeWriteInfo(
           "keyspace: " + keyspace,
           "table: " + table,
-          "sechema: " + descriptor.schema.toString)
+          "schema: " + descriptor.schema.toString,
+          "sort type: " + descriptor.sortType,
+          "storage type: " + descriptor.storageType.getSimpleName,
+          "segment size: " + descriptor.segmentSize
+          )
       }
     }
   }

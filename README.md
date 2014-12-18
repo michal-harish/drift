@@ -209,9 +209,10 @@ cd scala
 mvn package
 java -jar target/drift-cluster.jar --cluster-id test1 --num-nodes 4
 java -jar target/drift-client.jar 'CLUSTER numNodes 4'
-java -jar target/drift-client.jar 'CREATE TABLE addthis.views at_id(STRING), url(STRING), timestamp(LONG), useragent(STRING) WITH STORAGE=LZ4, SEGMENT_SIZE=50000000'
-java -jar target/drift-client.jar 'CREATE TABLE addthis.syncs at_id(STRING), vdna_user_uid(UUID), timestamp(LONG) WITH STORAGE=LZ4, SEGMENT_SIZE=200000000'
-java -jar target/drift-client.jar 'CREATE TABLE vdna.pageviews user_uid(UUID), timestamp(LONG), url(STRING), ip(IPV4), useragent(STRING) WITH STORAGE=LZ4, SEGMENT_SIZE=100000000'
+java -jar target/drift-client.jar 'CREATE TABLE addthis.views at_id(STRING), url(STRING), timestamp(TIME), useragent(STRING)'
+java -jar target/drift-client.jar 'CREATE TABLE addthis.syncs at_id(STRING), vdna_user_uid(UUID), timestamp(TIME)'
+java -jar target/drift-client.jar 'CREATE TABLE vdna.pageviews user_uid(UUID), timestamp(TIME), url(STRING), ip(IPV4), useragent(STRING)'
+java -jar target/drift-client.jar 'CREATE MEM TABLE ips.test ip(IPV4), useragent(STRING), user_uid(UUID)'
 time cat ~/addthis_syncs_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table syncs
 time cat ~/addthis_views_2014-10-31_15.csv.gz | java -jar target/drift-loader.jar --separator '\t' --gzip --keyspace addthis --table views
 
