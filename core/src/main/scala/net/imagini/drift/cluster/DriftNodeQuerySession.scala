@@ -11,6 +11,10 @@ import net.imagini.drift.types.DriftQueryException
 import net.imagini.drift.client.DriftClient
 import net.imagini.drift.cluster.Protocol._
 import net.imagini.drift.segment.TransformScanner
+import net.imagini.drift.utils.BlockStorageFS
+import net.imagini.drift.utils.BlockStorage
+import net.imagini.drift.utils.BlockStorageMEMLZ4
+import net.imagini.drift.types.DriftSchema
 
 class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pipe) extends DriftNodeSession {
 
@@ -24,6 +28,8 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
         case adminQuery: String if (adminQuery.toUpperCase.startsWith("CLUSTER")) ⇒ clusterProps(adminQuery)
         case helpQuery: String if (helpQuery.toUpperCase.startsWith("HELP")) ⇒ helpInfo()
         case ddlQuery: String if (ddlQuery.toUpperCase.startsWith("DESCRIBE")) ⇒ describe(ddlQuery)
+        case ddlQuery: String if (ddlQuery.toUpperCase.startsWith("CREATE")) ⇒ create(ddlQuery)
+        //case ddlQuery: String if (ddlQuery.toUpperCase.startsWith("DROP")) ⇒ create(ddlQuery)
         case dataQuery: String ⇒
           if (pipe.protocol == QUERY_USER) {
             peerClients.foreach(peer ⇒ peer.query(dataQuery))
@@ -31,6 +37,7 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
           dataQuery match {
             case command: String if (command.toUpperCase.startsWith("CLOSE")) ⇒ close
             case query: String if (query.toUpperCase.startsWith("STAT")) ⇒ handleSelectStream(node.stats(dataQuery.substring(5).trim))
+            //case query:String if (query.toUpperCase.startsWith("DELETE"))
             case query: String ⇒ handleSelectStream(node.query(query))
           }
       }
@@ -50,29 +57,49 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
     pipe.write("OK")
     pipeWriteInfo(
       "Available commands:\n",
+      "CREATE [MEM] TABLE <keyspace>.<table_name> <schema>", //TODO WITH SEGMENT_SIZE=<int_inflated_bytes>
+      "CLUSTER DOWN",
+      "CLUSTER numNodes <int_total_nodes>",
+      "CLUSTER",
+      "CLOSE",
       "DESCRIBE",
       "DESCRIBE <keyspace>",
       "DESCRIBE <keyspace>.<table>",
       "STAT",
       "STAT <keyspace>",
-      "SELECT <fields> FROM {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>] [JOIN SELECT ..] [UNION SELECT ..] [INTERSECTION SELECT ..]",
       "COUNT {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>]",
-      "CLUSTER DOWN",
-      "CLUSTER numNodes <int_total_nodes>",
-      "CLUSTER",
-      "CLOSE",
-      "~SELECT ... INTO <keyspace>.<table>",
-      "~CREATE TABLE <keyspace>.<table_name> <schema> WITH STORAGE=[MEM|MEMLZ4|FSLZ4], SEGMENT_SIZE=<int_inflated_bytes>",
+      "SELECT <fields> FROM {<keyspace>.<table>|(SELECT ..)} [WHERE <boolean_exp>] [JOIN SELECT ..] [UNION SELECT ..] [INTERSECTION SELECT ..]",
+      "SELECT ... INTO <keyspace>.<table>",
       "~DROP <keyspace>.<table>",
-      "~TRUNCATE <keyspace>.<table>")
+      "~DELETE <keyspace>.<table>")
+  }
+
+  private def create(ddlQuery: String) = {
+    val cmd = Tokenizer.tokenize(ddlQuery, true)
+    if (!cmd.poll.toUpperCase.equals("CREATE")) throw new DriftQueryException("Expecting CREATE [MEM] TABLE ...")
+    var storageType: Class[_ <: BlockStorage] = classOf[BlockStorageFS]
+    cmd.poll.toUpperCase match {
+      case "MEM" => {
+        storageType = classOf[BlockStorageMEMLZ4]
+        if (!cmd.poll.toUpperCase.equals("TABLE")) throw new DriftQueryException("Expecting CREATE [MEM] TABLE ...")
+      }
+      case "TABLE" => {}
+      case _ => throw new DriftQueryException("Expecting CREATE [MEM] TABLE ...")
+    }
+    val keyspace = cmd.poll
+    if (!cmd.poll.equals(".")) throw new DriftQueryException("Expecting CREATE [MEM] TABLE <keyspace>.<table> <schema>")
+    val table = cmd.poll
+    val schema = DriftSchema.fromTokens(cmd)
+    node.manager.createTable(keyspace, table, schema, 10485760, storageType)
+    describe("DESCRIBE " + keyspace + "." + table)
   }
 
   private def describe(ddlQuery: String) = {
     val cmd = Tokenizer.tokenize(ddlQuery, true)
-    cmd.poll
-    pipe.write("OK")
+    if (!cmd.poll.toUpperCase.equals("DESCRIBE")) throw new DriftQueryException("Expecting DESCRIBE [<keyspace>[.<table>]]")
     if (cmd.isEmpty) {
       //describe cluster
+      pipe.write("OK")
       pipeWriteInfo(
         "cluster id=" + node.manager.clusterId,
         "cluster numNodes=" + node.manager.expectedNumNodes,
@@ -82,6 +109,7 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
       val keyspace = cmd.poll
       if (cmd.isEmpty()) {
         //describe keyspace
+        pipe.write("OK")
         pipeWriteInfo(
           "keyspace: " + keyspace,
           "tables: " + node.manager.listTables(keyspace).mkString(", "))
@@ -90,6 +118,7 @@ class DriftNodeQuerySession(override val node: DriftNode, override val pipe: Pip
         cmd.poll
         val table = cmd.poll
         val descriptor = node.manager.getDescriptor(keyspace, table)
+        pipe.write("OK")
         pipeWriteInfo(
           "keyspace: " + keyspace,
           "table: " + table,

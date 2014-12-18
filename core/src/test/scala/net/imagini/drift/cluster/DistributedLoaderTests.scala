@@ -5,13 +5,14 @@ import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import net.imagini.drift.client.DriftClient
 import java.io.EOFException
+import net.imagini.drift.types.DriftSchema
 
 class DistributedLoaderTests extends FlatSpec with Matchers {
   "distributed loader" should "result in a correct client output" in {
       val manager = new DriftManagerLocal(4)
 
-      manager.createTable("vdna", "events", "user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
-      manager.createTable("addthis", "syncs", "at_id(STRING),user_uid(UUID),timestamp(LONG)")
+      manager.createTable("vdna", "events", DriftSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)"))
+      manager.createTable("addthis", "syncs", DriftSchema.fromString("at_id(STRING),user_uid(UUID),timestamp(LONG)"))
       val node1 = new DriftNode(1, "localhost:9998", manager)
       val node2 = new DriftNode(2, "localhost:9997", manager)
       val node3 = new DriftNode(3, "localhost:9996", manager)

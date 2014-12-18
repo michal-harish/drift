@@ -11,14 +11,15 @@ import java.util.regex.Pattern;
 public class Tokenizer {
 
     public static enum Token { 
-        WHITESPACE,KEYWORD,OPERATOR,NUMBER,STRING
+        WHITESPACE,KEYWORD,OPERATOR,SEPARATOR,NUMBER,STRING
     }
 
     @SuppressWarnings("serial")
     static final Map<Token,Pattern> matchers = new HashMap<Token,Pattern>() {{
         put(Token.WHITESPACE, Pattern.compile("^((\\s+))"));
-        put(Token.KEYWORD, Pattern.compile("^(([A-Za-z_]+))"));
-        put(Token.OPERATOR, Pattern.compile("^(([\\!@\\$%\\^&\\*;\\:|,<.>/\\?\\-=\\+\\(\\)\\[\\]\\{\\}`~]+))")); // TODO define separately () {} []
+        put(Token.KEYWORD, Pattern.compile("^(([A-Za-z_]+[A-Za-z_0-9]*))"));
+        put(Token.OPERATOR, Pattern.compile("^(([\\!@\\$%\\^&\\*\\:|<.>/\\?\\-=\\+\\(\\)\\[\\]\\{\\}`~]+))")); // TODO define separately () {} []
+        put(Token.SEPARATOR, Pattern.compile("^(([;,]+))"));
         put(Token.NUMBER,  Pattern.compile("^(([0-9]+|[0-9]+\\.[0-9]+))"));
         put(Token.STRING, Pattern.compile("^('(.*?)')")); // TODO fix escape sequence (?:\\"|.)*? OR /'(?:[^'\\]|\\.)*'/
     }};

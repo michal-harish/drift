@@ -1,11 +1,11 @@
 package net.imagini.drift.cluster
 
-import net.imagini.drift.types.DriftSchema
-import grizzled.slf4j.Logger
-import net.imagini.drift.utils.BlockStorage
-import net.imagini.drift.utils.BlockStorageMEMLZ4
 import java.net.URI
+import grizzled.slf4j.Logger
+import net.imagini.drift.types.DriftSchema
 import net.imagini.drift.types.DriftTableDescriptor
+import net.imagini.drift.utils.BlockStorageMEMLZ4
+import net.imagini.drift.utils.BlockStorage
 
 trait DriftManager {
   val log = Logger[this.type]
@@ -35,11 +35,16 @@ trait DriftManager {
     if (nodeConnectors.size != expectedNumNodes) throw new IllegalStateException("Expecting " + expectedNumNodes + " nodes, found " + nodeConnectors.size)
     nodeConnectors
   }
-  
-  final def listTables(keyspace: String):Iterable[String] = list[String]("/drift/" + clusterId +"/keyspaces/" + keyspace).keys
+
+  final def listTables(keyspace: String): Iterable[String] = list[String]("/drift/" + clusterId + "/keyspaces/" + keyspace).keys
 
   final def getDescriptor(keyspace: String, table: String): DriftTableDescriptor = {
-    new DriftTableDescriptor(get[String]("/drift/" + clusterId +"/keyspaces/" + keyspace + "/" + table))
+    val tablePath = "/drift/" + clusterId + "/keyspaces/" + keyspace + "/" + table
+    if (pathExists(tablePath)) {
+      new DriftTableDescriptor(get[String]("/drift/" + clusterId + "/keyspaces/" + keyspace + "/" + table))
+    } else {
+      throw new IllegalArgumentException("Table doesn't exist: " + keyspace + "." + table)
+    }
   }
 
   final def clusterIsSuspended: Boolean = {
@@ -58,7 +63,7 @@ trait DriftManager {
     }
     watchData("/nodes", (num: Option[String]) ⇒ num match {
       case Some(n) ⇒ expectedNumNodes = Integer.valueOf(n)
-      case None    ⇒ expectedNumNodes = -1
+      case None ⇒ expectedNumNodes = -1
     })
   }
 
@@ -70,17 +75,20 @@ trait DriftManager {
     pathUpdate("/drift/" + clusterId + "/nodes", totalNodes.toString)
   }
 
-  final def createTable(keyspace: String, name: String, schemaDeclaration: String) {
-    createTable(keyspace, name, schemaDeclaration, 10485760, classOf[BlockStorageMEMLZ4])
+  final def createTable(keyspace: String, name: String, schema: DriftSchema) {
+    createTable(keyspace, name, schema, 10485760, classOf[BlockStorageMEMLZ4])
   }
 
-  final def createTable(keyspace: String, name: String, schemaDeclaration: String, segmentSize: Int, storage: Class[_ <: BlockStorage]) {
-    DriftSchema.fromString(schemaDeclaration)
+  final def createTable(keyspace: String, name: String, schema: DriftSchema, segmentSize: Int, storage: Class[_ <: BlockStorage]) {
     val keyspacePath = "/drift/" + clusterId + "/keyspaces/" + keyspace
-    if (!pathExists(keyspacePath)) pathCreatePersistent(keyspacePath, "")
+    if (!pathExists(keyspacePath)) {
+      pathCreatePersistent(keyspacePath, "")
+    }
     val tablePath = keyspacePath + "/" + name
-    if (!pathExists(tablePath)) {
-      pathCreatePersistent(tablePath, schemaDeclaration + "\n" + segmentSize.toString + "\n" + storage.getName)
+    if (pathExists(tablePath)) {
+      throw new IllegalArgumentException("Table already exists: " + keyspace + "." + name)
+    } else {
+      pathCreatePersistent(tablePath, schema.toString + "\n" + segmentSize.toString + "\n" + storage.getName)
     }
   }
 

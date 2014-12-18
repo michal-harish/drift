@@ -4,11 +4,12 @@ import net.imagini.drift.client.DriftLoader
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import java.io.EOFException
+import net.imagini.drift.types.DriftSchema
 
 class LoaderTest extends FlatSpec with Matchers {
   "ClientLoader" should " load csv and gz" in {
     val manager = new DriftManagerLocal(1)
-    manager.createTable("vdna", "events", "user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
+    manager.createTable("vdna", "events", DriftSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)"))
     val node = new DriftNode(1, "localhost:9998", manager)
 
     new DriftLoader(manager, "vdna", "events", '\t', this.getClass.getResourceAsStream("datasync.csv"), false).streamInput should be(3)
@@ -22,7 +23,7 @@ class LoaderTest extends FlatSpec with Matchers {
 
 //  "ServerLoader" should " load from record view" in {
 //    val manager = new DriftManagerLocal(1)
-//    manager.createTable("vdna", "events", "user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
+//    manager.createTable("vdna", "events", DriftSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)"))
 //    val node = new DriftNode(1, "localhost:9998", manager)
 //    val loader = new DriftNodeLoader(manager, "vdna", "events")
 //    loader.insert("37b22cfb-a29e-42c3-a3d9-12d32850e103", "1413061544595", "VDNAUserPageview", "http://zh.pad.wikia.com/wiki/Puzzle_%26_Dragons_%E4%B8%AD%E6%96%87WIKI")

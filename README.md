@@ -143,6 +143,7 @@ addthis.views  (102m, 4.1GB.gz)         addthis.syncs    (18m, 540Mb.gz)        
 
 * bl-yarnpoc-p01 hive> select count(1) from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync';
 * bl-yarnpoc-p01 ~> hive -e "select partner_user_id, useruid, concat(timestamp,'000') from hcat_events_rc where d='2014-10-31' and partner_id_space='at_id' and topic='datasync'" | gzip --stdout > addthis_syncs_2014-10-31.csv.gz
+* bl-yarnpoc-p01 ~> hive -e "select useruid, concat(timestamp,'000'), url, client_ip, useragent from hcat_events_rc where d='2014-10-31' and topic='pageviews'" | gzip --stdout > vdna_pageviews_2014-10-31.csv.gz
 * bl-yarnpoc-p01 ~> 
 * scp mharis@bl-yarnpoc-p01:~/addthis_syncs_2014-10-31.csv.gz ~/
 
@@ -158,7 +159,8 @@ Usecase 3. Benchmark - id-linking from newly discovered information (?)
 
 Design thoughts dump
 =================================================================================================
-* next quick features: CREATE statement, TRUNCATE statement, DROP statement, 
+* TODO: CREATE TABLE (with FS storage), CREATE MEM TABLE (with MEMLZ4 storage)
+* TODO: DROP statement, DELETE statement
 * drift-client could also have merge capability - this would speed up export queries
 * atm cluster doesn't have any replication and since partitioning is critical, the cluster suspends all operations if any one of the expected nodes is missing until it reappears
 * compaction - use transformation method to do the merge sorting into larger and larger segments - e.g. start with tiny segments with quick sort and use maturing background transformations
@@ -240,3 +242,5 @@ cat src/test/resources/pageviews.json \
 | java -jar target/drift-loader.jar --keyspace vdna --table events
 
 
+#exmample transormation queries
+select ip, useragent, user_uid from vdna.pageviews into ips.test

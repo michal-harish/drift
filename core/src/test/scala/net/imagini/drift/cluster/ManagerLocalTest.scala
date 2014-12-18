@@ -3,6 +3,7 @@ package net.imagini.drift.cluster
 import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import org.scalatest.Finders
+import net.imagini.drift.types.DriftSchema
 
 class ManagerLocalTest extends FlatSpec with Matchers {
 
@@ -18,7 +19,7 @@ class ManagerLocalTest extends FlatSpec with Matchers {
         })
       })
     })
-    manager.createTable("xyz", "table1", "user_id(STRING)")
+    manager.createTable("xyz", "table1", DriftSchema.fromString("user_id(STRING)"))
     notification.get should be("user_id(STRING)\n10485760\nnet.imagini.drift.utils.BlockStorageMEMLZ4")
   }
 }

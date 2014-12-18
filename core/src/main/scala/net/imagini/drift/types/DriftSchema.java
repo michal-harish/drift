@@ -7,7 +7,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 
+import net.imagini.drift.utils.Tokenizer;
 import net.imagini.drift.utils.View;
 
 import org.apache.commons.lang3.StringUtils;
@@ -15,52 +17,64 @@ import org.apache.commons.lang3.StringUtils;
 public class DriftSchema {
 
     public static DriftSchema fromString(String declaration) {
-        final String[] dec = declaration.split(",");
+        return fromTokens(Tokenizer.tokenize(declaration, true));
+    }
+
+    public static DriftSchema fromTokens(Queue<String> tokens) {
         LinkedHashMap<String, DriftType> result = new LinkedHashMap<String, DriftType>();
-        for (int f = 0; f < dec.length; f++) {
-            String name = String.valueOf(f + 1);
-            Integer arg = null;
-            String type = dec[f].trim();
-            if (type.contains("(")) {
-                name = type.substring(0, type.indexOf("("));
-                type = type.substring(type.indexOf("(") + 1, type.indexOf(")"));
+        while (!tokens.isEmpty()) {
+            String fieldName = tokens.poll();
+            DriftType driftType;
+            if (tokens.peek().equals("(")) {
+                tokens.poll();
+                String typeDeclaration = tokens.poll();
+                switch (typeDeclaration) {
+                case "BOOL":
+                    driftType = Drift.BOOL;
+                    break;
+                case "BYTE":
+                    driftType = Drift.BYTE;
+                    break;
+                case "INT":
+                    driftType = Drift.INT;
+                    break;
+                case "LONG":
+                    driftType = Drift.LONG;
+                    break;
+                case "BYTEARRAY":
+                    if (!tokens.poll().equals("["))
+                        throw new IllegalArgumentException(
+                                "Invalid schema declaration, missing '['");
+                    driftType = Drift.BYTEARRAY(Integer.valueOf(tokens.poll()));
+                    if (!tokens.poll().equals("]"))
+                        throw new IllegalArgumentException(
+                                "Invalid schema declaration, missing ']'");
+                    break;
+                case "STRING":
+                    driftType = Drift.STRING;
+                    break;
+                case "UUID":
+                    driftType = Drift.UUID;
+                    break;
+                case "IPV4":
+                    driftType = Drift.IPV4;
+                    break;
+                case "TIME":
+                    driftType = Drift.TIME;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown data type " + typeDeclaration);
+                }
+                if (!tokens.poll().equals(")"))
+                    throw new IllegalArgumentException(
+                            "Invalid schema declaration, missing ')'");
+            } else {
+                driftType = Drift.STRING;
             }
-            type = type.toUpperCase();
-            if (type.contains("[")) {
-                arg = Integer.valueOf(type.substring(type.indexOf("[") + 1,
-                        type.indexOf("]")));
-                type = type.substring(0, type.indexOf("["));
-            }
-            switch (type) {
-            case "BOOL":
-                result.put(name, Drift.BOOL);
-                break;
-            case "BYTE":
-                result.put(name, Drift.BYTE);
-                break;
-            case "INT":
-                result.put(name, Drift.INT);
-                break;
-            case "LONG":
-                result.put(name, Drift.LONG);
-                break;
-            case "BYTEARRAY":
-                result.put(name, Drift.BYTEARRAY(arg));
-                break;
-            case "STRING":
-                result.put(name, Drift.STRING);
-                break;
-            case "UUID":
-                result.put(name, Drift.UUID);
-                break;
-            case "IPV4":
-                result.put(name, Drift.IPV4);
-                break;
-            case "TIME":
-                result.put(name, Drift.TIME);
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown data type " + type);
+            result.put(fieldName, driftType);
+            if (!tokens.isEmpty() && !tokens.poll().equals(",")) {
+                throw new IllegalArgumentException(
+                        "Invalid schema declaration, missing ','");
             }
         }
         return new DriftSchema(result);
@@ -81,33 +95,39 @@ public class DriftSchema {
     public String asString(View[] view) {
         return asString(view, ", ");
     }
+
     public String asString(View[] view, String separator) {
-        String result ="";
-        for(int i=0; i <size(); i++) {
-            DriftType t= def.get(i);
-            result +=t.asString(view[i]);
-            if (t != def.get(size()-1)) result += separator;
+        String result = "";
+        for (int i = 0; i < size(); i++) {
+            DriftType t = def.get(i);
+            result += t.asString(view[i]);
+            if (t != def.get(size() - 1))
+                result += separator;
         }
         return result;
     }
+
     public String[] asStrings(View[] view) {
         String[] result = new String[view.length];
-        for(int i=0; i <size(); i++) {
-            DriftType t= def.get(i);
+        for (int i = 0; i < size(); i++) {
+            DriftType t = def.get(i);
             result[i] = t.asString(view[i]);
         }
         return result;
     }
+
     public String asString(View view) {
         return asString(view, ", ");
     }
+
     public String asString(View view, String separator) {
         int mark = view.offset;
-        String result ="";
-        for(int f = 0; f<size(); f++) {
+        String result = "";
+        for (int f = 0; f < size(); f++) {
             result += def.get(f).asString(view);
             view.offset += def.get(f).sizeOf(view);
-            if (f <size() -1) result += separator;
+            if (f < size() - 1)
+                result += separator;
         }
         view.offset = mark;
         return result;
@@ -171,17 +191,18 @@ public class DriftSchema {
     @SuppressWarnings("serial")
     public DriftSchema subset(final List<String> columns) {
         final DriftSchema subSchema = new DriftSchema(
-            new LinkedHashMap<String, DriftType>() {
-                {
-                    for (String colName : columns)
-                        if (colName != null) {
-                            if (!colIndex.containsKey(colName)) {
-                                throw new DriftQueryException("Unknown field " + colName);
+                new LinkedHashMap<String, DriftType>() {
+                    {
+                        for (String colName : columns)
+                            if (colName != null) {
+                                if (!colIndex.containsKey(colName)) {
+                                    throw new DriftQueryException(
+                                            "Unknown field " + colName);
+                                }
+                                put(colName, def.get(colIndex.get(colName)));
                             }
-                            put(colName, def.get(colIndex.get(colName)));
-                        }
-                }
-            });
+                    }
+                });
         return subSchema;
     }
 }

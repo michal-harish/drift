@@ -17,20 +17,18 @@ import net.imagini.drift.types.SortType
 class NodeIntegrationTest extends FlatSpec with Matchers {
   val host = "localhost"
   val port = 9999
-  val manager = new DriftManagerLocal(1)
 
-  def fixutreNode: DriftNode = {
-    manager.createTable("vdna", "events", "user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)")
+  def fixutreNode(numSegments: Int): DriftNode = {
+    val manager = new DriftManagerLocal(1)
+    manager.createTable("vdna", "events", DriftSchema.fromString("user_uid(UUID),timestamp(LONG),column(STRING),value(STRING)"))
     val node = new DriftNode(1, host + ":" + port, manager)
-    node
-  }
-  def fixutreLoadDataSyncs = {
     val loader = new DriftLoader(manager, "vdna", "events", '\t', this.getClass.getResourceAsStream("datasync.csv"), false)
     loader.streamInput should be(3)
-  }
-  def fixutreLoadPageviews = {
-    val loader = new DriftLoader(manager, "vdna", "events", '\t', this.getClass.getResourceAsStream("pageviews.csv"), false)
-    loader.streamInput should be(5)
+    if (numSegments > 1) {
+        val loader2 = new DriftLoader(manager, "vdna", "events", '\t', this.getClass.getResourceAsStream("pageviews.csv"), false)
+        loader2.streamInput should be(5)
+    }
+    node
   }
 
   def newClient: DriftClient = {
@@ -106,9 +104,7 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
   }
 
   "Multiple loaders" should "be merged and sorted" in {
-    val node = fixutreNode
-    fixutreLoadDataSyncs
-    fixutreLoadPageviews
+    val node = fixutreNode(2)
     val client = newClient
     if (client.query("select * from vdna.events") != None) {
       client.hasNext should be(true)
@@ -135,8 +131,8 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
 
   "Region with 1 segment" should "should return all records after selecting loaded test data" in {
 
-    val node = fixutreNode
-    fixutreLoadDataSyncs
+    val node = fixutreNode(1)
+    
 
     val client = newClient
     if (client.query("select * from vdna.events") != None) {
@@ -149,12 +145,11 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
       client.hasNext should be(false)
       an[EOFException] must be thrownBy (client.fetchRecordStrings)
       node.manager.down
-
     }
   }
 
   "Filter over muitlple loaders" should "return subset from all sources" in {
-    val node = fixutreNode
+    val node = fixutreNode(2)
     val client = newClient
 
     //  TODO EmptyTableScanner
@@ -169,9 +164,6 @@ class NodeIntegrationTest extends FlatSpec with Matchers {
     //
     //    client.query("COUNT vdna.events") should be(None)
     //    client.getCount should be(0)
-
-    fixutreLoadDataSyncs
-    fixutreLoadPageviews
 
     client.query("select * from vdna.events where user_uid='37b22cfb-a29e-42c3-a3d9-12d32850e103'") match {
       case None ⇒ throw new IllegalArgumentException
