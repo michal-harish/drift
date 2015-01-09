@@ -19,7 +19,7 @@ object DriftLoader extends App {
   val argsIterator = args.iterator
   while (argsIterator.hasNext) {
     argsIterator.next match {
-      case "--zookeeper"    ⇒ zookeeper = argsIterator.next
+      case "--zookeeper"  ⇒ zookeeper = argsIterator.next
       case "--cluster-id" ⇒ clusterId = argsIterator.next
       case "--keyspace"   ⇒ keyspace = argsIterator.next
       case "--table"      ⇒ table = argsIterator.next

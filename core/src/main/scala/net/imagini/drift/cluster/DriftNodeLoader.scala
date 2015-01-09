@@ -36,25 +36,36 @@ class DriftNodeLoader(val manager: DriftManager, val keyspace: String, val table
       val parseBuffer = new Array[Byte](65535)
       val record: Array[View] = descriptor.schema.fields.map(field ⇒ new View(parseBuffer))
       val totalNodes = manager.expectedNumNodes
+      var lineNumber = 0
       while (!manager.clusterIsSuspended) {
         var f = 0
         var parserBufferPosition = 0
         var recordWithIllegalArgument = false
-        while (f < descriptor.schema.size) {
-          val field = descriptor.schema.get(f)
-          record(f).offset = parserBufferPosition
-          val valueToParse = csv.nextValue
-          try {
-            val parsedLength = field.parse(valueToParse, parseBuffer, parserBufferPosition)
-            record(f).limit = parserBufferPosition + parsedLength - 1
-            parserBufferPosition += parsedLength
-          } catch {
-            case e: IllegalArgumentException ⇒ {
-              recordWithIllegalArgument = true
-              log.warn(field + " " + new String(valueToParse.array, valueToParse.offset, valueToParse.limit - valueToParse.offset + 1) + " " + e)
+        lineNumber += 1
+        try {
+          while (f < descriptor.schema.size) {
+            val field = descriptor.schema.get(f)
+            record(f).offset = parserBufferPosition
+            val valueToParse = csv.nextValue
+            try {
+              val parsedLength = field.parse(valueToParse, parseBuffer, parserBufferPosition)
+              record(f).limit = parserBufferPosition + parsedLength - 1
+              parserBufferPosition += parsedLength
+              f += 1
+            } catch {
+              case e: IllegalArgumentException ⇒
+                {
+                  recordWithIllegalArgument = true
+                  if (valueToParse.limit - valueToParse.offset + 1 < 3) {
+                    log.error(valueToParse.offset + "::" + valueToParse.limit)
+                  }
+                  log.warn(lineNumber + ": " + field + " " + new String(valueToParse.array, valueToParse.offset, valueToParse.limit - valueToParse.offset + 1) + " " + e)
+                }
+                throw e
             }
           }
-          f += 1
+        } catch {
+          case e: IllegalArgumentException ⇒ csv.skipLine
         }
         if (!recordWithIllegalArgument) try {
           insert(record)

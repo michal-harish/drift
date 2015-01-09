@@ -19,6 +19,12 @@ public class CSVStreamParser {
     }
 
     public View nextValue() throws IOException {
+        return nextValue(false);
+    }
+    public void skipLine()  throws IOException {
+        nextValue(true);
+    }
+    private View nextValue(boolean skipLine) throws IOException {
         int start = -1;
         int end = -1;
         char ch;
@@ -27,8 +33,7 @@ public class CSVStreamParser {
                 ++position;
                 if (position >= limit) {
                     if (start >= 0 && end >= 0) {
-                        ByteUtils.copy(buffer, start, buffer, 0, end - start
-                                + 1);
+                        ByteUtils.copy(buffer, start, buffer, 0, end - start + 1);
                         position = end - start + 1;
                         limit = position;
                         start = 0;
@@ -47,7 +52,9 @@ public class CSVStreamParser {
                         start = position;
                     }
                 }
-                if (ch == separator || ch == '\n') {
+                if (ch == '\n') {
+                    break;
+                } else if (!skipLine && ch == separator) {
                     break;
                 } else {
                     if (ch != ' ' && ch != '\r' && ch != 0) {
@@ -61,15 +68,20 @@ public class CSVStreamParser {
                 throw e;
             }
         }
-        if (start < 0) start = 0;
-        if (end < start) end = start -1; 
+        if (start < 0)
+            start = 0;
+        if (end < start)
+            end = start - 1;
         bufferView.offset = start;
         bufferView.limit = end;
         return bufferView;
     }
 
+//    private int filepos = 0;
+
     private void loadBuffer() throws IOException {
         int read = input.read(buffer, position, buffer.length - position);
+//        filepos += read;
         if (read < 0)
             throw new EOFException();
         limit = position + read;
