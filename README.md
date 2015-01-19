@@ -159,8 +159,8 @@ Usecase 3. Benchmark - id-linking from newly discovered information (?)
 
 Design thoughts dump
 =================================================================================================
-* TODO: CREATE TABLE (with FS storage), CREATE MEM TABLE (with MEMLZ4 storage)
-* TODO: DROP statement, DELETE statement
+* Intersting application of DRIFT, although it demands validation, would be that similar to how Giraph operates - that is spawning an in-memory cluster on demand, parallel-loading either from hadoop or by custom kafka consumer, running a job and then dumping the result out, provided the "linearisation" would be a benefit.
+* DROP statement, DELETE statement still missing but hey!
 * drift-client could also have merge capability - this would speed up export queries
 * atm cluster doesn't have any replication and since partitioning is critical, the cluster suspends all operations if any one of the expected nodes is missing until it reappears
 * compaction - use transformation method to do the merge sorting into larger and larger segments - e.g. start with tiny segments with quick sort and use maturing background transformations

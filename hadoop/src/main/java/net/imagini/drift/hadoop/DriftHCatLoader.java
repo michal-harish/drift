@@ -29,7 +29,7 @@ public class DriftHCatLoader extends Configured implements Tool {
         String driftKeyspace = "addthis";
         String driftTable = "syncs";
         String hcatTable = "hcat_events_rc";
-        String filter = "topic=\"datasync\" and d>=\"2014-09-01\" and d<\"2014-10-01\"";
+        String filter = "topic=\"datasync\" and d>=\"2014-12-01\" and d<=\"2014-12-31\"";
         String[] mapping = new String[] {"partner_user_id", "useruid", "timestamp"};
         //------------------------------------------------------------------------------
         Configuration conf = getConf();
