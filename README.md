@@ -1,10 +1,8 @@
-basic use case: grouped view on large data stream window with time-space linear complexity scans 
-the 
-
-- next best alternative for the basic use case: HBase
-- next best alternative for the general case: Spark (provided the read side of the shuffle will get merge sort eventually)
-
 Fast sequential processing of keyed data windows - a conceptual child of Cassandra, Spark and Kafka
+Basic use case: grouped view on large data stream window with time-space linear complexity scans.
+- next best alternative for the general case: Spark (provided the read side of the shuffle will get merge sort eventually)
+- next best alternative for the basic use case: HBase
+
 
 Motivation
 ==========
