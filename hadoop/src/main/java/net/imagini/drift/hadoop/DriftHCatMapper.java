@@ -1,7 +1,10 @@
 package net.imagini.drift.hadoop;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 
+import net.imagini.drift.segment.RowFilter;
+import net.imagini.drift.types.Drift;
 import net.imagini.drift.types.DriftSchema;
 import net.imagini.drift.types.DriftType;
 import net.imagini.drift.utils.ByteUtils;
@@ -29,6 +32,9 @@ public class DriftHCatMapper extends
     static Logger log = LoggerFactory.getLogger(DriftHCatMapper.class);
 
     private HCatSchema hcatSchema;
+    private DriftSchema hcatFilterSchema;
+    private RowFilter hcatRowFilter;
+
     private DriftSchema driftSchema;
     private int[] hCatColumns;
     private int numDriftNodes;
@@ -36,10 +42,23 @@ public class DriftHCatMapper extends
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         Configuration conf = context.getConfiguration();
-        hcatSchema = HCatBaseInputFormat.getTableSchema(conf);
+
         log.info("DRIFT SCHEMA: " + conf.get("driftSchema"));
         driftSchema = DriftSchema.fromString(conf.get("driftSchema"));
-        String[] mapping = conf.getStrings("mapping");
+        String[] mapping = conf.getStrings("hcatMapping");
+
+        hcatSchema = HCatBaseInputFormat.getTableSchema(conf);
+
+        //convert hcatSchema to drift equivalent
+        LinkedHashMap<String, DriftType> hcatFieldsAsDrift = new LinkedHashMap<>();
+        for(HCatFieldSchema hcatField: hcatSchema.getFields()) {
+            hcatFieldsAsDrift.put(hcatField.getName(), Drift.STRING);
+        }
+        DriftSchema hcatSchemaAsDrift = new DriftSchema(hcatFieldsAsDrift);
+        hcatRowFilter = RowFilter.fromString(hcatSchemaAsDrift, conf.get("hcatRowFilter"));
+        hcatFilterSchema = hcatSchemaAsDrift.subset(hcatRowFilter.getColumns());
+        hcatRowFilter.updateFormula(hcatFilterSchema.names());
+
         hCatColumns = new int[mapping.length];
         for(int c = 0; c < driftSchema.size(); c++) {
             HCatFieldSchema hCatField = hcatSchema.get(mapping[c]);
@@ -78,7 +97,6 @@ public class DriftHCatMapper extends
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
-        // TODO Auto-generated method stub
         super.cleanup(context);
     }
 }

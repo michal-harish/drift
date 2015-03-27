@@ -24,22 +24,28 @@ public class DriftHCatLoader extends Configured implements Tool {
     }
 
     public int run(String[] args) throws Exception {
+        String hcatTable = "hcat_events_rc";
+        String[] hcatMapping = new String[] {"partner_user_id", "useruid", "timestamp"};
+        String hcatPartitionFilter = "topic=\"datasync\" and d>=\"2014-12-01\" and d<=\"2014-12-31\"";
+        String hcatRowFilter = "partner_id_space='at_id'";
         String driftZkConnect = "bl-mharis-d02";
         String driftClusterId = "benchmark4B";
         String driftKeyspace = "addthis";
         String driftTable = "syncs";
-        String hcatTable = "hcat_events_rc";
-        String filter = "topic=\"datasync\" and d>=\"2014-12-01\" and d<=\"2014-12-31\"";
-        String[] mapping = new String[] {"partner_user_id", "useruid", "timestamp"};
         //------------------------------------------------------------------------------
         Configuration conf = getConf();
         conf.set("driftZkConnect", driftZkConnect);
         conf.set("driftCluserId", driftClusterId);
         conf.set("driftKeyspace", driftKeyspace);
         conf.set("driftTable", driftTable);
+        conf.setStrings("hcatMapping", hcatMapping);
+        conf.set("hcatRowFilter", hcatRowFilter);
         DriftManager manager = new DriftManagerZk(driftZkConnect, driftClusterId);
         int numNodes = manager.getNodeConnectors().size();
         DriftSchema schema = manager.getDescriptor(driftKeyspace, driftTable).schema;
+        System.out.println("HCAT SOURCE TABLE: " + hcatTable);
+        System.out.println("HCAT SOURCE PARTITIONS: " + hcatPartitionFilter);
+        System.out.println("HCAT SOURCE ROW FILTER: " + hcatRowFilter);
         System.out.println("DRIFT CLUSTER ZK CONNECT: " + driftZkConnect);
         System.out.println("DRIFT CLUSTER ID: " + driftClusterId);
         System.out.println("DRIFT CLUSTER NODES: " + numNodes);
@@ -48,15 +54,14 @@ public class DriftHCatLoader extends Configured implements Tool {
         System.out.println("DRIFT SCHEMA: " + schema.toString());
         conf.set("driftSchema", schema.toString());
         conf.set("driftNumNodes", String.valueOf(numNodes));
-        conf.setStrings("mapping", mapping);
 
         JobConf jobConf = new JobConf(conf);
-        Job job = Job.getInstance(jobConf, "drift.loader-" + filter);
+        Job job = Job.getInstance(jobConf, "drift.loader-" + hcatPartitionFilter);
         job.setJarByClass(DriftHCatLoader.class);
 
         job.setInputFormatClass(HCatInputFormat.class);
         job.setMapperClass(DriftHCatMapper.class);
-        HCatInputFormat.setInput(job, null, hcatTable, filter);
+        HCatInputFormat.setInput(job, null, hcatTable, hcatPartitionFilter);
         job.setReducerClass(DriftLoaderReducer.class);
 
         job.setOutputFormatClass(TextOutputFormat.class);

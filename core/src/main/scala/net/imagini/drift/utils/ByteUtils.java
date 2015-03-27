@@ -1,12 +1,5 @@
 package net.imagini.drift.utils;
 
-
-/**
- * 1. byte array utils 2. inputstream utils 3. ByteBuffer utils
- * 
- * We need to use BIG_ENDIAN because the pro(s) are favourable to our usecase,
- * e.g. lot of streaming filtering.
- */
 public class ByteUtils {
 
     public static int parseIntRadix10(byte[] array, int offset, int limit) {
@@ -121,7 +114,7 @@ public class ByteUtils {
         }
         int i = leftOffset;
         int j = rightOffset;
-        int n = lSize -1;
+        int n = lSize;
         for (int k = 0; k < n; k++, i++, j++) {
             int cmp = (lArray[i] & 0xFF) - (rArray[j] & 0xFF);
             if (cmp != 0) {
@@ -175,5 +168,24 @@ public class ByteUtils {
         int sum = 0;
         for (int i = offset; i< offset + size; i++) sum ^=  array[i];
         return sum;
+    }
+
+    public static byte[] parseUUID(String uuid) {
+        byte[] result = new byte[16];
+        parseUUID(uuid.getBytes(), 0, result, 0);
+        return result;
+    }
+
+    public static void parseUUID(byte[] uuid, int uuidOffset, byte[] dest, int destOffset) {
+        long mostSigBits = parseLongRadix16(uuid, uuidOffset, uuidOffset + 7);
+        mostSigBits <<= 16;
+        mostSigBits |= ByteUtils.parseLongRadix16(uuid, uuidOffset+9, uuidOffset + 12);
+        mostSigBits <<= 16;
+        mostSigBits |= ByteUtils.parseLongRadix16(uuid, uuidOffset+14, uuidOffset + 17);
+        long leastSigBits = ByteUtils.parseLongRadix16(uuid, uuidOffset+19, uuidOffset + 22);
+        leastSigBits <<= 48;
+        leastSigBits |= ByteUtils.parseLongRadix16(uuid, uuidOffset+24, uuidOffset + 35);
+        ByteUtils.putLongValue(mostSigBits, dest, destOffset);
+        ByteUtils.putLongValue(leastSigBits, dest, destOffset + 8);
     }
 }

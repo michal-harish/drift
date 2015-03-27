@@ -11,6 +11,8 @@ public class DriftTypeUUID extends DriftTypeBYTEARRAY {
 
     @Override
     public int parse(View value, byte[] dest, int destOffset) {
+        ByteUtils.parseUUID(value.array, value.offset, dest, destOffset);
+        /*
         long mostSigBits = ByteUtils.parseLongRadix16(value.array, value.offset, value.offset + 7);
         mostSigBits <<= 16;
         mostSigBits |= ByteUtils.parseLongRadix16(value.array, value.offset+9, value.offset + 12);
@@ -21,6 +23,7 @@ public class DriftTypeUUID extends DriftTypeBYTEARRAY {
         leastSigBits |= ByteUtils.parseLongRadix16(value.array, value.offset+24, value.offset + 35);
         ByteUtils.putLongValue(mostSigBits, dest, destOffset);
         ByteUtils.putLongValue(leastSigBits, dest, destOffset + 8);
+        */
         return 16;
     }
 
